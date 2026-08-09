@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
          LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { forAnalytics } from "../lib/companies.js";
+import { attentionActions } from "../lib/investigation.js";
 
 // ── Design tokens ────────────────────────────────────────────────
 const T = {
@@ -290,34 +291,34 @@ function IRRTable() {
 // ─────────────────────────────────────────────────────────────────
 // Attention Required panel (AI-powered)
 // ─────────────────────────────────────────────────────────────────
-const STATIC_ACTIONS = [
-  { company: "CareOS", severity: "critical", icon: "🔴", action: "Cash runway breaches 60-day threshold in 8 days", owner: "CFO", due: "30 Jun" },
-  { company: "Meridian SaaS", severity: "high", icon: "🟠", action: "£7.2k overdue AR — DIISR and Rex Media Group require escalation", owner: "CFO", due: "07 Jul" },
-  { company: "CareOS", severity: "high", icon: "🟠", action: "Revenue tracking at 64% of budget — Q3 plan needs revision", owner: "CEO", due: "15 Jul" },
-  { company: "Meridian SaaS", severity: "medium", icon: "🟡", action: "Board pack due — prepare Q2 investor update", owner: "CEO", due: "30 Jun" },
-  { company: "SwiftLogix", severity: "medium", icon: "🟡", action: "Ops health score declined 8pts MoM — investigate logistics cost base", owner: "COO", due: "10 Jul" },
-];
+// The five actions the portfolio most needs, computed from the finance model.
+// These were five hardcoded rows, one of which read "£7.2k overdue AR — DIISR
+// and Rex Media Group require escalation": Meridian's overdue balance is £73k
+// and neither debtor exists in the ledger. Refresh calls the same calculation
+// server-side; the initial render does not wait for the network.
+const STATIC_ACTIONS = attentionActions();
 
 function AttentionPanel() {
   const [loading, setLoading] = useState(false);
   const [actions, setActions] = useState(STATIC_ACTIONS);
   const [live, setLive] = useState(false);
 
+  // Previously the reply was fetched and discarded — only `live` was read, so
+  // the button lit a badge and left the stale rows exactly where they were.
   async function refresh() {
     setLoading(true);
     try {
       const r = await fetch("/api/ai/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "attention",
-          company: { name: "Portfolio", score: 68, rag: "AMBER" },
-          data: { question: "What are the top 5 actions required across the portfolio this week? Format as JSON array with fields: company, severity (critical/high/medium), action, owner, due." },
-        }),
+        body: JSON.stringify({ type: "attention" }),
       });
       const d = await r.json();
-      if (d.live) setLive(true);
-    } catch (e) {}
+      if (Array.isArray(d.actions) && d.actions.length) setActions(d.actions);
+      setLive(!!d.live);
+    } catch (e) {
+      // Leave what is on screen rather than replace it with nothing.
+    }
     setLoading(false);
   }
 
@@ -342,7 +343,9 @@ function AttentionPanel() {
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: sevColor[a.severity], marginTop: 5, flexShrink: 0, boxShadow: `0 0 6px ${sevColor[a.severity]}` }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, color: T.txt1 }}>{a.action}</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>{a.company} · {a.owner} · Due {a.due}</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>
+              {a.company} · {a.owner} · Due {a.due}{a.rationale ? ` · ${a.rationale}` : ""}
+            </div>
           </div>
           <div style={{ fontSize: 9, color: sevColor[a.severity], textTransform: "uppercase", letterSpacing: 1, flexShrink: 0 }}>{a.severity}</div>
         </div>

@@ -20,6 +20,9 @@ import { COMPANIES, FUNDS, forDashboard, forAnalytics } from "../src/lib/compani
 import { buildRevenueMiss } from "../src/lib/scenarioRevenueMiss.js";
 import { buildExpansion } from "../src/lib/scenarioExpansion.js";
 import { buildExceptionReport, buildGrowthBrief, reportToHtml } from "../src/lib/reports.js";
+import { buildInvestigation } from "../src/lib/investigation.js";
+import { portfolioContext } from "../api/ai/_context.js";
+import { readFile, readdir } from "node:fs/promises";
 
 let failures = 0;
 let checks = 0;
@@ -225,6 +228,162 @@ check("grounded board pack computes metrics and leaves narrative to the model", 
   const filled = fallbackNarrative(pack, { name: "Meridian SaaS" });
   if (!filled.executiveSummary) return "fallback wrote no summary";
   return true;
+});
+
+// The endpoints must actually USE the grounded modules. Commit 80363ea said in
+// its message that both had been rewritten to do so; only _groundedPack.js was
+// staged, and the two endpoints stayed on the ungrounded path for four further
+// commits without anything noticing. A claim in a commit message is not a test.
+// Comments in these files describe what was removed and name the old values, so
+// the scans below read code only — otherwise the explanation trips the check.
+const codeOf = async (rel) => (await readFile(new URL(rel, import.meta.url), "utf8"))
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/^\s*\/\/.*$/gm, "");
+
+const boardpackSrc = await codeOf("../api/ai/boardpack.js");
+const agentSrc = await codeOf("../api/ai/agent.js");
+
+check("boardpack.js is wired to the grounded pack", () =>
+  (boardpackSrc.includes("_groundedPack.js") && boardpackSrc.includes("groundedPack(")) ||
+  "boardpack.js does not call groundedPack — it is asking the model for the figures");
+
+check("agent.js is wired to the grounded context", () =>
+  (agentSrc.includes("_context.js") && agentSrc.includes("companyContext")) ||
+  "agent.js does not build its prompt from the finance model");
+
+check("no endpoint falls back to Meridian's figures for another company", () => {
+  const stale = [/£?413k/, /£?412k/, /company\.runway \|\|/, /finance\.cash \|\|/];
+  for (const src of [boardpackSrc, agentSrc]) {
+    const hit = stale.find((p) => p.test(src));
+    if (hit) return `a hardcoded default survives: ${hit}`;
+  }
+  return true;
+});
+
+// ── 10. The AI screen ───────────────────────────────────────────────────────
+section("AI agents — the screen calls our own endpoint, over computed evidence");
+
+const agentsSrc = await codeOf("../src/views/Agents.jsx");
+
+
+// Scanned across every view rather than the one screen that was fixed: five
+// such calls existed, three in Agents.jsx and two in GPDashboard.jsx, none
+// carrying an Authorization header. They could only ever fail, and each was
+// caught silently — so what a partner saw was always the hardcoded catch block.
+const views = await readdir(new URL("../src/views/", import.meta.url));
+for (const file of views.filter((f) => f.endsWith(".jsx"))) {
+  const src = await codeOf(`../src/views/${file}`);
+  check(`${file} keeps model calls on our own endpoint`, () => {
+    const vendor = /api\.anthropic\.com|api\.openai\.com|api\.x\.ai/.exec(src);
+    return vendor ? `calls ${vendor[0]} directly from the browser, with no key` : true;
+  });
+}
+
+check("the AI screen posts to /api/ai/agent", () =>
+  agentsSrc.includes("/api/ai/agent") || "Agents.jsx does not call our endpoint");
+
+check("every company can be investigated", () => {
+  for (const c of COMPANIES) {
+    const inv = buildInvestigation(c.id);
+    if (!inv.steps.length) return `${c.name}: no reasoning steps`;
+    if (!inv.actions.length) return `${c.name}: no actions`;
+    const text = inv.steps.map((s) => s.text).join(" ") + inv.rootCause;
+    if (/undefined|NaN/.test(text)) return `${c.name}: chain contains undefined or NaN`;
+  }
+  return true;
+});
+
+check("the investigation agrees with the finance screen", () => {
+  for (const c of COMPANIES) {
+    const inv = buildInvestigation(c.id);
+    const fin = buildFinance({ id: c.id, status: c.rag.toLowerCase() });
+    if (inv.fin.runway !== fin.runway) return `${c.name}: runway ${inv.fin.runway} vs ${fin.runway}`;
+    if (!inv.steps[1].text.includes(String(fin.runway))) return `${c.name}: chain does not quote the runway on screen`;
+  }
+  return true;
+});
+
+check("no root cause is claimed where no threshold is breached", () => {
+  for (const c of COMPANIES) {
+    const inv = buildInvestigation(c.id);
+    if (!inv.underStress && /largest single contributor/.test(inv.rootCause))
+      return `${c.name}: names a root cause on ${inv.fin.runway} months of runway with no breach`;
+  }
+  return true;
+});
+
+check("contribution shares sum to 100% where causes are ranked", () => {
+  for (const c of COMPANIES) {
+    const { contributions } = buildInvestigation(c.id);
+    if (!contributions.length) continue;
+    const total = contributions.reduce((t, x) => t + x.share, 0);
+    if (Math.abs(total - 100) > 1) return `${c.name}: shares sum to ${total}%`;
+  }
+  return true;
+});
+
+check("the investigation is deterministic", () => {
+  const a = JSON.stringify(buildInvestigation("careos").steps);
+  const b = JSON.stringify(buildInvestigation("careos").steps);
+  return a === b || "two runs disagree";
+});
+
+check("portfolio context covers every company and both funds", () => {
+  const { text, rows } = portfolioContext();
+  if (rows.length !== COMPANIES.length) return `${rows.length} rows for ${COMPANIES.length} companies`;
+  const missing = COMPANIES.filter((c) => !text.includes(c.name)).map((c) => c.name);
+  if (missing.length) return `absent from the model's context: ${missing.join(", ")}`;
+  for (const f of FUNDS) if (!text.includes(f.name)) return `fund missing: ${f.name}`;
+  if (/undefined|NaN/.test(text)) return "context contains undefined or NaN";
+  return true;
+});
+
+// The handlers are async, so they are run here and the outcome checked below.
+const call = async (handler, body) => {
+  let out = null, code = 200;
+  await handler({ method: "POST", body }, {
+    status(c) { code = c; return this; },
+    json(o) { out = o; return this; },
+    end() { return this; },
+  });
+  return { code, out };
+};
+
+const agentHandler = (await import("../api/ai/agent.js")).default;
+const boardpackHandler = (await import("../api/ai/boardpack.js")).default;
+
+const noKeyRuns = {
+  investigate: await call(agentHandler, { type: "investigate", companyId: "careos" }),
+  qa: await call(agentHandler, { type: "qa", question: "Which companies need capital?" }),
+  attention: await call(agentHandler, { type: "attention" }),
+  pack: await call(boardpackHandler, { company: { id: "nusantara" } }),
+  unknown: await call(boardpackHandler, { company: { id: "not-a-company" } }),
+};
+
+check("every endpoint answers with no API key set", () => {
+  for (const [name, r] of Object.entries(noKeyRuns)) {
+    if (name === "unknown") continue;
+    if (r.code !== 200) return `${name} returned ${r.code}`;
+    const body = r.out.text ?? JSON.stringify(r.out.pack ?? "");
+    if (!body || body.length < 80) return `${name} returned nothing usable`;
+    if (/undefined|NaN|\[object Object\]/.test(body)) return `${name} contains undefined, NaN or [object Object]`;
+    if (r.out.live) return `${name} claims to be live without a key`;
+  }
+  return true;
+});
+
+check("a company we do not hold is refused rather than answered as Meridian", () => {
+  const { code, out } = noKeyRuns.unknown;
+  if (code !== 400) return `returned ${code} instead of refusing`;
+  if (out.pack) return "produced a board pack for an unknown company";
+  return true;
+});
+
+check("the no-key board pack quotes the company it was asked for", () => {
+  const fin = buildFinance({ id: "nusantara", status: "amber" });
+  const mrr = noKeyRuns.pack.out.pack.keyMetrics.find((x) => x.label === "MRR").value;
+  const expected = `£${Math.round(fin.revenue.total).toLocaleString()}k`;
+  return mrr === expected || `board pack says ${mrr}, finance model says ${expected}`;
 });
 
 // ── Result ──────────────────────────────────────────────────────────────────

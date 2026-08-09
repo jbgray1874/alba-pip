@@ -1,4 +1,21 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
+import { buildInvestigation, investigationTargets } from "../lib/investigation.js";
+import { COMPANIES } from "../lib/companies.js";
+import { fmtMoney } from "../lib/fx.js";
+
+// Every demo below posts to /api/ai/agent, which grounds the request on the
+// finance model server-side. It previously called api.anthropic.com direct from
+// the browser with no Authorization header — three requests that could only
+// ever fail, silently caught, leaving a scripted demo that looked live.
+async function askAgent(body) {
+  const r = await fetch("/api/ai/agent", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`agent ${r.status}`);
+  return r.json();
+}
 
 const T = {
   bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
@@ -112,7 +129,7 @@ const AGENTS = [
     tagline:"Ask any question about your portfolio in plain English. Get a cited answer.",
     color:T.purple,
     what:"Natural language interface across all portfolio companies and all KPIs. Ask cross-portfolio questions: 'Which companies are most likely to need capital in the next 90 days?', 'Which company has the best gross margin trend?', 'Where is attrition above sector benchmark?'. Agent queries relevant data, reasons across it, returns a cited answer.",
-    prototype:"Live — ask any question in the demo panel below. Runs against all 5 seeded portfolio companies.",
+    prototype:"Live — ask any question in the demo panel below. Runs against every portfolio company, restated into the fund's reporting currency.",
     production:"LangChain RAG over KPI database + vector embeddings. Sources cited. Confidence scores. Audit log of every query.",
     tools:["Multi-company KPI query","Cross-portfolio analysis","Benchmark comparison","Cited response generation"],
     why:"GPs currently get the answer to these questions by building Excel models. This is a 2-second natural language query.",
@@ -182,92 +199,53 @@ const AGENTS = [
   },
 ];
 
-const CATS = ["All", ...Array.from(new Set(AGENTS.map(a=>a.cat)))];
-const PORTFOLIO_CONTEXT = `
-Portfolio: Caledonia Alba Fund I
-Companies:
-1. Meridian SaaS (B2B SaaS, Series A, score 62/100 AMBER) — Cash runway 4.8mo, revenue 87% of budget, attrition 14%, DSO 47 days, burn £138k/mo
-2. PayFlo (Fintech/Payments, Growth PE, score 88/100 GREEN) — Cash runway 11.2mo, revenue 112% of budget, attrition 7%, NRR 118%, GMV +23% MoM
-3. SwiftLogix (Logistics, Series B, score 71/100 AMBER) — Cash runway 8.1mo, revenue 96% of budget, attrition 19%, on-time delivery 87% vs 95% SLA
-4. CareOS (HealthTech, Series A, score 34/100 RED) — Cash runway 2.3mo CRITICAL, revenue 64% of budget, attrition 23%, pipeline coverage 0.8x
-5. ForgeTech (Manufacturing, PE Growth, score 84/100 GREEN) — Cash runway 9.4mo, revenue 103% of budget, attrition 9%, EBITDA 18%
-Fund health: 1 RED, 2 AMBER, 2 GREEN. Average health score: 68/100.
-`;
 
 // ── LIVE AGENT DEMOS ──────────────────────────────────────────────────────────
+//  The reasoning chain, the board pack and the Q&A fallback are all computed
+//  from the finance model. What the agent says on screen is therefore the same
+//  arithmetic the finance drill-down shows, and a figure cannot drift in one
+//  place without moving in the other.
 function InvestigationDemo() {
-  const [target, setTarget] = useState("meridian_cash");
+  const TARGETS = useMemo(() => investigationTargets(3), []);
+  const [target, setTarget] = useState(TARGETS[0].id);
   const [running, setRunning] = useState(false);
-  const [steps, setSteps] = useState([]);
-  const [done, setDone] = useState(false);
+  const [shown, setShown] = useState(0);
+  const [summary, setSummary] = useState(null);
+  const [live, setLive] = useState(false);
 
-  const TARGETS = [
-    { id:"meridian_cash",   label:"Meridian SaaS — Cash Runway (RED)",   company:"Meridian SaaS" },
-    { id:"careos_revenue",  label:"CareOS — Revenue vs Budget (RED)",     company:"CareOS" },
-    { id:"swiftlogix_sla",  label:"SwiftLogix — On-Time Delivery (AMBER)",company:"SwiftLogix" },
-  ];
-
-  const MOCK_STEPS = {
-    meridian_cash:[
-      "🔍 Fetching all finance KPIs for Meridian SaaS...",
-      "📊 Cash balance: £412k. Monthly burn: £138k (+£12k MoM). Runway: 4.8 months.",
-      "🔗 Cross-referencing AR data... DSO has widened from 32 to 47 days. AR overdue >30 days: £74k.",
-      "📈 Checking revenue trend... Revenue 87% of budget. Gap widening for 3rd consecutive month.",
-      "👥 Checking HR data... 6 open roles including Head of Sales. Attrition 14% — sales team most affected.",
-      "🧮 Root cause identified: Cash pressure is compound. Primary: AR collections slowing (DSO +15 days = ~£58k trapped). Secondary: Burn creeping up (payroll for unfilled roles still on budget). Revenue miss compounding the gap.",
-      "⚡ Recommended actions: (1) Emergency AR review — top 5 overdue accounts = £74k recoverable in 30 days. (2) Freeze discretionary spend immediately. (3) Reassess open roles — 3 of 6 non-critical.",
-    ],
-    careos_revenue:[
-      "🔍 Fetching all KPIs for CareOS...",
-      "📊 Revenue £162k vs budget £415k — 64% attainment. Gap is £253k/month.",
-      "🔗 Cross-referencing pipeline data... Pipeline coverage 0.8x. Win rate 18% (down from 25%). Sales cycle 54 days (up 18 days).",
-      "👥 Checking HR data... Head of Sales vacant 60+ days. Sales team attrition 28% — 2 of 5 reps left in last 90 days.",
-      "💰 Cross-referencing cash... Burn £185k/mo. Runway 2.3 months. At current trajectory, cash out in 9 weeks.",
-      "🧮 Root cause identified: Revenue miss is a go-to-market execution failure, not a market problem. Vacant Head of Sales + 40% rep attrition has gutted sales capacity. Pipeline exists but conversion is broken.",
-      "⚡ CRITICAL: Company has ~9 weeks of cash. GP must act this week: (1) Interim sales leadership immediately. (2) Emergency board meeting — bridge financing or cost restructure required. (3) Assess if existing pipeline can be accelerated.",
-    ],
-    swiftlogix_sla:[
-      "🔍 Fetching operations KPIs for SwiftLogix...",
-      "📊 On-time delivery: 87% vs 95% SLA target. 2 enterprise clients issued formal warnings.",
-      "🔗 Cross-referencing HR data... Operations team attrition: 24% (highest in company). 12 driver vacancies across 3 depots.",
-      "⚙️ Checking ops metrics... Throughput down 8% vs plan. Backlog up 22 items MoM. Route efficiency declining.",
-      "💰 Revenue at risk: 2 enterprise clients represent £420k ARR. SLA breach penalty clauses trigger at <85% over 60 days.",
-      "🧮 Root cause identified: Capacity constraint from driver attrition is directly causing SLA misses. Not a process problem — a staffing problem. 12 driver vacancies = 8–12% capacity shortfall.",
-      "⚡ Recommended actions: (1) Emergency response to 2 client warnings — escalation call with COO this week. (2) Temporary agency driver cover — £40–60k cost vs £420k revenue at risk. (3) Root cause of driver attrition — comp benchmarking urgent.",
-    ],
-  };
+  const inv = useMemo(() => buildInvestigation(target), [target]);
 
   async function runInvestigation() {
-    setRunning(true); setSteps([]); setDone(false);
-    const mockSteps = MOCK_STEPS[target];
-    for (let i = 0; i < mockSteps.length; i++) {
-      await new Promise(r => setTimeout(r, 700 + Math.random() * 600));
-      setSteps(p => [...p, mockSteps[i]]);
+    setRunning(true); setShown(0); setSummary(null); setLive(false);
+
+    // Reveal the computed chain a step at a time. The pace is fixed rather than
+    // random — nothing on this screen should be non-deterministic.
+    for (let i = 0; i < inv.steps.length; i++) {
+      await new Promise((r) => setTimeout(r, i === 0 ? 300 : 620));
+      setShown(i + 1);
     }
-    // Try real API call for final narrative
+
     try {
-      const tgt = TARGETS.find(t=>t.id===target);
-      const r = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514", max_tokens:300,
-          system:"You are a PE portfolio analyst running an automated investigation. You have already completed the step-by-step analysis. Write a 3-sentence executive summary of your findings and the single most important action the GP must take in the next 48 hours. Be specific and cite numbers.",
-          messages:[{role:"user",content:`Investigation target: ${tgt?.label}\n\nPortfolio context:\n${PORTFOLIO_CONTEXT}\n\nAnalysis steps completed:\n${mockSteps.join("\n")}\n\nGenerate executive summary and #1 priority action.`}]
-        })
-      });
-      const d = await r.json();
-      const summary = d.content?.[0]?.text;
-      if (summary) setSteps(p => [...p, `\n📋 EXECUTIVE SUMMARY:\n${summary}`]);
-    } catch(e) { /* mock steps are sufficient */ }
-    setDone(true); setRunning(false);
+      const d = await askAgent({ type: "investigate", companyId: target });
+      setSummary(d.text);
+      setLive(!!d.live);
+    } catch (e) {
+      setSummary(inv.rootCause);
+    }
+    setRunning(false);
   }
+
+  const visible = inv.steps.slice(0, shown);
+  const kindColour = { rootCause: T.amber, action: T.green };
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={{color:T.txt3,fontSize:10,marginBottom:4}}>Select a KPI alert to investigate:</div>
+      <div style={{color:T.txt3,fontSize:10,marginBottom:4}}>
+        Select a company to investigate — ranked on runway and revenue against plan:
+      </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {TARGETS.map(t=>(
-          <button key={t.id} onClick={()=>{setTarget(t.id);setSteps([]);setDone(false);}}
+          <button key={t.id} onClick={()=>{setTarget(t.id);setShown(0);setSummary(null);}}
             style={{padding:"6px 12px",background:target===t.id?T.red:T.surface,
               border:`1px solid ${target===t.id?T.red:T.border}`,borderRadius:6,
               color:target===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10}}>
@@ -281,20 +259,52 @@ function InvestigationDemo() {
         alignSelf:"flex-start"}}>
         {running?"🔍 Investigating…":"🔍 Run Investigation"}
       </button>
-      {steps.length>0&&(
+
+      {visible.length>0&&(
         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:16,
           display:"flex",flexDirection:"column",gap:6}}>
-          {steps.map((s,i)=>(
-            <div key={i} style={{color:s.includes("EXECUTIVE")||s.includes("Root cause")||s.includes("CRITICAL")?T.amber:T.txt2,
-              fontSize:11,lineHeight:1.6,padding:s.includes("EXECUTIVE")?"10px 12px":"4px 0",
-              background:s.includes("EXECUTIVE")?T.amberDim:"transparent",
-              borderRadius:s.includes("EXECUTIVE")?6:0,
-              whiteSpace:"pre-wrap",
-              animation:"fadeIn 0.3s ease"}}>
-              {s}
+          {visible.map((s,i)=>(
+            <div key={i} style={{color:kindColour[s.kind]??T.txt2,
+              fontSize:11,lineHeight:1.6,padding:s.kind==="rootCause"?"10px 12px":"4px 0",
+              background:s.kind==="rootCause"?T.amberDim:"transparent",
+              borderRadius:s.kind==="rootCause"?6:0,
+              whiteSpace:"pre-wrap",animation:"fadeIn 0.3s ease"}}>
+              {s.icon} {s.text}
             </div>
           ))}
           {running&&<div style={{color:T.blue,fontSize:10,animation:"pulse 1s infinite"}}>Agent reasoning…</div>}
+
+          {summary&&(
+            <div style={{marginTop:8,padding:"10px 12px",background:T.blueDim,border:`1px solid ${T.blue}33`,
+              borderRadius:6,color:T.txt2,fontSize:11,lineHeight:1.7,whiteSpace:"pre-wrap"}}>
+              <div style={{color:T.blue,fontSize:9,fontWeight:700,letterSpacing:"0.1em",marginBottom:6}}>
+                EXECUTIVE SUMMARY · {live ? "Grok, over the calculated evidence above" : "calculated — set XAI_API_KEY for the analytical layer"}
+              </div>
+              {summary}
+            </div>
+          )}
+        </div>
+      )}
+
+      {shown>=inv.steps.length&&inv.contributions.length>0&&(
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}>
+          <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:8}}>
+            {inv.underStress ? "HOW THE CAUSES WERE RANKED" : "WATCH LIST — NO THRESHOLD BREACHED"}
+          </div>
+          {inv.contributions.map(c=>(
+            <div key={c.key} style={{marginBottom:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:3}}>
+                <span style={{color:T.txt2,fontSize:10.5}}>{c.label}</span>
+                <span style={{color:T.txt1,fontSize:10.5,fontWeight:600,fontVariantNumeric:"tabular-nums"}}>
+                  {fmtMoney(c.impact, inv.currency, {k:true})} <span style={{color:T.txt3,fontWeight:400}}>· {c.share}%</span>
+                </span>
+              </div>
+              <div style={{height:5,background:T.bg,borderRadius:2,overflow:"hidden"}}>
+                <div style={{width:`${c.share}%`,height:"100%",background:T.amber,opacity:0.8}}/>
+              </div>
+              <div style={{color:T.txt3,fontSize:8.5,marginTop:3}}>{c.basis}</div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -310,27 +320,24 @@ function PortfolioQADemo() {
     "What are the top 3 risks to fund performance this quarter?",
     "Compare all companies on gross margin and burn multiple",
   ];
+  const [live,setLive]=useState(false);
   async function ask(question) {
     const qText = question||q; if (!qText.trim()) return;
-    setLoading(true); setAns(null);
+    setLoading(true); setAns(null); setLive(false);
     try {
-      const r = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",max_tokens:500,
-          system:"You are a senior PE portfolio analyst. Answer questions about the portfolio concisely and directly. Always cite specific numbers. Structure your answer clearly. Flag the most important action or insight at the end.",
-          messages:[{role:"user",content:`Portfolio data:\n${PORTFOLIO_CONTEXT}\n\nQuestion: ${qText}`}]
-        })
-      });
-      const d = await r.json();
-      setAns(d.content?.[0]?.text||"Unable to answer.");
+      const d = await askAgent({ type:"qa", question:qText });
+      setAns(d.text||"Unable to answer.");
+      setLive(!!d.live);
     } catch(e) {
-      setAns(`Based on current portfolio data: CareOS (2.3 months runway) and Meridian SaaS (4.8 months) are the highest capital risk companies. CareOS requires immediate GP attention — at current burn rate, cash is exhausted in approximately 9 weeks. Meridian's situation is serious but manageable with debtor collection acceleration. The other three companies (PayFlo, SwiftLogix, ForgeTech) have adequate runway for the next 12 months.`);
+      setAns("The analysis endpoint is unreachable. Nothing is shown rather than something unverified.");
     }
     setLoading(false);
   }
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{color:T.txt3,fontSize:9}}>
+        Answered over all {COMPANIES.length} portfolio companies, restated into GBP.
+      </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {QUICK.map(qq=><button key={qq} onClick={()=>{setQ(qq);ask(qq);}}
           style={{padding:"5px 10px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:5,
@@ -347,7 +354,12 @@ function PortfolioQADemo() {
         </button>
       </div>
       {ans&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:8,
-        padding:16,color:T.txt2,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{ans}</div>}
+        padding:16,color:T.txt2,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>
+        <div style={{color:live?T.green:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:8}}>
+          {live?"● GROK · OVER CALCULATED PORTFOLIO DATA":"● CALCULATED · SET XAI_API_KEY FOR THE ANALYTICAL LAYER"}
+        </div>
+        {ans}
+      </div>}
     </div>
   );
 }
@@ -356,33 +368,29 @@ function BoardPackDemo() {
   const [co, setCo] = useState("meridian");
   const [loading, setLoading] = useState(false);
   const [pack, setPack] = useState(null);
-  const COS = [{id:"meridian",l:"Meridian SaaS (Amber)"},{id:"careos",l:"CareOS (Red)"},{id:"payflo",l:"PayFlo (Green)"}];
-  const CO_DATA = {
-    meridian:"Meridian SaaS, B2B SaaS, Series A, 22% ownership. Health score 62/100 AMBER. Cash runway 4.8 months (RED). Revenue 87% of budget (AMBER). Attrition 14% (AMBER). DSO 47 days (RED). Pipeline coverage 2.1x (RED). Gross margin 71% (GREEN). Monthly burn £138k. ARR £3.1M. NRR 94%.",
-    careos:"CareOS, HealthTech, Series A, 29% ownership. Health score 34/100 RED. Cash runway 2.3 months (CRITICAL RED). Revenue 64% of budget (RED). Attrition 23% (RED). Pipeline coverage 0.8x (RED). Head of Sales vacant 60+ days. Burn £185k/mo. 5 critical roles unfilled.",
-    payflo:"PayFlo, Fintech/Payments, Growth PE, 41% ownership. Health score 88/100 GREEN. Cash runway 11.2 months. Revenue 112% of budget. Attrition 7%. NRR 118%. GMV +23% MoM. Take rate compressing slightly.",
-  };
+  const [live, setLive] = useState(false);
+
+  // Drawn from the registry rather than restated, so a company added to the
+  // fund appears here without anyone remembering to edit this file.
+  const COS = useMemo(() => COMPANIES.map((c) => ({
+    id: c.id,
+    l: `${c.name} (${c.rag[0]}${c.rag.slice(1).toLowerCase()})`,
+  })), []);
+
   async function generate() {
-    setLoading(true); setPack(null);
+    setLoading(true); setPack(null); setLive(false);
     try {
-      const r = await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          model:"claude-sonnet-4-20250514",max_tokens:700,
-          system:`You are generating a board pack executive section for a PE portfolio company. Format exactly as:\n\n**EXECUTIVE SUMMARY**\n[2–3 sentences]\n\n**PERFORMANCE SCORECARD**\n[5 bullet KPIs with RAG status]\n\n**KEY RISKS THIS QUARTER**\n[3 risks with specific numbers]\n\n**ACTIONS FOR BOARD RESOLUTION**\n[3 specific actions with owners and deadlines]\n\n**OUTLOOK**\n[2 sentences forward view]\n\nBe specific. Cite all numbers. No waffle.`,
-          messages:[{role:"user",content:`Generate board pack executive section for:\n${CO_DATA[co]}`}]
-        })
-      });
-      const d = await r.json();
-      setPack(d.content?.[0]?.text||"Error generating board pack.");
+      const d = await askAgent({ type:"boardpack", companyId:co });
+      setPack(d.text);
+      setLive(!!d.live);
     } catch(e) {
-      setPack(`**EXECUTIVE SUMMARY**\nMeridian SaaS enters Q3 with cash runway at 4.8 months — the critical constraint requiring board resolution this quarter. Revenue at 87% of budget reflects a pipeline coverage problem (2.1× vs 3× target) compounded by a 3-month win rate decline. Immediate action is required on both debtors (DSO 47 days) and sales leadership.\n\n**PERFORMANCE SCORECARD**\n• Cash Runway: 4.8 months 🔴 (target >9 months)\n• Revenue vs Budget: 87% 🟡 (budget £300k, actual £261k)\n• Gross Margin: 71% 🟢 (target >65%)\n• Attrition: 14% 🟡 (target <12%)\n• NRR: 94% 🟡 (target >100%)\n\n**KEY RISKS THIS QUARTER**\n• Cash depletion: At current burn trajectory (£138k/mo), cash exhausts in October without intervention\n• Revenue recovery: Pipeline coverage 2.1× is insufficient to bridge the £39k monthly gap — needs to reach 3× by August\n• Team stability: 6 open roles including Head of Sales; 14% attrition in engineering is a delivery risk\n\n**ACTIONS FOR BOARD RESOLUTION**\n• Approve emergency debtor escalation programme — target £74k AR recovery in 30 days (Owner: CFO, Deadline: 15 June)\n• Approve interim Head of Sales appointment — shortlist of 3 candidates ready (Owner: CEO, Deadline: 30 June)\n• Board to approve hiring freeze on 3 non-critical open roles pending cash recovery (Owner: Board, Deadline: This meeting)\n\n**OUTLOOK**\nWith the debtor programme and hiring freeze, runway extends to 7+ months — sufficient to execute the pipeline recovery plan. Q3 remains achievable if the two priority deals (£180k combined) close on current timeline.`);
+      setPack("The board pack endpoint is unreachable. Nothing is shown rather than something unverified.");
     }
     setLoading(false);
   }
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={{display:"flex",gap:6}}>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {COS.map(c=><button key={c.id} onClick={()=>{setCo(c.id);setPack(null);}}
           style={{padding:"6px 12px",background:co===c.id?T.green:T.surface,
             border:`1px solid ${co===c.id?T.green:T.border}`,borderRadius:6,
@@ -397,7 +405,12 @@ function BoardPackDemo() {
       </button>
       {pack&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:8,
         padding:16,color:T.txt2,fontSize:11,lineHeight:1.8,whiteSpace:"pre-wrap",
-        fontFamily:"inherit"}}>{pack}</div>}
+        fontFamily:"inherit"}}>
+        <div style={{color:live?T.green:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:8}}>
+          {live?"● GROK · OVER CALCULATED COMPANY DATA":"● CALCULATED · SET XAI_API_KEY FOR THE ANALYTICAL LAYER"}
+        </div>
+        {pack}
+      </div>}
     </div>
   );
 }

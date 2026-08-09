@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
-import { forDashboard } from "../lib/companies.js";
+import { forDashboard, financeOf } from "../lib/companies.js";
+import { buildInvestigation } from "../lib/investigation.js";
 
 const T = {
   bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
@@ -24,17 +25,22 @@ const COMPANIES = forDashboard();
 // ── KPI DATA ──────────────────────────────────────────────────────────────────
 const mk = vals => MO.map((m,i) => ({ m, v: vals[i] }));
 
+const MF = financeOf("meridian");
+
 const MODULES = {
   meridian: {
     finance:{
       src:"Xero · TrueLayer · 4h ago", qual:98,
       kpis:[
-        { label:"Cash Balance",       value:"£412k",   status:"amber", delta:"-£28k MoM",  src:"TrueLayer",  threshold:"Warn <£300k",  confidence:98 },
-        { label:"Cash Runway",        value:"4.8 mo",  status:"red",   delta:"-1.2 mo",    src:"Xero",       threshold:"Red <6 mo",    confidence:98 },
-        { label:"Monthly Burn",       value:"£138k",   status:"amber", delta:"+£12k MoM",  src:"Xero",       threshold:"Warn +10% MoM",confidence:96 },
-        { label:"Revenue vs Budget",  value:"87%",     status:"amber", delta:"-4% MoM",    src:"Xero",       threshold:"Red <85%",     confidence:99 },
-        { label:"Gross Margin",       value:"71%",     status:"green", delta:"+1%",         src:"Xero",       threshold:"Green >60%",   confidence:97 },
-        { label:"EBITDA Margin",      value:"-8%",     status:"red",   delta:"-2%",         src:"Xero",       threshold:"Red <-15%",   confidence:97 },
+        // The six tiles FIN_SEED covers are derived, not restated. Cash read
+        // "£412k" here against a seed of £663k — a £251k disagreement on a tile
+        // labelled as coming from TrueLayer, on the fund's main dashboard.
+        { label:"Cash Balance",       value:`£${MF.cashK}k`,        status:"amber", delta:"-£28k MoM",  src:"TrueLayer",  threshold:"Warn <£300k",  confidence:98 },
+        { label:"Cash Runway",        value:`${MF.runway} mo`,      status:"red",   delta:"-1.2 mo",    src:"Xero",       threshold:"Red <6 mo",    confidence:98 },
+        { label:"Monthly Burn",       value:`£${MF.burnK}k`,        status:"amber", delta:"+£12k MoM",  src:"Xero",       threshold:"Warn +10% MoM",confidence:96 },
+        { label:"Revenue vs Budget",  value:`${MF.rvb}%`,           status:"amber", delta:"-4% MoM",    src:"Xero",       threshold:"Red <85%",     confidence:99 },
+        { label:"Gross Margin",       value:`${MF.grossMargin}%`,   status:"green", delta:"+1%",         src:"Xero",       threshold:"Green >60%",   confidence:97 },
+        { label:"EBITDA Margin",      value:`${MF.ebitdaPct}%`,     status:"red",   delta:"-2%",         src:"Xero",       threshold:"Red <-15%",   confidence:97 },
         { label:"ARR",                value:"£3.1M",   status:"amber", delta:"+£80k QoQ",  src:"Stripe",     threshold:"Watch",        confidence:100 },
         { label:"NRR",                value:"94%",     status:"amber", delta:"-3%",         src:"Stripe",     threshold:"Red <90%",    confidence:100 },
         { label:"DSO",                value:"47 days", status:"red",   delta:"+15 days",   src:"Xero",       threshold:"Red >45 days", confidence:94 },
@@ -328,12 +334,39 @@ function CockpitView({co}){
 
 // ── AI PANEL ──────────────────────────────────────────────────────────────────
 function AIPanel({co}){
-  const [loading,setLoading]=useState(false);const [narrative,setNarrative]=useState(null);
-  const [q,setQ]=useState("");const [answer,setAnswer]=useState(null);const [qLoad,setQLoad]=useState(false);
-  const ctx=`Company: ${co.name} (${co.sector}, ${co.stage})\nScore: ${co.score}/100 (${co.status})\nCash Runway: ${co.runway}mo · Revenue vs Budget: ${co.rvb}% · Attrition: ${co.att}%\nEBITDA Margin: ${co.ebitda}% · Sub-scores: ${JSON.stringify(co.subScores)}`;
-  async function gen(){setLoading(true);setNarrative(null);try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,system:"PE/VC analyst. Direct. Cite numbers. No hedging.\nFormat:\n**Overall Assessment** (2 sentences)\n\n**Top 3 Risks**\n• risk + metric\n• risk + metric\n• risk + metric\n\n**Recommended GP Actions**\n• action + time-bound\n• action + time-bound\n• action + time-bound\n\nUnder 280 words.",messages:[{role:"user",content:`Analyse:\n${ctx}`}]})});const d=await r.json();setNarrative(d.content?.[0]?.text||"Error.");}catch(e){setNarrative(`**Overall Assessment**\n${co.name} scores ${co.score}/100 with cash runway at ${co.runway} months as the critical constraint. Revenue at ${co.rvb}% of budget with ${co.att}% attrition indicates compound execution risk.\n\n**Top 3 Risks**\n• Cash depletion: ${co.runway} months runway — 30-day intervention window\n• Revenue shortfall: ${co.rvb}% of budget, gap widening MoM\n• Team instability: ${co.att}% attrition impairing delivery capacity\n\n**Recommended GP Actions**\n• Emergency operating review with CEO + CFO this week — cash plan required\n• Activate hiring freeze immediately on all non-critical roles\n• Escalate top-5 debtor accounts — recover AR within 30 days`);}setLoading(false);}
-  async function ask(){if(!q.trim())return;setQLoad(true);setAnswer(null);try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,system:"PE/VC analyst. 2–3 sentences. Cite numbers. No hedging.",messages:[{role:"user",content:`Context:\n${ctx}\n\nQuestion: ${q}`}]})});const d=await r.json();setAnswer(d.content?.[0]?.text||"Error.");}catch(e){setAnswer(`${co.name} has ${co.runway} months of cash runway at current burn rate of £138k/month. Revenue is at ${co.rvb}% of budget with pipeline coverage insufficient to recover the shortfall this quarter.`);}setQLoad(false);}
-  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><div style={{color:T.txt1,fontSize:13,fontWeight:600}}>Board-Ready Executive Summary</div><div style={{color:T.txt3,fontSize:10,marginTop:2}}>All KPIs · All data sources · Source-cited · GP action recommendations</div></div><button onClick={gen} disabled={loading} style={{padding:"8px 16px",background:loading?T.borderLt:T.blue,color:loading?T.txt3:"#fff",border:"none",borderRadius:6,cursor:loading?"wait":"pointer",fontSize:11,fontWeight:600}}>{loading?"Analysing…":"Generate Analysis"}</button></div>{narrative&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:14,color:T.txt2,fontSize:12,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{narrative}</div>}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{color:T.txt1,fontSize:13,fontWeight:600,marginBottom:10}}>Ask a Question</div><div style={{display:"flex",gap:8,marginBottom:8}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder='e.g. "How many months before a cash injection is needed?"' style={{flex:1,padding:"8px 11px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/><button onClick={ask} disabled={qLoad} style={{padding:"8px 16px",background:T.purple,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>{qLoad?"…":"Ask"}</button></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{["How urgent is the cash situation?","What's driving the revenue miss?","Which risks need GP attention this week?","What does Rule of 40 tell us?"].map(qq=><button key={qq} onClick={()=>setQ(qq)} style={{padding:"3px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>{qq}</button>)}</div>{answer&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:12,color:T.txt2,fontSize:12,lineHeight:1.7}}>{answer}</div>}</div></div>);
+  const [loading,setLoading]=useState(false);const [narrative,setNarrative]=useState(null);const [live,setLive]=useState(false);
+  const [q,setQ]=useState("");const [answer,setAnswer]=useState(null);const [qLoad,setQLoad]=useState(false);const [qLive,setQLive]=useState(false);
+
+  // Both panels used to POST to api.anthropic.com from the browser with no
+  // Authorization header — requests that could only ever 401, silently caught,
+  // so what a partner saw was always the hardcoded catch block. They now go to
+  // /api/ai/agent, which builds the prompt from the finance model server-side.
+  // The context is no longer assembled here either: the six lines it sent were
+  // a fraction of what is known, and the model was asked to be specific over
+  // them.
+  async function post(body,setText,setFlag,setBusy){
+    setBusy(true);setText(null);setFlag(false);
+    try{
+      const r=await fetch("/api/ai/agent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error(`agent ${r.status}`);
+      const d=await r.json();
+      setText(d.text);setFlag(!!d.live);
+    }catch(e){
+      // The endpoint is unreachable. Fall back to the calculated investigation
+      // rather than to prose written months ago about a different company.
+      const inv=buildInvestigation(co.id);
+      setText(`${inv.rootCause}\n\nPriority action: ${inv.actions[0].action} (${inv.actions[0].owner}). ${inv.actions[0].rationale}.`);
+    }
+    setBusy(false);
+  }
+  const gen=()=>post({type:"boardpack",companyId:co.id},setNarrative,setLive,setLoading);
+  const ask=()=>{if(!q.trim())return;post({type:"qa",companyId:co.id,question:q},setAnswer,setQLive,setQLoad);};
+
+  const badge=(on)=>(<div style={{color:on?T.green:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:8}}>
+    {on?"● GROK · OVER CALCULATED COMPANY DATA":"● CALCULATED · SET XAI_API_KEY FOR THE ANALYTICAL LAYER"}
+  </div>);
+
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><div style={{color:T.txt1,fontSize:13,fontWeight:600}}>Board-Ready Executive Summary</div><div style={{color:T.txt3,fontSize:10,marginTop:2}}>All KPIs · All data sources · Source-cited · GP action recommendations</div></div><button onClick={gen} disabled={loading} style={{padding:"8px 16px",background:loading?T.borderLt:T.blue,color:loading?T.txt3:"#fff",border:"none",borderRadius:6,cursor:loading?"wait":"pointer",fontSize:11,fontWeight:600}}>{loading?"Analysing…":"Generate Analysis"}</button></div>{narrative&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:14,color:T.txt2,fontSize:12,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{badge(live)}{narrative}</div>}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{color:T.txt1,fontSize:13,fontWeight:600,marginBottom:10}}>Ask a Question</div><div style={{display:"flex",gap:8,marginBottom:8}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder='e.g. "How many months before a cash injection is needed?"' style={{flex:1,padding:"8px 11px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/><button onClick={ask} disabled={qLoad} style={{padding:"8px 16px",background:T.purple,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>{qLoad?"…":"Ask"}</button></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{["How urgent is the cash situation?","What's driving the revenue miss?","Which risks need GP attention this week?","What does Rule of 40 tell us?"].map(qq=><button key={qq} onClick={()=>setQ(qq)} style={{padding:"3px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>{qq}</button>)}</div>{answer&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:12,color:T.txt2,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{badge(qLive)}{answer}</div>}</div></div>);
 }
 
 // ── COMPANY VIEW ──────────────────────────────────────────────────────────────
