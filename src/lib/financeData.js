@@ -34,6 +34,7 @@ export const FIN_SEED = {
 
 import { buildSeries, seriesOf, MONTH_KEYS } from "./portfolioSeries.js";
 import { convert, conversionNote } from "./fx.js";
+import { SOURCES, KPIS, provenanceOf } from "./kpiDefinitions.js";
 
 const MONTHS = ["Dec","Jan","Feb","Mar","Apr","May"];
 const k = (n) => `£${Math.round(n).toLocaleString()}k`;
@@ -143,6 +144,7 @@ export function buildFinance(co, opts = {}) {
   // Additive: the ledger the sparklines are drawn from, so any figure can be
   // opened and asked "compared with when?". Existing consumers ignore these.
   const asOf = MONTH_KEYS[MONTH_KEYS.length - 1];
+  const last = ledger[ledger.length - 1];
   const history = {
     months: MONTH_KEYS,
     cash: ledger.map((m) => ({ month: m.month, balance: Math.round(m.cashClose), burn: Math.round(m.netBurn) })),
@@ -159,9 +161,46 @@ export function buildFinance(co, opts = {}) {
       converted: nativeCcy !== reportingCurrency,
       note: conversionNote(native.revenue, nativeCcy, reportingCurrency),
     },
-    cash: { balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj },
-    revenue: { total: s.revenue, budget: s.budget, byProduct: revByProduct, byRegion: revByRegion, deals: revDeals },
-    ebitda: { pct: s.ebitdaPct, value: ebitda, bridge, opexLines, grossMargin: s.gm },
+    cash: {
+      balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj,
+      source: SOURCES.banking, asOf,
+      methodology: {
+        balance: provenanceOf("cash", asOf),
+        burn: provenanceOf("burn", asOf),
+        runway: provenanceOf("runway", asOf),
+        overdueTotal: provenanceOf("overdueAR", asOf),
+      },
+    },
+    revenue: {
+      total: s.revenue, budget: s.budget, byProduct: revByProduct, byRegion: revByRegion, deals: revDeals,
+      source: SOURCES.accounting, asOf,
+      methodology: {
+        total: provenanceOf("revenue", asOf),
+        budget: provenanceOf("budget", asOf),
+        variance: provenanceOf("revenueVariance", asOf),
+      },
+    },
+    ebitda: {
+      pct: s.ebitdaPct, value: ebitda, bridge, opexLines, grossMargin: s.gm,
+      source: SOURCES.accounting, asOf,
+      methodology: {
+        grossMargin: provenanceOf("grossMargin", asOf),
+        pct: provenanceOf("ebitdaMargin", asOf),
+      },
+    },
+    people: {
+      headcount: last.headcount, planHeadcount: last.planHeadcount, attritionPct: last.attritionPct,
+      source: SOURCES.hris, asOf,
+      history: ledger.map((m) => ({ month: m.month, headcount: m.headcount, planHeadcount: m.planHeadcount, attritionPct: m.attritionPct })),
+      methodology: { headcount: provenanceOf("headcount", asOf), attritionPct: provenanceOf("attrition", asOf) },
+    },
+    sales: {
+      pipelineCoverage: last.pipelineCoverage, winRatePct: last.winRatePct,
+      coverageFrom: ledger[0].pipelineCoverage, winRateFrom: ledger[0].winRatePct,
+      source: SOURCES.crm, asOf,
+      history: ledger.map((m) => ({ month: m.month, pipelineCoverage: m.pipelineCoverage, winRatePct: m.winRatePct })),
+      methodology: { pipelineCoverage: provenanceOf("pipelineCoverage", asOf), winRatePct: provenanceOf("winRate", asOf) },
+    },
   };
 }
 

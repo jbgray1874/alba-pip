@@ -54,7 +54,7 @@ const ARCS = {
   // Scenario 1 — the forward indicators are what deteriorate, not the reported
   // revenue. Coverage 3.2x to 1.9x and win rate 31% to 22% are the figures the
   // specification names.
-  straits:    { growth: 0.0125, planDrift: 0.030, gmDrift: 1.0,  burnFrom: 0.66,
+  straits:    { growth: 0.0125, planDrift: 0.004, gmDrift: 1.0,  burnFrom: 0.66,
                 people: { headcount: 182, hiring: 1.8, planGap: 3, attrition: 15, attritionFrom: 11 },
                 sales:  { coverage: 1.9, coverageFrom: 3.2, winRate: 22, winRateFrom: 31 } },
   // Scenario 4 — tracking plan, so nothing in reporting draws attention here.
@@ -133,7 +133,7 @@ export function buildSeries(id, seed) {
   // ── Revenue: grow backwards from today, then re-anchor exactly ──
   const rawRevenue = MONTH_KEYS.map((_, i) => {
     const trend = seed.revenue / Math.pow(1 + arc.growth, lastIdx - i);
-    return trend * (1 + wobble(rng, 0.012));
+    return trend * (1 + wobble(rng, 0.005));
   });
   const revScale = seed.revenue / rawRevenue[lastIdx];
   const revenue = rawRevenue.map((v) => v * revScale);
