@@ -15,15 +15,25 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 // Core reconciling seeds per company (£k unless noted)
+// Values are in THOUSANDS OF THE COMPANY'S OWN CURRENCY. buildFinance converts
+// to the fund's reporting currency, so every screen compares like with like.
 export const FIN_SEED = {
-  meridian:   { cash:663,  burn:138, revenue:261, budget:300, gm:71, ebitdaPct:-8  },
-  payflo:     { cash:1646, burn:147, revenue:412, budget:368, gm:78, ebitdaPct:14  },
-  swiftlogix: { cash:972,  burn:120, revenue:384, budget:400, gm:42, ebitdaPct:6   },
-  careos:     { cash:426,  burn:185, revenue:162, budget:253, gm:55, ebitdaPct:-31 },
-  forgetech:  { cash:1974, burn:210, revenue:618, budget:600, gm:38, ebitdaPct:18  },
+  meridian:   { ccy:"GBP", cash:663,   burn:138, revenue:261,  budget:300,  gm:71, ebitdaPct:-8  },
+  payflo:     { ccy:"GBP", cash:1646,  burn:147, revenue:412,  budget:368,  gm:78, ebitdaPct:14  },
+  swiftlogix: { ccy:"GBP", cash:972,   burn:120, revenue:384,  budget:400,  gm:42, ebitdaPct:6   },
+  careos:     { ccy:"GBP", cash:426,   burn:185, revenue:162,  budget:253,  gm:55, ebitdaPct:-31 },
+  forgetech:  { ccy:"GBP", cash:1974,  burn:210, revenue:618,  budget:600,  gm:38, ebitdaPct:18  },
+  // Scenario 1 — still reporting growth, forward indicators deteriorating.
+  straits:    { ccy:"USD", cash:12400, burn:420, revenue:4000, budget:4120, gm:78, ebitdaPct:4   },
+  // Scenario 4 — performing broadly in line with plan.
+  zafira:     { ccy:"USD", cash:9800,  burn:210, revenue:3100, budget:3080, gm:74, ebitdaPct:11  },
+  // Scenario 2 — appears adequately funded in the latest board pack.
+  nusantara:  { ccy:"SGD", cash:5000,  burn:615, revenue:2900, budget:3180, gm:31, ebitdaPct:-6  },
+  khaleej:    { ccy:"AED", cash:21500, burn:380, revenue:9200, budget:9050, gm:29, ebitdaPct:15  },
 };
 
 import { buildSeries, seriesOf, MONTH_KEYS } from "./portfolioSeries.js";
+import { convert, conversionNote } from "./fx.js";
 
 const MONTHS = ["Dec","Jan","Feb","Mar","Apr","May"];
 const k = (n) => `£${Math.round(n).toLocaleString()}k`;
@@ -50,9 +60,18 @@ const REV_REGIONS = [
 
 const CUSTOMERS = ["Acme Corporation","Beta Holdings","TechVentures Ltd","Delta Systems","Gamma Industries","Orion Retail","Vertex Group","Halo Logistics"];
 
-export function buildFinance(co) {
+export function buildFinance(co, opts = {}) {
   const id = FIN_SEED[co.id] ? co.id : "meridian";
-  const s = FIN_SEED[id];
+  const native = FIN_SEED[id];
+  const reportingCurrency = opts.reportingCurrency || co.reportingCurrency || "GBP";
+  const nativeCcy = native.ccy || "GBP";
+
+  // Restate into the reporting currency. Margins are ratios and do not convert.
+  const fx = (v) => convert(v, nativeCcy, reportingCurrency);
+  const s = nativeCcy === reportingCurrency
+    ? native
+    : { ...native, cash: fx(native.cash), burn: fx(native.burn), revenue: fx(native.revenue), budget: fx(native.budget) };
+
   const runway = +(s.cash / s.burn).toFixed(1);
   const cs = co.status; // company RAG
 
@@ -133,6 +152,13 @@ export function buildFinance(co) {
 
   return {
     seed: s, runway, status: cs, asOf, history,
+    currency: reportingCurrency,
+    native: {
+      currency: nativeCcy,
+      cash: native.cash, burn: native.burn, revenue: native.revenue, budget: native.budget,
+      converted: nativeCcy !== reportingCurrency,
+      note: conversionNote(native.revenue, nativeCcy, reportingCurrency),
+    },
     cash: { balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj },
     revenue: { total: s.revenue, budget: s.budget, byProduct: revByProduct, byRegion: revByRegion, deals: revDeals },
     ebitda: { pct: s.ebitdaPct, value: ebitda, bridge, opexLines, grossMargin: s.gm },

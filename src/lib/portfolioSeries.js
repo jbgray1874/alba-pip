@@ -31,15 +31,50 @@ export const AS_OF_MONTH = "2026-05";
 //   planDrift  extra annual growth assumed by the plan (widens variance)
 //   gmDrift    gross-margin points given up over the period (negative = gained)
 //   burnFrom   burn 18 months ago as a share of today's
+//   people     headcount today, monthly hiring rate, plan gap, attrition today
+//              and eighteen months ago (annualised %)
+//   sales      pipeline coverage and win rate, today and eighteen months ago
 const ARCS = {
-  meridian:   { growth: 0.009,  planDrift: 0.085, gmDrift: 2.0,  burnFrom: 0.62 },
-  payflo:     { growth: 0.016,  planDrift: 0.002, gmDrift: -1.5, burnFrom: 0.75 },
-  swiftlogix: { growth: 0.010,  planDrift: 0.048, gmDrift: 2.0,  burnFrom: 0.70 },
-  careos:     { growth: 0.004,  planDrift: 0.220, gmDrift: 6.0,  burnFrom: 0.55 },
-  forgetech:  { growth: 0.0139, planDrift: -0.012, gmDrift: 8.0, burnFrom: 0.68 },
+  meridian:   { growth: 0.009,  planDrift: 0.085, gmDrift: 2.0,  burnFrom: 0.62,
+                people: { headcount: 29, hiring: 0.4, planGap: 3, attrition: 14, attritionFrom: 9 },
+                sales:  { coverage: 2.4, coverageFrom: 3.0, winRate: 26, winRateFrom: 29 } },
+  payflo:     { growth: 0.016,  planDrift: 0.002, gmDrift: -1.5, burnFrom: 0.75,
+                people: { headcount: 54, hiring: 0.9, planGap: -1, attrition: 8,  attritionFrom: 11 },
+                sales:  { coverage: 3.4, coverageFrom: 3.1, winRate: 34, winRateFrom: 31 } },
+  swiftlogix: { growth: 0.010,  planDrift: 0.048, gmDrift: 2.0,  burnFrom: 0.70,
+                people: { headcount: 41, hiring: 0.5, planGap: 2, attrition: 17, attritionFrom: 13 },
+                sales:  { coverage: 2.6, coverageFrom: 2.8, winRate: 24, winRateFrom: 26 } },
+  careos:     { growth: 0.004,  planDrift: 0.220, gmDrift: 6.0,  burnFrom: 0.55,
+                people: { headcount: 38, hiring: 0.2, planGap: 5, attrition: 24, attritionFrom: 12 },
+                sales:  { coverage: 1.6, coverageFrom: 2.9, winRate: 18, winRateFrom: 27 } },
+  forgetech:  { growth: 0.0139, planDrift: -0.012, gmDrift: 8.0, burnFrom: 0.68,
+                people: { headcount: 67, hiring: 0.7, planGap: 0, attrition: 11, attritionFrom: 12 },
+                sales:  { coverage: 3.1, coverageFrom: 3.0, winRate: 30, winRateFrom: 29 } },
+
+  // Scenario 1 — the forward indicators are what deteriorate, not the reported
+  // revenue. Coverage 3.2x to 1.9x and win rate 31% to 22% are the figures the
+  // specification names.
+  straits:    { growth: 0.0125, planDrift: 0.030, gmDrift: 1.0,  burnFrom: 0.66,
+                people: { headcount: 182, hiring: 1.8, planGap: 3, attrition: 15, attritionFrom: 11 },
+                sales:  { coverage: 1.9, coverageFrom: 3.2, winRate: 22, winRateFrom: 31 } },
+  // Scenario 4 — tracking plan, so nothing in reporting draws attention here.
+  zafira:     { growth: 0.0152, planDrift: 0.002, gmDrift: -1.0, burnFrom: 0.78,
+                people: { headcount: 141, hiring: 1.5, planGap: 1, attrition: 9,  attritionFrom: 10 },
+                sales:  { coverage: 3.3, coverageFrom: 3.2, winRate: 33, winRateFrom: 32 } },
+  // Scenario 2 — the board pack reads as adequately funded; the trajectory does not.
+  nusantara:  { growth: 0.0061, planDrift: 0.105, gmDrift: 3.5,  burnFrom: 0.48,
+                people: { headcount: 214, hiring: 0.9, planGap: 4, attrition: 19, attritionFrom: 14 },
+                sales:  { coverage: 2.2, coverageFrom: 2.7, winRate: 25, winRateFrom: 28 } },
+  khaleej:    { growth: 0.0084, planDrift: -0.015, gmDrift: -1.5, burnFrom: 0.72,
+                people: { headcount: 336, hiring: 1.1, planGap: -2, attrition: 12, attritionFrom: 13 },
+                sales:  { coverage: 2.9, coverageFrom: 2.8, winRate: 29, winRateFrom: 28 } },
 };
 
-const DEFAULT_ARC = { growth: 0.010, planDrift: 0.030, gmDrift: 2.0, burnFrom: 0.68 };
+const DEFAULT_ARC = {
+  growth: 0.010, planDrift: 0.030, gmDrift: 2.0, burnFrom: 0.68,
+  people: { headcount: 40, hiring: 0.4, planGap: 0, attrition: 13, attritionFrom: 12 },
+  sales:  { coverage: 2.8, coverageFrom: 2.8, winRate: 28, winRateFrom: 28 },
+};
 
 // ── Seeded noise ────────────────────────────────────────────────────────────
 // Small month-to-month variation so the lines are not suspiciously straight,
@@ -126,6 +161,11 @@ export function buildSeries(id, seed) {
   cashClose[lastIdx] = seed.cash;
   for (let i = lastIdx - 1; i >= 0; i--) cashClose[i] = cashClose[i + 1] + netBurn[i + 1];
 
+  // People and sales move linearly from where they were to where they are.
+  const people = arc.people || DEFAULT_ARC.people;
+  const sales = arc.sales || DEFAULT_ARC.sales;
+  const to = (from, now, i) => from + (now - from) * (i / lastIdx);
+
   return MONTH_KEYS.map((month, i) => {
     const rev = revenue[i];
     const gmPct = gmAt(i);
@@ -146,6 +186,15 @@ export function buildSeries(id, seed) {
       ebitdaMarginPct: (ebitda / rev) * 100,
       netBurn: netBurn[i],
       cashClose: cashClose[i],
+
+      // People
+      headcount: Math.round(people.headcount - people.hiring * (lastIdx - i)),
+      planHeadcount: Math.round(people.headcount - people.hiring * (lastIdx - i)) + people.planGap,
+      attritionPct: +to(people.attritionFrom, people.attrition, i).toFixed(1),
+
+      // Sales
+      pipelineCoverage: +to(sales.coverageFrom, sales.coverage, i).toFixed(2),
+      winRatePct: +to(sales.winRateFrom, sales.winRate, i).toFixed(1),
     };
   });
 }

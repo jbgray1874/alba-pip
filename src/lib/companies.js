@@ -19,12 +19,26 @@
 import { FIN_SEED } from "./financeData.js";
 
 /**
+ * Funds. The specification's Command Centre filters by fund, which needs more
+ * than one. `reportingCurrency` is what portfolio-level figures are restated
+ * into — companies keep their own currency in FIN_SEED.
+ */
+export const FUNDS = [
+  { id: "growth1", name: "Alba Growth I", vintage: 2023, strategy: "Growth & venture", reportingCurrency: "GBP" },
+  { id: "opps2", name: "Alba Opportunities II", vintage: 2025, strategy: "Buyout & later stage", reportingCurrency: "GBP" },
+];
+
+export function fundById(id) {
+  return FUNDS.find((f) => f.id === id) || null;
+}
+
+/**
  * Canonical portfolio. Presentation fields only — anything computable from
  * the finance seed is derived below instead of being stored twice.
  */
 export const COMPANIES = [
   {
-    id: "meridian", name: "Meridian SaaS",
+    id: "meridian", fund: "growth1", currency: "GBP", name: "Meridian SaaS",
     sector: "B2B SaaS", sectorLabel: "B2B SaaS", sectorLong: "B2B SaaS",
     stage: "Series A", geo: "UK", own: 22,
     score: 62, rag: "AMBER", headcount: 29, irr: 31, moic: 1.8,
@@ -35,7 +49,7 @@ export const COMPANIES = [
     trend: "down", actions: 4, alerts: 3, att: 14, upd: "4h ago", freshness: 98,
   },
   {
-    id: "payflo", name: "PayFlo",
+    id: "payflo", fund: "opps2", currency: "GBP", name: "PayFlo",
     sector: "FinTech", sectorLabel: "Fintech/Payments", sectorLong: "FinTech · Payments",
     stage: "Growth PE", geo: "UK", own: 41,
     score: 88, rag: "GREEN", headcount: 54, irr: 47, moic: 3.1,
@@ -46,7 +60,7 @@ export const COMPANIES = [
     trend: "up", actions: 1, alerts: 0, att: 7, upd: "1h ago", freshness: 100,
   },
   {
-    id: "swiftlogix", name: "SwiftLogix",
+    id: "swiftlogix", fund: "growth1", currency: "GBP", name: "SwiftLogix",
     sector: "Logistics", sectorLabel: "Logistics", sectorLong: "Logistics · Series B",
     stage: "Series B", geo: "UK", own: 18,
     score: 71, rag: "AMBER", headcount: 41, irr: 28, moic: 2.1,
@@ -57,7 +71,7 @@ export const COMPANIES = [
     trend: "stable", actions: 2, alerts: 2, att: 19, upd: "Yesterday", freshness: 84,
   },
   {
-    id: "careos", name: "CareOS",
+    id: "careos", fund: "growth1", currency: "GBP", name: "CareOS",
     sector: "HealthTech", sectorLabel: "HealthTech", sectorLong: "HealthTech · Series A",
     stage: "Series A", geo: "UK", own: 29,
     score: 34, rag: "RED", headcount: 38, irr: 8, moic: 0.7,
@@ -68,7 +82,7 @@ export const COMPANIES = [
     trend: "down", actions: 6, alerts: 4, att: 23, upd: "3d ago", freshness: 61,
   },
   {
-    id: "forgetech", name: "ForgeTech",
+    id: "forgetech", fund: "opps2", currency: "GBP", name: "ForgeTech",
     sector: "Manufacturing", sectorLabel: "Manufacturing", sectorLong: "Manufacturing · PE Growth",
     stage: "PE Growth", geo: "UK", own: 55,
     score: 84, rag: "GREEN", headcount: 67, irr: 44, moic: 2.8,
@@ -77,6 +91,50 @@ export const COMPANIES = [
     issue: "Inventory aging 11% above target — review slow-moving SKUs",
     spark: [76, 77, 78, 79, 80, 81, 82, 83, 83, 84, 84, 84],
     trend: "up", actions: 1, alerts: 1, att: 9, upd: "12h ago", freshness: 96,
+  },
+  {
+    id: "straits", fund: "growth1", currency: "USD", name: "Straits Analytics",
+    sector: "B2B Software", sectorLabel: "B2B Software", sectorLong: "B2B Software · Series B",
+    stage: "Series B", geo: "Singapore", own: 34,
+    score: 76, rag: "GREEN", headcount: 182, irr: 38, moic: 2.4,
+    subScores: { finance: 84, sales: 61, hr: 74, ops: 82, procurement: 78, technology: 88, compliance: 83 },
+    depts: { Finance: 84, Sales: 58, Product: 86, HR: 74, Ops: 82, Tech: 88, Marketing: 66, Risk: 79, Compliance: 83 },
+    issue: "Reported revenue on plan — pipeline coverage down to 1.9x from 3.2x",
+    spark: [70, 71, 73, 74, 76, 77, 78, 78, 77, 77, 76, 76],
+    trend: "down", actions: 2, alerts: 1, att: 11, upd: "2h ago", freshness: 97,
+  },
+  {
+    id: "nusantara", fund: "growth1", currency: "SGD", name: "Nusantara Foods",
+    sector: "Consumer", sectorLabel: "Consumer/F&B", sectorLong: "Consumer · F&B",
+    stage: "PE Growth", geo: "Singapore", own: 47,
+    score: 59, rag: "AMBER", headcount: 214, irr: 19, moic: 1.4,
+    subScores: { finance: 44, sales: 62, hr: 55, ops: 68, procurement: 71, technology: 58, compliance: 76 },
+    depts: { Finance: 44, Sales: 62, Product: 60, HR: 55, Ops: 68, Tech: 58, Marketing: 64, Risk: 49, Compliance: 76 },
+    issue: "Board pack shows funded position — collections and payroll say otherwise",
+    spark: [72, 71, 69, 68, 66, 65, 64, 62, 61, 60, 59, 59],
+    trend: "down", actions: 3, alerts: 2, att: 17, upd: "6h ago", freshness: 91,
+  },
+  {
+    id: "zafira", fund: "opps2", currency: "USD", name: "Zafira Systems",
+    sector: "B2B SaaS", sectorLabel: "B2B SaaS", sectorLong: "B2B SaaS · Multi-product",
+    stage: "Growth PE", geo: "Dubai, UAE", own: 38,
+    score: 83, rag: "GREEN", headcount: 141, irr: 41, moic: 2.6,
+    subScores: { finance: 86, sales: 88, hr: 81, ops: 84, procurement: 76, technology: 87, compliance: 80 },
+    depts: { Finance: 86, Sales: 88, Product: 84, HR: 81, Ops: 84, Tech: 87, Marketing: 79, Risk: 80, Compliance: 80 },
+    issue: "Tracking plan — second-product penetration below comparable accounts",
+    spark: [76, 77, 78, 79, 80, 81, 81, 82, 82, 83, 83, 83],
+    trend: "up", actions: 1, alerts: 0, att: 6, upd: "1h ago", freshness: 99,
+  },
+  {
+    id: "khaleej", fund: "opps2", currency: "AED", name: "Khaleej Marine Services",
+    sector: "Energy Services", sectorLabel: "Marine/Energy", sectorLong: "Energy · Marine Services",
+    stage: "PE Buyout", geo: "Abu Dhabi, UAE", own: 61,
+    score: 80, rag: "GREEN", headcount: 336, irr: 33, moic: 2.2,
+    subScores: { finance: 82, sales: 76, hr: 79, ops: 86, procurement: 68, technology: 71, compliance: 88 },
+    depts: { Finance: 82, Sales: 76, Product: 70, HR: 79, Ops: 86, Tech: 71, Marketing: 64, Risk: 81, Compliance: 88 },
+    issue: "Vendor spend fragmented across three cloud and two insurance contracts",
+    spark: [78, 79, 78, 80, 79, 80, 81, 80, 80, 81, 80, 80],
+    trend: "stable", actions: 2, alerts: 1, att: 12, upd: "5h ago", freshness: 93,
   },
 ];
 
@@ -110,6 +168,7 @@ export function forDashboard() {
     const f = financeOf(c.id);
     return {
       id: c.id, name: c.name, sector: c.sectorLabel, stage: c.stage, geo: c.geo,
+      fund: c.fund, currency: c.currency,
       own: c.own, score: c.score, subScores: c.subScores,
       status: c.rag.toLowerCase(),
       runway: f.runway, rvb: f.rvb, ebitda: f.ebitdaPct,
@@ -126,6 +185,7 @@ export function forAnalytics() {
     const f = financeOf(c.id);
     return {
       id: c.id, name: c.name, sector: c.sectorLong, stage: c.stage,
+      fund: c.fund, currency: c.currency, geo: c.geo,
       score: c.score, rag: c.rag, runway: f.runway,
       burnK: f.burnK, cashK: f.cashK, revenueK: f.revenueK, budgetK: f.budgetK,
       irr: c.irr, moic: c.moic, headcount: c.headcount,
