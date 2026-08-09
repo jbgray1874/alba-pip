@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import CommandCentre  from './views/CommandCentre.jsx'
+import ScenarioRevenueMiss from './views/ScenarioRevenueMiss.jsx'
+import ScenarioExpansion   from './views/ScenarioExpansion.jsx'
 import GPDashboard    from './views/GPDashboard.jsx'
 import ClientPortal   from './views/ClientPortal.jsx'
 import RealTime       from './views/RealTime.jsx'
@@ -12,6 +14,8 @@ import PortfolioAnalytics from './views/PortfolioAnalytics.jsx'
 
 const VIEWS = [
   { id:'command',      label:'Portfolio Health',  icon:' ◎ ', sub:'Command centre · Risks vs opportunities · 9 companies' },
+  { id:'revenuemiss',  label:'Revenue Risk',      icon:' ▽ ', sub:'Straits Analytics · Forecast miss · Driver bridge' },
+  { id:'expansion',    label:'Growth Opportunity',icon:' △ ', sub:'Zafira Systems · Cross-sell radar · Account scoring' },
   { id:'gp',           label:'GP Dashboard',      icon:'⬡', sub:'Fund manager · All companies · 9 modules' },
   { id:'client',       label:'Client Portal',      icon:'◈', sub:'Portfolio company · Role-based · Configurable' },
   { id:'realtime',     label:'Live Data',          icon:'◉', sub:'Real-time feeds · Market data · Activity stream' },
@@ -187,6 +191,8 @@ export default function App() {
         {/* View area — re-keyed on view change to trigger transition */}
         <div key={view} className="view-enter" style={{ flex:1, overflow:'hidden' }}>
           {view==='command'      && <CommandCentre onOpenCompany={()=>setView('gp')}/>}
+      {view==='revenuemiss'  && <ScenarioRevenueMiss/>}
+      {view==='expansion'    && <ScenarioExpansion/>}
       {view==='gp'           && <GPDashboard/>}
           {view==='client'       && <ClientPortal/>}
           {view==='realtime'     && <RealTime/>}
