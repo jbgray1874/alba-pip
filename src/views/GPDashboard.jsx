@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
+import { forDashboard } from "../lib/companies.js";
 
 const T = {
   bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
@@ -18,38 +19,7 @@ const ragCol = s => ({green:T.green,amber:T.amber,red:T.red}[s]||T.txt3);
 const ragBg  = s => ({green:T.greenDim,amber:T.amberDim,red:T.redDim}[s]||"transparent");
 
 // ── COMPANIES ─────────────────────────────────────────────────────────────────
-const COMPANIES = [
-  { id:"meridian",   name:"Meridian SaaS",  sector:"B2B SaaS",        stage:"Series A",  geo:"UK",  own:22, score:62,
-    subScores:{ finance:48, sales:58, hr:62, ops:78, procurement:81, technology:84, compliance:88 },
-    status:"amber", runway:4.8, rvb:87, att:14, ebitda:-8, upd:"4h ago", freshness:98,
-    issue:"Cash runway 4.8 mo — DSO +15 days, burn accelerating",
-    spark:[68,66,67,64,63,62,60,58,55,54,53,52],
-    trend:"down", actions:4, alerts:3 },
-  { id:"payflo",     name:"PayFlo",          sector:"Fintech/Payments", stage:"Growth PE", geo:"UK",  own:41, score:88,
-    subScores:{ finance:91, sales:94, hr:88, ops:85, procurement:83, technology:90, compliance:86 },
-    status:"green", runway:11.2, rvb:112, att:7,  ebitda:14, upd:"1h ago",  freshness:100,
-    issue:"Take rate compressing slightly vs sector peers",
-    spark:[78,80,79,82,83,85,84,86,87,88,88,88],
-    trend:"up",   actions:1, alerts:0 },
-  { id:"swiftlogix", name:"SwiftLogix",      sector:"Logistics",        stage:"Series B",  geo:"UK",  own:18, score:71,
-    subScores:{ finance:74, sales:72, hr:58, ops:62, procurement:79, technology:76, compliance:84 },
-    status:"amber", runway:8.1, rvb:96,  att:19, ebitda:6,  upd:"Yesterday",freshness:84,
-    issue:"On-time delivery 87% vs 95% SLA — 2 enterprise client warnings",
-    spark:[70,71,69,72,71,70,72,71,70,71,71,71],
-    trend:"stable",actions:2, alerts:2 },
-  { id:"careos",     name:"CareOS",          sector:"HealthTech",       stage:"Series A",  geo:"UK",  own:29, score:34,
-    subScores:{ finance:18, sales:24, hr:32, ops:51, procurement:62, technology:68, compliance:74 },
-    status:"red",   runway:2.3, rvb:64,  att:23, ebitda:-31,upd:"3d ago",  freshness:61,
-    issue:"CRITICAL: 2.3 mo runway + revenue 36% below budget",
-    spark:[58,55,52,48,46,44,42,40,38,36,35,34],
-    trend:"down", actions:6, alerts:4 },
-  { id:"forgetech",  name:"ForgeTech",       sector:"Manufacturing",    stage:"PE Growth", geo:"UK",  own:55, score:84,
-    subScores:{ finance:86, sales:82, hr:88, ops:80, procurement:78, technology:84, compliance:91 },
-    status:"green", runway:9.4, rvb:103, att:9,  ebitda:18, upd:"12h ago", freshness:96,
-    issue:"Inventory aging 11% above target — review slow-moving SKUs",
-    spark:[76,77,78,79,80,81,82,83,83,84,84,84],
-    trend:"up",   actions:1, alerts:1 },
-];
+const COMPANIES = forDashboard();
 
 // ── KPI DATA ──────────────────────────────────────────────────────────────────
 const mk = vals => MO.map((m,i) => ({ m, v: vals[i] }));

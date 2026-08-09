@@ -15,7 +15,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 // Core reconciling seeds per company (£k unless noted)
-const FIN_SEED = {
+export const FIN_SEED = {
   meridian:   { cash:663,  burn:138, revenue:261, budget:300, gm:71, ebitdaPct:-8  },
   payflo:     { cash:1646, burn:147, revenue:412, budget:368, gm:78, ebitdaPct:14  },
   swiftlogix: { cash:972,  burn:120, revenue:384, budget:400, gm:42, ebitdaPct:6   },
