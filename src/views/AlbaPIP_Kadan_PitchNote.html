@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alba PIP — Investor Note · Kadan Capital</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050505;
+    --card: #0A0A08;
+    --border: #1A1810;
+    --gold: #C8A84B;
+    --goldb: #E0C870;
+    --txt1: #F5F0E8;
+    --txt2: #8A8070;
+    --txt3: #4A4030;
+    --green: #3FB984;
+    --blue: #5B8DEF;
+    --red: #E25563;
+    --amber: #F5A524;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--txt1);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 64px 32px 80px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .logo-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #C8A84B, #E0C870);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 20px;
+    color: #050505;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    color: var(--txt1);
+    font-weight: 300;
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: var(--txt3);
+    margin-top: 2px;
+    letter-spacing: 1px;
+  }
+
+  .header-meta {
+    text-align: right;
+  }
+
+  .to-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-bottom: 4px;
+  }
+
+  .to-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt1);
+  }
+
+  .to-sub {
+    font-size: 11px;
+    color: var(--txt3);
+  }
+
+  .date-line {
+    font-size: 10px;
+    color: var(--txt3);
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Opening */
+  .opening {
+    margin-bottom: 40px;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  .headline {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 300;
+    line-height: 1.15;
+    color: var(--txt1);
+    margin-bottom: 20px;
+  }
+
+  .headline em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .lede {
+    font-size: 15px;
+    color: var(--txt2);
+    line-height: 1.8;
+    max-width: 660px;
+  }
+
+  /* URL strip */
+  .url-strip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--gold);
+    border-radius: 10px;
+    padding: 14px 20px;
+    margin: 28px 0;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .url-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--txt1);
+  }
+
+  .url-note {
+    font-size: 11px;
+    color: var(--txt3);
+    margin-left: auto;
+  }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 32px 0;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    line-height: 1.4;
+  }
+
+  /* Body sections */
+  .body-section {
+    margin-bottom: 36px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .body-text {
+    font-size: 14px;
+    color: var(--txt2);
+    line-height: 1.85;
+  }
+
+  .body-text strong {
+    color: var(--txt1);
+    font-weight: 600;
+  }
+
+  /* Market opportunity */
+  .market-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .market-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .market-region {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .market-stat {
+    font-family: 'Fraunces', serif;
+    font-size: 26px;
+    color: var(--txt1);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .market-desc {
+    font-size: 11px;
+    color: var(--txt3);
+    line-height: 1.6;
+  }
+
+  /* What's live */
+  .live-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .live-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+
+  .live-dot2 {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .live-item-text {
+    font-size: 12px;
+    color: var(--txt2);
+    line-height: 1.5;
+  }
+
+  .live-item-text strong {
+    color: var(--txt1);
+    display: block;
+    margin-bottom: 1px;
+  }
+
+  /* Why Kadan */
+  .why-list {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .why-item {
+    display: flex;
+    gap: 14px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    align-items: flex-start;
+  }
+
+  .why-num {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    color: var(--gold);
+    flex-shrink: 0;
+    line-height: 1.3;
+  }
+
+  .why-text {
+    font-size: 13px;
+    color: var(--txt2);
+    line-height: 1.6;
+  }
+
+  .why-text strong { color: var(--txt1); }
+
+  /* Ask */
+  .ask-box {
+    background: linear-gradient(135deg, #0A0E08, #0A0A08);
+    border: 1px solid var(--green);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-top: 14px;
+  }
+
+  .ask-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 12px;
+  }
+
+  .ask-main {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    color: var(--txt1);
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+
+  .ask-main em { font-style: italic; color: var(--green); }
+
+  .ask-detail {
+    font-size: 13px;
+    color: var(--txt2);
+    line-height: 1.7;
+  }
+
+  /* Agent teaser */
+  .agent-teaser {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-top: 14px;
+    font-size: 13px;
+  }
+
+  .agent-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-bottom: 10px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .agent-msg {
+    color: var(--txt2);
+    line-height: 1.7;
+    padding: 10px 14px;
+    background: #C8A84B08;
+    border: 1px solid #C8A84B25;
+    border-radius: 8px;
+    margin-bottom: 6px;
+  }
+
+  .agent-msg strong { color: var(--txt1); }
+  .agent-msg .hi { color: var(--green); font-weight: 600; }
+  .agent-msg .lo { color: var(--red); font-weight: 600; }
+
+  .agent-source {
+    font-size: 9px;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 6px;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .footer-contact {
+    font-size: 12px;
+    color: var(--txt3);
+    line-height: 1.7;
+  }
+
+  .footer-contact strong { color: var(--txt2); display: block; }
+
+  .footer-conf {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    text-align: right;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: #050505;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    margin-top: 16px;
+  }
+
+  @media (max-width: 580px) {
+    .page { padding: 40px 20px 60px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .market-grid, .live-grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; }
+    .header-meta { text-align: left; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-block" style="display:flex;align-items:center;gap:0">
+      <svg width="38" height="42" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+      <span style="font-size:12px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:white;font-family:'Space Grotesk',sans-serif;margin-left:12px">ALBA PIP</span>
+    </div>
+    </div>
+    <div class="header-meta">
+      <div class="to-label">Submitted to</div>
+      <div class="to-name">Kadan Capital</div>
+      <div class="to-sub">Felix Frenzel & Rei Murakami</div>
+      <div class="date-line">June 2026 · Confidential</div>
+    </div>
+  </div>
+
+  <!-- Opening -->
+  <div class="opening">
+    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin-bottom:32px">
+    <svg width="64" height="70" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+    <div style="font-size:12px;font-weight:600;letter-spacing:6px;text-transform:uppercase;color:white;font-family:'Space Grotesk',sans-serif">A L B A &nbsp; P I P</div>
+  </div>
+    <div class="eyebrow">Investment Opportunity · Pre-Seed</div>
+    <h1 class="headline">The AI operating system<br>for private capital in<br><em>Southeast Asia and the Middle East.</em></h1>
+    <p class="lede">PE and VC fund managers across Singapore, Indonesia, the UAE, and Saudi Arabia are managing portfolio companies worth hundreds of billions of dollars with spreadsheets and disconnected dashboards. Alba PIP is the first AI-native portfolio intelligence platform built for them — and it is live, working, and connected to real data today.</p>
+  </div>
+
+  <!-- URL -->
+  <div class="url-strip">
+    <div class="live-dot"></div>
+    <div class="url-text">alba-pip.vercel.app</div>
+    <div class="url-note">Open on any device · no login required</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-val">6</div>
+      <div class="stat-label">Live integrations today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">~£5</div>
+      <div class="stat-label">Monthly running cost</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">Days</div>
+      <div class="stat-label">Time to build this</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val">£200k</div>
+      <div class="stat-label">Enterprise alternative cost</div>
+    </div>
+  </div>
+
+  <!-- The problem -->
+  <div class="body-section">
+    <div class="section-label">The Problem</div>
+    <p class="body-text">
+      A PE fund manager in Singapore overseeing six portfolio companies across Indonesia, Vietnam, and Thailand is doing the same thing every Monday morning: chasing CEOs for weekly updates, building consolidation models in Excel, and calling CFOs to understand why a company missed its numbers. <strong>The information exists — in accounting systems, CRM platforms, bank accounts, and billing tools. It just isn't connected.</strong>
+      <br><br>
+      The Western solutions — Allvue, iLevel, Dynamo — cost £80,000–200,000 per year in licensing, are built for US and European fund structures, require 6-month implementations, and offer no meaningful AI. <strong>No product exists that is built for the Southeast Asian and Middle Eastern PE market, priced for it, or designed around how those fund managers actually operate.</strong>
+    </p>
+  </div>
+
+  <!-- The solution -->
+  <div class="body-section">
+    <div class="section-label">The Solution</div>
+    <p class="body-text">
+      Alba PIP connects every system a portfolio company uses — accounting, banking, CRM, billing, market data, and HR — into a single intelligence layer, then puts AI agents to work across it. <strong>Not a dashboard. An analyst that works continuously, without being asked.</strong>
+      <br><br>
+      The AI agents investigate problems and cite their sources. They draft board packs in under 30 seconds. They send a morning portfolio briefing at 7am covering every company across every connected system. They alert the fund manager the moment a bank balance drops below a covenant threshold, or a purchase order exceeds the approval limit, or a key customer goes quiet in the CRM. <strong>This is what a team of three analysts does — running autonomously, at a fraction of the cost.</strong>
+    </p>
+
+    <div class="agent-teaser">
+      <div class="agent-label">Example · Morning Portfolio Briefing Agent · 07:00 SGT</div>
+      <div class="agent-msg">
+        <strong>Portfolio Brief · Monday 22 June · Caledonia Alba</strong><br><br>
+        🔴 <strong>CRITICAL — CareOS:</strong> Bank balance SGD 487,000 — <span class="lo">below SGD 570k covenant minimum</span>. Bridge financing conversation required today. Draft notification prepared for lead investor.<br><br>
+        🟢 <strong>POSITIVE — PayFlo:</strong> MRR crossed SGD 700k for the first time — <span class="hi">14% above target</span>. Three new enterprise contracts signed. Runway now 11.8 months. Series B threshold metrics approaching.<br><br>
+        📊 <strong>MARKETS:</strong> SGD strengthened 0.3% overnight. Regional indices up. Macro context positive for portfolio companies with USD revenue exposure.
+      </div>
+      <div class="agent-source">Sources: Xero · TrueLayer · Stripe · HubSpot · Bloomberg · Generated by Grok AI · 07:00:14 SGT</div>
+    </div>
+  </div>
+
+  <!-- What's live -->
+  <div class="body-section">
+    <div class="section-label">What Is Live Today</div>
+    <p class="body-text">This is not a pitch deck for a product to be built. The platform is deployed and working at the URL above, with six genuine external data connections:</p>
+
+    <div class="live-grid">
+      <div class="live-item">
+        <div class="live-dot2" style="background:var(--green)"></div>
+        <div class="live-item-text">
+          <strong>Xero</strong>
+          Real invoices, AR aging, overdue debtors, P&L via OAuth
+        </div>
+      </div>
+      <div class="live-item">
+        <div class="live-dot2" style="background:var(--green)"></div>
+        <div class="live-item-text">
+          <strong>xAI Grok</strong>
+          Live AI agents — investigation, Q&A, board pack generation
+        </div>
+      </div>
+      <div class="live-item">
+        <div class="live-dot2" style="background:var(--green)"></div>
+        <div class="live-item-text">
+          <strong>Stripe</strong>
+          Live MRR, subscriptions, revenue and customer count
+        </div>
+      </div>
+      <div class="live-item">
+        <div class="live-dot2" style="background:var(--green)"></div>
+        <div class="live-item-text">
+          <strong>HubSpot</strong>
+          Live sales pipeline, deal stages, weighted pipeline value
+        </div>
+      </div>
+      <div class="live-item">
+        <div class="live-dot2" style="background:var(--green)"></div>
+        <div class="live-item-text">
+          <strong>Yahoo Finance</strong>
+          Live NASDAQ, S&P 500, real-time index data
+        </div>
+      </div>
+      <div class="live-item">
+        <div class="live-dot2" style="background:var(--green)"></div>
+        <div class="live-item-text">
+          <strong>Alpha Vantage</strong>
+          Live GBP/USD, GBP/EUR, real-time FX rates
+        </div>
+      </div>
+    </div>
+
+    <p class="body-text" style="margin-top:14px">The 6-month roadmap adds Bloomberg, Refinitiv, Citi Velocity, Nomura Connexus, regional Open Banking (DBS, OCBC, UOB, Emirates NBD, FAB), Sage X3, NetSuite, Workday, Salesforce, and 80+ further integrations — all following the same proven architecture.</p>
+  </div>
+
+  <!-- Market opportunity -->
+  <div class="body-section">
+    <div class="section-label">Market Opportunity</div>
+
+    <div class="market-grid">
+      <div class="market-card">
+        <div class="market-region">Southeast Asia</div>
+        <div class="market-stat">$340B+</div>
+        <div class="market-desc">PE and private capital AUM managed from Singapore alone. The region's PE market is growing faster than anywhere else globally. Fund managers are managing cross-border complexity — multi-currency, multi-entity, fragmented data — with no adequate tooling. Most are still on Excel.</div>
+      </div>
+      <div class="market-card">
+        <div class="market-region">Middle East</div>
+        <div class="market-stat">$700B+</div>
+        <div class="market-desc">Saudi PIF AUM alone. Vision 2030 is deploying capital at unprecedented pace. The UAE hosts Mubadala, ADIA, and hundreds of family offices managing generational wealth. No PE monitoring platform is built for their operating model. Price sensitivity is low; appetite for premium AI technology is high.</div>
+      </div>
+    </div>
+
+    <p class="body-text" style="margin-top:14px">The first platform to establish a credible presence in both markets, with the right integrations and the right AI layer, has a long, defensible runway before any Western incumbent can respond. <strong>The switching cost created by deep integration into a portfolio's accounting, banking, and CRM systems is a powerful moat.</strong></p>
+  </div>
+
+  <!-- Why now -->
+  <div class="body-section">
+    <div class="section-label">Why Now</div>
+    <p class="body-text">Three things converged in 2026 to make this possible and timely:</p>
+    <div class="why-list">
+      <div class="why-item">
+        <div class="why-num">1</div>
+        <div class="why-text"><strong>AI models crossed the threshold.</strong> Grok, Claude, and GPT-4o can now reason reliably across complex financial data and produce board-pack-quality output. Twelve months ago this wasn't true at the quality level required for institutional use.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">2</div>
+        <div class="why-text"><strong>API ecosystems matured.</strong> Xero, Stripe, HubSpot, Bloomberg, and the Open Banking networks now expose the data needed through stable, reliable APIs. The integration layer that would have taken 18 months to build now takes weeks.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">3</div>
+        <div class="why-text"><strong>The incumbents are not moving.</strong> Allvue, iLevel, and Dynamo are Western-built, expensive, and slow. None has a meaningful AI layer. None is built for the SEA or Middle East market. The window to establish a native, AI-first alternative is open now and will not stay open indefinitely.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Why Kadan -->
+  <div class="body-section">
+    <div class="section-label">Why Kadan</div>
+    <p class="body-text">This is not a generic investor note. Kadan is the right first conversation for three specific reasons:</p>
+    <div class="why-list">
+      <div class="why-item">
+        <div class="why-num">1</div>
+        <div class="why-text"><strong>Geographic alignment.</strong> Kadan operates from Singapore with a Southeast Asia mandate. Your network is our market. An investor who knows the fund managers in Singapore, Jakarta, and Kuala Lumpur is more valuable than a larger cheque from London.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">2</div>
+        <div class="why-text"><strong>Thesis alignment.</strong> AI and Fintech is Kadan's explicit focus. Alba PIP is AI infrastructure for institutional financial services — the intersection of both categories, applied to the fastest-growing private capital market in the world.</div>
+      </div>
+      <div class="why-item">
+        <div class="why-num">3</div>
+        <div class="why-text"><strong>You are the customer.</strong> As a fund manager, Kadan oversees a portfolio of companies and needs exactly what this platform provides. We are asking you to invest in something you would use and can evaluate with direct domain expertise.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The ask -->
+  <div class="body-section">
+    <div class="section-label">The Ask</div>
+    <div class="ask-box">
+      <div class="ask-label">Investment opportunity</div>
+      <div class="ask-main">Pre-seed round · <em>$500k–$1M.</em></div>
+      <div class="ask-detail">
+        We are raising a pre-seed round to fund the 6-month integration roadmap, a Singapore entity and market presence, regional bank and data partnerships, and the first two enterprise clients in the SEA and Middle East markets.<br><br>
+        <strong style="color:var(--txt1)">Use of funds:</strong> Integration engineering (Bloomberg, regional banks, trading platforms) · Singapore entity and regulatory setup · First two regional enterprise pilots · AI agent layer — autonomous monitoring, morning briefings, LP reporting automation.<br><br>
+        <strong style="color:var(--txt1)">What we are not raising for:</strong> This is not a product-building round. The product exists, works, and is live. This is a market entry and integration depth round — turning a working prototype into the dominant platform for a specific, underserved, high-value market.
+      </div>
+      <a href="https://alba-pip.vercel.app" target="_blank" class="cta-btn">Open the platform →</a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-contact">
+      <strong>James Gray</strong>
+      MD · Caledonia Alba · Alba PIP<br>
+      Available for a call within 48 hours<br>
+      Platform live at alba-pip.vercel.app
+    </div>
+    <div class="footer-conf">
+      Confidential · June 2026<br>
+      Alba PIP · Caledonia Alba<br>
+      Not for distribution
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

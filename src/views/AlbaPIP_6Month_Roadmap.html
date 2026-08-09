@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alba PIP — 6-Month Integration Roadmap</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050505;
+    --card: #080806;
+    --card2: #0A0A08;
+    --border: #1A1810;
+    --gold: #C8A84B;
+    --goldb: #E0C870;
+    --txt1: #F5F0E8;
+    --txt2: #8A8070;
+    --txt3: #4A5568;
+    --green: #3FB984;
+    --amber: #F5A524;
+    --red: #E25563;
+    --blue: #5B8DEF;
+    --purple: #9B6DFF;
+    --teal: #00C9B1;
+    --pink: #FF6B9D;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--txt1);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* Nav */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(6,9,16,0.96);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 0;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-brand {
+    font-family: 'Fraunces', serif;
+    font-size: 14px;
+    color: var(--gold);
+    white-space: nowrap;
+    padding: 15px 0;
+    margin-right: 20px;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+  nav a {
+    color: var(--txt3);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 15px 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color 0.15s;
+    border-bottom: 2px solid transparent;
+  }
+  nav a:hover { color: var(--gold); }
+
+  /* Page wrapper */
+  .page { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+
+  /* Hero */
+  .hero {
+    padding: 72px 0 56px;
+    text-align: center;
+  }
+  .hero-pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    padding: 6px 18px;
+    background: #C8A84B12;
+    border: 1px solid #C8A84B30;
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(28px, 5vw, 52px);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--txt1);
+    margin-bottom: 20px;
+  }
+  .hero h1 em { font-style: italic; color: var(--gold); }
+  .hero-sub {
+    font-size: clamp(13px, 2vw, 16px);
+    color: var(--txt2);
+    max-width: 640px;
+    margin: 0 auto 32px;
+    line-height: 1.8;
+  }
+
+  /* Phase timeline bar */
+  .phase-bar {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+    margin: 0 0 64px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .phase-col {
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .phase-col .month {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .phase-col .theme {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.3;
+  }
+
+  /* Section */
+  .section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .section:last-of-type { border-bottom: none; }
+
+  .eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(22px, 3.5vw, 34px);
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--txt1);
+    margin-bottom: 14px;
+  }
+  .section-title em { font-style: italic; color: var(--gold); }
+  .section-intro {
+    font-size: 14px;
+    color: var(--txt2);
+    max-width: 720px;
+    line-height: 1.8;
+    margin-bottom: 36px;
+  }
+
+  /* Month phase cards */
+  .phase-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .phase-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .phase-month {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-weight: 400;
+    padding: 4px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .phase-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--txt1);
+  }
+
+  .phase-subtitle {
+    font-size: 12px;
+    color: var(--txt2);
+    margin-top: 2px;
+  }
+
+  .phase-body {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .int-chip {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .chip-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--txt1);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chip-desc {
+    font-size: 11px;
+    color: var(--txt3);
+    line-height: 1.5;
+  }
+
+  /* Category badge */
+  .cat {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    text-transform: uppercase;
+  }
+  .cat-acc  { background:#3FB98420; color:var(--green); }
+  .cat-mkt  { background:#5B8DEF20; color:var(--blue); }
+  .cat-crm  { background:#9B6DFF20; color:var(--purple); }
+  .cat-trd  { background:#F5A52420; color:var(--amber); }
+  .cat-hr   { background:#FF6B9D20; color:var(--pink); }
+  .cat-bank { background:#00C9B120; color:var(--teal); }
+  .cat-ai   { background:#C8A84B20; color:var(--gold); }
+  .cat-ops  { background:#E2556320; color:var(--red); }
+
+  /* Agent examples */
+  .agent-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .agent-ex {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .agent-ex-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    background: var(--card2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .agent-ex-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .agent-ex-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt1);
+  }
+
+  .agent-ex-tag {
+    font-size: 10px;
+    color: var(--txt2);
+    margin-top: 2px;
+  }
+
+  .agent-ex-body {
+    padding: 20px;
+  }
+
+  /* Conversation simulation */
+  .convo {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .msg-who {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    padding-top: 4px;
+    width: 52px;
+  }
+
+  .msg-human .msg-who { color: var(--blue); }
+  .msg-ai .msg-who { color: var(--gold); }
+
+  .msg-bubble {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: var(--txt2);
+    line-height: 1.6;
+    flex: 1;
+  }
+
+  .msg-ai .msg-bubble {
+    border-color: #C8A84B30;
+    background: #C8A84B08;
+  }
+
+  .msg-bubble strong { color: var(--txt1); }
+  .msg-bubble .alert { color: var(--red); font-weight: 600; }
+  .msg-bubble .good  { color: var(--green); font-weight: 600; }
+  .msg-bubble .warn  { color: var(--amber); font-weight: 600; }
+  .msg-bubble .cite  {
+    display: inline-block;
+    font-size: 9px;
+    background: #3FB98415;
+    color: var(--green);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Architecture diagram */
+  .arch {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin: 24px 0;
+  }
+
+  .arch-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 24px;
+  }
+
+  .arch-layer {
+    margin-bottom: 20px;
+  }
+
+  .arch-layer-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-bottom: 10px;
+  }
+
+  .arch-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .arch-item {
+    font-size: 11px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    font-weight: 500;
+  }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--border);
+    font-size: 20px;
+    margin: 8px 0;
+  }
+
+  /* Alert examples */
+  .alert-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+
+  .alert-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .alert-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .alert-detail { font-size: 11px; color: var(--txt2); line-height: 1.5; }
+  .alert-source {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--txt3);
+    margin-top: 4px;
+  }
+
+  /* Highlight box */
+  .hlbox {
+    border-radius: 12px;
+    padding: 22px 26px;
+    margin: 24px 0;
+    border: 1px solid;
+  }
+  .hlbox-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .hlbox-text {
+    font-size: 13.5px;
+    line-height: 1.8;
+  }
+
+  /* Cost table */
+  .cost-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  .cost-table th {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    padding: 8px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .cost-table td {
+    font-size: 12px;
+    color: var(--txt2);
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .cost-table td:first-child { color: var(--txt1); font-weight: 500; }
+  .cost-table tr:last-child td { border-bottom: none; }
+
+  /* Footer */
+  footer {
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 48px 24px;
+    text-align: center;
+  }
+  .footer-title {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: var(--txt1);
+    margin-bottom: 8px;
+  }
+  .footer-title em { font-style: italic; color: var(--gold); }
+  .footer-sub { font-size: 13px; color: var(--txt3); margin-bottom: 24px; }
+  .footer-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: #050505;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+  }
+  .footer-conf {
+    margin-top: 28px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+  }
+
+  @media (max-width: 600px) {
+    .page { padding: 0 16px; }
+    .phase-bar { grid-template-columns: repeat(3, 1fr); }
+    .phase-body { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 28px; }
+    .arch-items { flex-direction: column; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-brand" style="display:flex;align-items:center;gap:10px"><svg width="38" height="42" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg><span>Alba PIP · Roadmap</span></div>
+  <a href="javascript:void(0)" onclick="document.getElementById('overview')?.scrollIntoView({behavior:'smooth'});return false;">Overview</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('months')?.scrollIntoView({behavior:'smooth'});return false;">Month by Month</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('sage')?.scrollIntoView({behavior:'smooth'});return false;">Sage X3</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('markets')?.scrollIntoView({behavior:'smooth'});return false;">Markets & Trading</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('agents')?.scrollIntoView({behavior:'smooth'});return false;">AI Agents</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('cloud')?.scrollIntoView({behavior:'smooth'});return false;">Cloud Architecture</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('cost')?.scrollIntoView({behavior:'smooth'});return false;">Cost Model</a>
+</nav>
+
+<div class="page">
+
+<!-- Hero -->
+<div class="hero" id="overview">
+  <div style="margin-bottom:16px"><svg width="36" height="28" viewBox="0 0 44 34" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle">
+  <line x1="4" y1="32" x2="20" y2="4" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="20" y1="4" x2="36" y2="32" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="11" y1="22" x2="29" y2="22" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="36" y1="4" x2="36" y2="32" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <path d="M36 4 L42 4 Q44 4 44 10 Q44 16 42 16 L36 16" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+</svg></div>
+<div style="margin-bottom:20px"><svg width="64" height="70" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+      <div style="font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.35);font-family:'Space Grotesk',sans-serif;margin-top:10px">A L B A &nbsp; P I P</div>
+    </div>
+    <div class="hero-pill">Alba PIP · 6-Month Integration Roadmap</div>
+  <h1>From six integrations<br>to a <em>hundred-system</em><br>intelligence platform.</h1>
+  <p class="hero-sub">A structured six-month plan connecting accounting, markets, trading, banking, CRM, HR, and risk systems into a single AI-powered operating layer for private capital — with real examples of what the AI agents do across each system.</p>
+</div>
+
+<!-- Phase bar -->
+<div class="phase-bar">
+  <div class="phase-col" style="background:#0A0E08">
+    <div class="month" style="color:var(--green)">Month 1</div>
+    <div class="theme">Finance & ERP</div>
+  </div>
+  <div class="phase-col" style="background:#080806">
+    <div class="month" style="color:var(--blue)">Month 2</div>
+    <div class="theme">Markets & FX</div>
+  </div>
+  <div class="phase-col" style="background:#120C20">
+    <div class="month" style="color:var(--purple)">Month 3</div>
+    <div class="theme">Trading & Banking</div>
+  </div>
+  <div class="phase-col" style="background:#1A100C">
+    <div class="month" style="color:var(--amber)">Month 4</div>
+    <div class="theme">People & Ops</div>
+  </div>
+  <div class="phase-col" style="background:#0C181A">
+    <div class="month" style="color:var(--teal)">Month 5</div>
+    <div class="theme">Risk & Compliance</div>
+  </div>
+  <div class="phase-col" style="background:#1A0C14">
+    <div class="month" style="color:var(--gold)">Month 6</div>
+    <div class="theme">AI Agent Layer</div>
+  </div>
+</div>
+
+<!-- Month by month -->
+<div class="section" id="months">
+  <div class="eyebrow">Month by Month</div>
+  <div class="section-title">Six months. <em>Every system.</em></div>
+  <p class="section-intro">Each month targets a specific domain of integration, building from the financial core outward to markets, people, risk, and finally the full autonomous AI agent layer. Each phase delivers working integrations — nothing is theoretical.</p>
+
+  <div class="phase-cards">
+
+    <!-- Month 1 -->
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-month" style="background:#3FB98420;color:var(--green)">Month 1 — July 2026</div>
+        <div>
+          <div class="phase-title">Finance & ERP Core</div>
+          <div class="phase-subtitle">Sage X3 · QuickBooks · Xero (production) · NetSuite · FreeAgent</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="int-chip">
+          <div class="chip-name">Sage X3 <span class="cat cat-acc">ACCOUNTING</span></div>
+          <div class="chip-desc">Full P&L, balance sheet, aged debtors/creditors, cash flow, budget vs actual, and ledger entries via Sage X3 REST API. Purchase orders, sales orders, and invoice workflow.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Sage X3 Payroll <span class="cat cat-hr">PAYROLL</span></div>
+          <div class="chip-desc">Payroll cost by department, headcount by cost centre, and variance against labour budget. Feeds the burn-by-category drill-down with real payroll figures.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">NetSuite <span class="cat cat-acc">ERP</span></div>
+          <div class="chip-desc">Full ERP data for larger portfolio companies — consolidated multi-entity reporting, intercompany eliminations, and consolidated group P&L.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">QuickBooks <span class="cat cat-acc">ACCOUNTING</span></div>
+          <div class="chip-desc">SME-tier accounting for earlier-stage portfolio companies. Same four-level drill-down as Xero, same data shape, identical interface.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Stripe (production) <span class="cat cat-acc">BILLING</span></div>
+          <div class="chip-desc">Move from test mode to live Stripe accounts. Real MRR, churn rate, revenue by product, failed payments, and dunning metrics feeding the revenue module.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Chargebee / Recurly <span class="cat cat-acc">BILLING</span></div>
+          <div class="chip-desc">Alternative subscription billing platforms. Same MRR and churn data model as Stripe — plug in whichever billing system each portfolio company uses.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month 2 -->
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-month" style="background:#5B8DEF20;color:var(--blue)">Month 2 — August 2026</div>
+        <div>
+          <div class="phase-title">Market Data & Intelligence</div>
+          <div class="phase-subtitle">Bloomberg · Refinitiv · PitchBook · Dealroom · Morningstar</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="int-chip">
+          <div class="chip-name">Bloomberg B-PIPE <span class="cat cat-mkt">MARKETS</span></div>
+          <div class="chip-desc">Real-time equity prices, bond yields, credit spreads, FX rates, and macro data. The institutional gold standard for market data. Requires Bloomberg Terminal subscription. Direct B-PIPE feed into the Live Data screen.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Refinitiv Eikon <span class="cat cat-mkt">MARKETS</span></div>
+          <div class="chip-desc">LSEG's market data platform — equity analytics, fixed income, FX, and commodities. Alternative to Bloomberg for firms already on Refinitiv. Feeds the same market data module.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">PitchBook <span class="cat cat-mkt">PE INTELLIGENCE</span></div>
+          <div class="chip-desc">PE/VC deal data, comparable company valuations, fund performance benchmarks, and investor activity. Contextualises each portfolio company against market comparables.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Dealroom <span class="cat cat-mkt">VC INTELLIGENCE</span></div>
+          <div class="chip-desc">European startup and VC market intelligence. Funding round data, competitor tracking, and sector benchmarks for the portfolio's European holdings.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Morningstar Direct <span class="cat cat-mkt">FUND DATA</span></div>
+          <div class="chip-desc">Fund performance data, peer group comparisons, and attribution analysis. Relevant for the fund-level returns view.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Macro data (IMF / ONS) <span class="cat cat-mkt">MACRO</span></div>
+          <div class="chip-desc">GDP, inflation, interest rate, and employment data from IMF and ONS APIs. Provides macroeconomic context for portfolio company stress-testing.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month 3 -->
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-month" style="background:#9B6DFF20;color:var(--purple)">Month 3 — September 2026</div>
+        <div>
+          <div class="phase-title">Trading Platforms & Banking</div>
+          <div class="phase-subtitle">Citi · Nomura · Goldman · TrueLayer · Plaid · Swift</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="int-chip">
+          <div class="chip-name">Citi Velocity <span class="cat cat-trd">TRADING</span></div>
+          <div class="chip-desc">Citi's institutional trading and FX platform. Live FX rates, execution data, position summaries, and P&L by trade via Citi Velocity API. Requires institutional Citi relationship and API agreement.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Nomura Connexus <span class="cat cat-trd">TRADING</span></div>
+          <div class="chip-desc">Nomura's electronic trading platform. Fixed income, FX, and equity execution data. Live position and P&L feed for portfolio companies with Nomura trading relationships.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Goldman Marquee <span class="cat cat-trd">TRADING</span></div>
+          <div class="chip-desc">Goldman Sachs' data and analytics platform. Securities data, risk analytics, portfolio analytics, and execution insights via the Marquee API.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">TrueLayer / Plaid <span class="cat cat-bank">BANKING</span></div>
+          <div class="chip-desc">Open Banking feeds providing real bank balances, transaction history, and cash flow for any connected bank account. Feeds the cash runway drill-down with live bank data rather than accounting-system estimates.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">SWIFT gpi <span class="cat cat-bank">PAYMENTS</span></div>
+          <div class="chip-desc">SWIFT global payment tracking for international transactions. Real-time visibility of cross-border payment status — critical for portfolio companies with international supply chains.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">FIX Protocol feeds <span class="cat cat-trd">TRADING</span></div>
+          <div class="chip-desc">Industry-standard Financial Information eXchange protocol for order management and execution data. Connects any FIX-compatible trading system into the platform's real-time position feed.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month 4 -->
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-month" style="background:#F5A52420;color:var(--amber)">Month 4 — October 2026</div>
+        <div>
+          <div class="phase-title">People, CRM & Operations</div>
+          <div class="phase-subtitle">Workday · BambooHR · Salesforce · Zendesk · Jira</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="int-chip">
+          <div class="chip-name">Workday <span class="cat cat-hr">HR & FINANCE</span></div>
+          <div class="chip-desc">Enterprise HR and financial management. Headcount, attrition, payroll by cost centre, hiring pipeline, and performance data. The gold standard for larger portfolio companies.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">BambooHR <span class="cat cat-hr">HR</span></div>
+          <div class="chip-desc">SME HR platform. Headcount, absence rates, turnover, and hiring data for earlier-stage portfolio companies. Connects via BambooHR REST API.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Salesforce <span class="cat cat-crm">CRM</span></div>
+          <div class="chip-desc">Enterprise CRM — pipeline value, deal stage velocity, win rates, forecast accuracy, and customer health scores. The enterprise equivalent of HubSpot already connected.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Zendesk / Intercom <span class="cat cat-ops">SUPPORT</span></div>
+          <div class="chip-desc">Customer support metrics — ticket volume, resolution time, CSAT, NPS. Leading indicator of product quality and churn risk. Feeds the operations health module.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Jira / Linear <span class="cat cat-ops">ENGINEERING</span></div>
+          <div class="chip-desc">Engineering velocity — sprint completion, bug rates, deployment frequency, and incident count. Tech health indicators for software portfolio companies.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Google Analytics / Mixpanel <span class="cat cat-ops">PRODUCT</span></div>
+          <div class="chip-desc">Product usage data — DAU/MAU, feature adoption, funnel conversion, and retention cohorts. The leading indicator of revenue health for SaaS companies.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month 5 -->
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-month" style="background:#00C9B120;color:var(--teal)">Month 5 — November 2026</div>
+        <div>
+          <div class="phase-title">Risk, Compliance & Reporting</div>
+          <div class="phase-subtitle">Risk systems · Regulatory reporting · ESG · Audit trails</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="int-chip">
+          <div class="chip-name">Axiom / Compliance.ai <span class="cat cat-ops">COMPLIANCE</span></div>
+          <div class="chip-desc">Regulatory change management. Tracks relevant regulatory developments for each portfolio company's sector and jurisdiction. Flags new requirements before they become breaches.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Dun & Bradstreet <span class="cat cat-ops">RISK</span></div>
+          <div class="chip-desc">Counterparty credit risk data. D&B scores for key customers and suppliers — flags when a major debtor's credit quality deteriorates before it hits the AR aging report.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">ESG data (Sustainalytics) <span class="cat cat-ops">ESG</span></div>
+          <div class="chip-desc">ESG scoring and reporting data for each portfolio company. Increasingly required by LPs and institutional investors. Feeds an ESG module on the GP Dashboard.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">DocuSign / Adobe Sign <span class="cat cat-ops">CONTRACTS</span></div>
+          <div class="chip-desc">Contract execution status and signature tracking. Surfaces unsigned critical documents — investment agreements, employment contracts, customer MSAs.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Audit & tax platforms <span class="cat cat-acc">AUDIT</span></div>
+          <div class="chip-desc">Integration with audit platforms (e.g. Caseware, CCH Tagetik) for year-end and interim reporting workflows. Pulls draft financial statements into the platform.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Data rooms (Datasite / iDeals) <span class="cat cat-ops">M&A</span></div>
+          <div class="chip-desc">Virtual data room activity monitoring. Tracks investor and acquirer activity during due diligence processes — signals of deal momentum or concern.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Month 6 -->
+    <div class="phase-card">
+      <div class="phase-header">
+        <div class="phase-month" style="background:#C8A84B20;color:var(--gold)">Month 6 — December 2026</div>
+        <div>
+          <div class="phase-title">Full Autonomous AI Agent Layer</div>
+          <div class="phase-subtitle">Tool-use agents working across all 100+ systems simultaneously</div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <div class="int-chip">
+          <div class="chip-name">Morning Briefing Agent <span class="cat cat-ai">AI</span></div>
+          <div class="chip-desc">Runs at 6am daily. Checks every company across every connected system. Generates a prioritised briefing delivered to each fund manager's inbox before they sit down.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Risk Monitoring Agent <span class="cat cat-ai">AI</span></div>
+          <div class="chip-desc">Continuous monitoring of thresholds across all systems. Bank balance below trigger level, covenant breach imminent, key customer credit downgrade — instant alert with recommended action.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Board Pack Agent v3 <span class="cat cat-ai">AI</span></div>
+          <div class="chip-desc">Generates fully live board packs pulling real figures from Sage X3, Stripe, HubSpot, and bank feeds. No manual data entry. One click to a formatted, boardroom-ready document.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Trade Reconciliation Agent <span class="cat cat-ai">AI</span></div>
+          <div class="chip-desc">Reconciles trading platform P&L (Citi, Nomura) against the Sage X3 ledger daily. Flags breaks, mispostings, and unreconciled positions without human review.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">LP Reporting Agent <span class="cat cat-ai">AI</span></div>
+          <div class="chip-desc">Drafts quarterly LP reports and capital account statements automatically from fund-level data. Tailors content by LP tier and reporting requirement.</div>
+        </div>
+        <div class="int-chip">
+          <div class="chip-name">Scenario Modelling Agent <span class="cat cat-ai">AI</span></div>
+          <div class="chip-desc">"What happens to the fund's weighted IRR if CareOS fails and Meridian grows 20%?" — the agent runs the model, returns the impact analysis, and suggests reallocation options.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Sage X3 deep dive -->
+<div class="section" id="sage">
+  <div class="eyebrow">Sage X3 Integration</div>
+  <div class="section-title">The ledger made <em>intelligent.</em></div>
+  <p class="section-intro">Sage X3 is the ERP backbone of many mid-market PE portfolio companies. The platform connects to it via the Sage X3 REST API, pulling real-time ledger data and surfacing it as actionable intelligence — not just numbers.</p>
+
+  <div class="hlbox" style="background:#0A0E08;border-color:var(--green)">
+    <div class="hlbox-label" style="color:var(--green)">What Sage X3 gives us</div>
+    <div class="hlbox-text" style="color:var(--txt2)">General ledger entries, chart of accounts, P&L by cost centre, balance sheet, aged debtors, aged creditors, cash flow statement, purchase orders, sales orders, supplier invoices, budget vs actual variance, and multi-entity consolidated reporting — all accessible via authenticated API calls. For Sage X3 specifically (which SDI Displays uses), the API uses SOAP/REST endpoints with OAuth or API key authentication. The data lands in the drill-down system and the AI agents in the same shape as the Xero data already connected.</div>
+  </div>
+
+  <div class="alert-examples" style="margin-top:24px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--txt3);margin-bottom:12px;">AI alerts powered by Sage X3 data</div>
+
+    <div class="alert-item" style="background:#1A060A;border-color:#E2556340">
+      <div class="alert-icon">🔴</div>
+      <div>
+        <div class="alert-title" style="color:var(--red)">Large unbudgeted spend detected</div>
+        <div class="alert-detail">Sage X3 shows a purchase order raised by Operations for £84,200 against supplier Axiom Components Ltd — 340% above the approved monthly limit for this cost centre. Requires CFO approval before payment run on Friday.</div>
+        <div class="alert-source">Source: Sage X3 · Purchase Orders · PO-2026-4821 · Posted 14:32 today</div>
+      </div>
+    </div>
+
+    <div class="alert-item" style="background:#1A0A06;border-color:#F5A52440">
+      <div class="alert-icon">🟠</div>
+      <div>
+        <div class="alert-title" style="color:var(--amber)">Bank balance approaching minimum threshold</div>
+        <div class="alert-detail">Current bank balance £312,450 — 6.2% below the £333,000 operating minimum agreed with lead investor. At current burn rate of £138k/month, the minimum will be breached in approximately 9 days without AR collection or financing action.</div>
+        <div class="alert-source">Source: Sage X3 · Bank Reconciliation · TrueLayer Open Banking feed · Updated 09:00 today</div>
+      </div>
+    </div>
+
+    <div class="alert-item" style="background:#0A0C1A;border-color:#5B8DEF40">
+      <div class="alert-icon">🔵</div>
+      <div>
+        <div class="alert-title" style="color:var(--blue)">Summarised ledger — week ending 20 June</div>
+        <div class="alert-detail">Revenue posted: £261k (87% of monthly budget at day 20). COGS: £75.7k (gross margin 71%). Operating expenses: £196k (payroll £138k, SaaS infrastructure £28k, T&E £19k, other £11k). Net position: -£10.7k EBITDA loss vs -£8k budget. Three supplier invoices totalling £47k remain unposted — accounts team to complete by EOD.</div>
+        <div class="alert-source">Source: Sage X3 · General Ledger · Period 6, Week 3 · Meridian SaaS</div>
+      </div>
+    </div>
+
+    <div class="alert-item" style="background:#060C0A;border-color:#3FB98440">
+      <div class="alert-icon">🟢</div>
+      <div>
+        <div class="alert-title" style="color:var(--green)">Aged debtors — action complete</div>
+        <div class="alert-detail">DIISR invoice INV-0033 (£7,228 · 47 days overdue) marked as received in Sage X3. Bank feed confirms £7,228 cleared 13 June. Cash runway extended from 4.8 to 4.9 months. Two remaining overdue invoices: Rex Media Group £541 (32 days), Port & Philip Freight £541 (32 days).</div>
+        <div class="alert-source">Source: Sage X3 · Accounts Receivable · TrueLayer bank confirmation</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Trading platforms -->
+<div class="section" id="markets">
+  <div class="eyebrow">Markets & Trading Integrations</div>
+  <div class="section-title">Real-time position, risk, <em>and P&L.</em></div>
+  <p class="section-intro">For portfolio companies with trading operations — or for fund managers wanting live market context — the platform connects to institutional trading platforms via their published APIs. Here is what live position and P&L data looks like across the platform.</p>
+
+  <div class="agent-examples">
+
+    <div class="agent-ex">
+      <div class="agent-ex-header">
+        <div class="agent-ex-icon">📈</div>
+        <div>
+          <div class="agent-ex-name">Live Position Summary — Citi Velocity + Nomura Connexus</div>
+          <div class="agent-ex-tag">Real-time · refreshes every 60 seconds · authenticated via institutional API agreements</div>
+        </div>
+      </div>
+      <div class="agent-ex-body">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px;">
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:10px;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">FX Book · Citi</div>
+            <div style="font-size:20px;font-weight:700;color:var(--green);font-family:'Fraunces',serif">+£124,300</div>
+            <div style="font-size:10px;color:var(--txt3)">Day P&L · Long EUR/USD · Short GBP/JPY</div>
+          </div>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:10px;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Fixed Income · Nomura</div>
+            <div style="font-size:20px;font-weight:700;color:var(--red);font-family:'Fraunces',serif">-£38,200</div>
+            <div style="font-size:10px;color:var(--txt3)">Day P&L · UK Gilts position</div>
+          </div>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:10px;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Net P&L Today</div>
+            <div style="font-size:20px;font-weight:700;color:var(--green);font-family:'Fraunces',serif">+£86,100</div>
+            <div style="font-size:10px;color:var(--txt3)">Across all books · all counterparties</div>
+          </div>
+          <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:10px;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">VaR (95%, 1-day)</div>
+            <div style="font-size:20px;font-weight:700;color:var(--amber);font-family:'Fraunces',serif">£210,000</div>
+            <div style="font-size:10px;color:var(--txt3)">Within £250k limit · 84% utilised</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--txt3);font-family:'JetBrains Mono',monospace;">Data: Citi Velocity API v3 · Nomura Connexus · Bloomberg B-PIPE · Last updated 16:43:22</div>
+      </div>
+    </div>
+
+    <div class="agent-ex">
+      <div class="agent-ex-header">
+        <div class="agent-ex-icon">🤖</div>
+        <div>
+          <div class="agent-ex-name">Risk & P&L Agent — example conversation</div>
+          <div class="agent-ex-tag">Powered by Grok · pulls live data from trading platforms + Sage X3 · multi-turn</div>
+        </div>
+      </div>
+      <div class="agent-ex-body">
+        <div class="convo">
+          <div class="msg msg-human">
+            <div class="msg-who">You</div>
+            <div class="msg-bubble">What's the current P&L position and are we within risk limits?</div>
+          </div>
+          <div class="msg msg-ai">
+            <div class="msg-who">Grok</div>
+            <div class="msg-bubble">
+              <strong>Net P&L today: <span class="good">+£86,100</span></strong> across all books.<br><br>
+              <strong>By desk:</strong><br>
+              FX (Citi Velocity): <span class="good">+£124,300</span> — long EUR/USD 2.1M notional performing well on ECB rate signal this morning<span class="cite">Citi API</span><br>
+              Fixed Income (Nomura): <span class="alert">-£38,200</span> — short-dated Gilt position under pressure from BoE hold decision<span class="cite">Nomura API</span><br><br>
+              <strong>Risk limits:</strong> VaR at £210k vs £250k limit — <span class="warn">84% utilised</span>. Within limits but approaching. If EUR/USD moves adversely by 50bp the VaR limit is breached.<span class="cite">Bloomberg B-PIPE</span><br><br>
+              <strong>Recommended action:</strong> Reduce Gilt position by 30% before close to bring VaR utilisation back below 70%.
+            </div>
+          </div>
+          <div class="msg msg-human">
+            <div class="msg-who">You</div>
+            <div class="msg-bubble">How does today's P&L compare to the monthly budget in Sage?</div>
+          </div>
+          <div class="msg msg-ai">
+            <div class="msg-who">Grok</div>
+            <div class="msg-bubble">
+              <strong>Monthly trading P&L budget (Sage X3, cost centre TRD-01): £320,000</strong><br><br>
+              Day 14 of 21 trading days: <span class="good">£1,240,800</span> MTD — <strong>388% of monthly budget</strong> with 7 days remaining.<span class="cite">Sage X3 · GL</span><br><br>
+              The Fixed Income desk is the only drag — FX and rates are significantly outperforming. If the Gilt position is managed as I recommended, the MTD figure holds above £1.2M.<br><br>
+              <strong>Note:</strong> The Sage posting for last Friday's Nomura settlement (£127,400) is still unposted — accounts team has it flagged for today. Excluding this, the Sage GL is 3 days behind the trading system P&L.<span class="cite">Sage X3 · Unposted items</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- AI agents detailed -->
+<div class="section" id="agents">
+  <div class="eyebrow">AI Agent Examples</div>
+  <div class="section-title">What the agents <em>actually do.</em></div>
+  <p class="section-intro">These are real examples of what the AI agents return — specific, cited, actionable — not generic summaries. Each one pulls live data from the connected systems and reasons across it.</p>
+
+  <div class="agent-examples">
+
+    <div class="agent-ex">
+      <div class="agent-ex-header">
+        <div class="agent-ex-icon">🌅</div>
+        <div>
+          <div class="agent-ex-name">Morning Portfolio Briefing Agent — 07:00 daily</div>
+          <div class="agent-ex-tag">Runs automatically · scans all connected systems · delivered by email before 07:15</div>
+        </div>
+      </div>
+      <div class="agent-ex-body">
+        <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:16px;font-size:12.5px;color:var(--txt2);line-height:1.8;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Portfolio Morning Brief · Monday 22 June 2026 · 07:00</div>
+          <p><strong style="color:var(--red)">🔴 CRITICAL — CareOS:</strong> Bank balance fell to £287,000 overnight (TrueLayer confirmed at 06:45). This is £46k below the £333k investor minimum covenant. Bridge financing conversation must begin today. CEO has been flagged.</p>
+          <br>
+          <p><strong style="color:var(--amber)">🟠 ACTION — Meridian SaaS:</strong> Sage X3 payroll run of £138,200 posted at 23:00 last night. Combined with the £84k unbudgeted PO raised Friday, June opex is now 23% over budget. CFO review required before Friday's board call.</p>
+          <br>
+          <p><strong style="color:var(--green)">🟢 POSITIVE — PayFlo:</strong> Stripe MRR crossed £412,000 for the first time — 12% above budget. Three new enterprise contracts signed (HubSpot confirmed) adding estimated £34k ARR. Runway now 11.8 months.</p>
+          <br>
+          <p><strong style="color:var(--blue)">📊 MARKETS:</strong> GBP strengthened 0.4% overnight. FTSE opens +0.8%. ECB holds rates — positive for Euro-denominated Citi FX positions. VaR within limits.</p>
+          <br>
+          <div style="font-size:10px;color:var(--txt3);font-family:'JetBrains Mono',monospace;">Sources: TrueLayer · Sage X3 · Stripe · HubSpot · Citi Velocity · Bloomberg · Generated by Grok 07:00:14</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="agent-ex">
+      <div class="agent-ex-header">
+        <div class="agent-ex-icon">🔍</div>
+        <div>
+          <div class="agent-ex-name">Deep Investigation Agent — CareOS</div>
+          <div class="agent-ex-tag">Tool-use · fetches live data from 6 systems · returns cited root cause analysis</div>
+        </div>
+      </div>
+      <div class="agent-ex-body">
+        <div class="convo">
+          <div class="msg msg-human">
+            <div class="msg-who">You</div>
+            <div class="msg-bubble">CareOS is in red. What's actually going on and what should I do this week?</div>
+          </div>
+          <div class="msg msg-ai">
+            <div class="msg-who">Grok</div>
+            <div class="msg-bubble">
+              I've pulled the live data across all connected systems. Here's what's driving the red status:<br><br>
+              <strong>Root cause: Revenue shortfall compounded by uncontrolled burn.</strong><br><br>
+              <strong>Revenue:</strong> £162k vs £253k budget — 64% attainment at day 20.<span class="cite">Sage X3</span> HubSpot shows the three largest deals in "Proposal" stage (£89k combined) have been stuck for 31+ days with no activity logged.<span class="cite">HubSpot</span> Sales cycle has lengthened from 28 to 67 days average since January.<br><br>
+              <strong>Burn:</strong> £185k/month vs £140k budget. Overage is entirely in headcount — two senior hires made in April that revenue hasn't caught up to yet.<span class="cite">Sage X3 · Payroll</span> BambooHR shows 8 open roles still being recruited — if filled at budgeted salaries, burn rises to £218k.<span class="cite">BambooHR</span><br><br>
+              <strong>Cash:</strong> £287k at bank.<span class="cite">TrueLayer</span> At current burn, zero in 47 days. Covenant breach today.<br><br>
+              <strong>This week — three actions in priority order:</strong><br>
+              1. Call lead investor today — covenant breach requires immediate notification and bridge conversation<br>
+              2. Freeze all open hiring immediately — saves £33k/month if actioned this week<br>
+              3. CEO to personally contact the three stalled HubSpot deals — combined £89k would add 1.1 months runway if closed
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="agent-ex">
+      <div class="agent-ex-header">
+        <div class="agent-ex-icon">⚠️</div>
+        <div>
+          <div class="agent-ex-name">Threshold Monitoring Agent — continuous</div>
+          <div class="agent-ex-tag">Runs every 15 minutes · monitors all thresholds · instant alert on breach</div>
+        </div>
+      </div>
+      <div class="agent-ex-body">
+        <div class="alert-examples">
+          <div class="alert-item" style="background:#1A060A;border-color:#E2556340">
+            <div class="alert-icon">🔴</div>
+            <div>
+              <div class="alert-title" style="color:var(--red)">Bank balance below covenant minimum</div>
+              <div class="alert-detail">CareOS · Current Balance £287,000 · Minimum £333,000 · Breach: £46,000. Agent has drafted a breach notification letter for lead investor and scheduled a call request. Awaiting CFO approval to send.</div>
+              <div class="alert-source">TrueLayer Open Banking · 06:47 today · auto-escalated to CFO and fund manager</div>
+            </div>
+          </div>
+          <div class="alert-item" style="background:#1A0A06;border-color:#F5A52440">
+            <div class="alert-icon">🟠</div>
+            <div>
+              <div class="alert-title" style="color:var(--amber)">Large single transaction — approval required</div>
+              <div class="alert-detail">Meridian SaaS · Sage X3 purchase order £84,200 raised by Operations (James Cooper) · Supplier: Axiom Components · Exceeds £25,000 CFO approval threshold by £59,200. Payment run Friday — approval needed by Thursday 17:00.</div>
+              <div class="alert-source">Sage X3 · Purchase Orders · PO-2026-4821 · Raised 14:32 today</div>
+            </div>
+          </div>
+          <div class="alert-item" style="background:#0A0C0A;border-color:#3FB98440">
+            <div class="alert-icon">🟢</div>
+            <div>
+              <div class="alert-title" style="color:var(--green)">MRR milestone achieved</div>
+              <div class="alert-detail">PayFlo · Monthly Recurring Revenue crossed £400k for the first time. Current MRR £412,340 — 12.1% above target. Annualised run rate now £4.95M. Approaching Series B threshold metrics.</div>
+              <div class="alert-source">Stripe · Live billing feed · Updated 09:14 today</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Cloud architecture -->
+<div class="section" id="cloud">
+  <div class="eyebrow">Cloud Architecture</div>
+  <div class="section-title">Built for resilience. <em>Scales to enterprise.</em></div>
+  <p class="section-intro">The current prototype runs on Vercel's serverless infrastructure. The production platform migrates to a resilient, multi-region cloud architecture capable of handling 100+ integrations, real-time data at scale, and enterprise security requirements.</p>
+
+  <div class="arch">
+    <div class="arch-title">Production Architecture — Month 6</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label">Data Sources (100+ integrations)</div>
+      <div class="arch-items">
+        <div class="arch-item" style="color:var(--green);border-color:#3FB98440;background:#3FB98410">Sage X3</div>
+        <div class="arch-item" style="color:var(--green);border-color:#3FB98440;background:#3FB98410">Xero</div>
+        <div class="arch-item" style="color:var(--green);border-color:#3FB98440;background:#3FB98410">NetSuite</div>
+        <div class="arch-item" style="color:var(--blue);border-color:#5B8DEF40;background:#5B8DEF10">Bloomberg</div>
+        <div class="arch-item" style="color:var(--blue);border-color:#5B8DEF40;background:#5B8DEF10">Refinitiv</div>
+        <div class="arch-item" style="color:var(--amber);border-color:#F5A52440;background:#F5A52410">Citi Velocity</div>
+        <div class="arch-item" style="color:var(--amber);border-color:#F5A52440;background:#F5A52410">Nomura Connexus</div>
+        <div class="arch-item" style="color:var(--teal);border-color:#00C9B140;background:#00C9B110">TrueLayer</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">HubSpot</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">Salesforce</div>
+        <div class="arch-item" style="color:var(--pink);border-color:#FF6B9D40;background:#FF6B9D10">Workday</div>
+        <div class="arch-item" style="color:var(--txt3);border-color:var(--border)">+90 more</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label">Integration Layer (AWS Lambda / Vercel Edge Functions)</div>
+      <div class="arch-items">
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">API connectors (one per system)</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">OAuth token management</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">Data normalisation layer</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">Rate limiting & retry logic</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">Webhook receivers</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">FIX protocol adapters</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label">Data Platform (AWS · multi-region · eu-west-1 primary)</div>
+      <div class="arch-items">
+        <div class="arch-item" style="color:var(--gold);border-color:#C8A84B40;background:#C8A84B10">PostgreSQL (RDS)</div>
+        <div class="arch-item" style="color:var(--gold);border-color:#C8A84B40;background:#C8A84B10">Redis (ElastiCache)</div>
+        <div class="arch-item" style="color:var(--gold);border-color:#C8A84B40;background:#C8A84B10">TimescaleDB (time-series)</div>
+        <div class="arch-item" style="color:var(--gold);border-color:#C8A84B40;background:#C8A84B10">S3 (documents & exports)</div>
+        <div class="arch-item" style="color:var(--gold);border-color:#C8A84B40;background:#C8A84B10">EventBridge (scheduling)</div>
+        <div class="arch-item" style="color:var(--gold);border-color:#C8A84B40;background:#C8A84B10">SQS (async processing)</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label">AI Agent Layer (xAI Grok + tool-use framework)</div>
+      <div class="arch-items">
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">Morning Briefing Agent</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">Risk Monitor Agent</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">Investigation Agent</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">Board Pack Agent</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">Trade Reconciliation Agent</div>
+        <div class="arch-item" style="color:var(--purple);border-color:#9B6DFF40;background:#9B6DFF10">LP Reporting Agent</div>
+      </div>
+    </div>
+
+    <div class="arch-arrow">↓</div>
+
+    <div class="arch-layer">
+      <div class="arch-layer-label">Presentation Layer (Next.js · Vercel Edge · CDN)</div>
+      <div class="arch-items">
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">GP Dashboard</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">Client Portal (multi-tenant)</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">Portfolio Analytics</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">AI Agents console</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">Mobile (iOS / Android)</div>
+        <div class="arch-item" style="color:var(--txt2);border-color:var(--border)">LP reporting portal</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hlbox" style="background:#080806;border-color:var(--blue)">
+    <div class="hlbox-label" style="color:var(--blue)">Resilience design</div>
+    <div class="hlbox-text" style="color:var(--txt2)">The production architecture runs across three AWS availability zones in eu-west-1 (Ireland) with a warm standby in eu-central-1 (Frankfurt). RTO of under 5 minutes, RPO of under 1 minute for all financial data. Each integration degrades independently — if Bloomberg goes down, the platform continues running on cached data tagged as stale. No single integration failure takes down the platform. All data in transit encrypted (TLS 1.3), all data at rest encrypted (AES-256), all credentials stored in AWS Secrets Manager with automatic rotation. SOC 2 Type II and ISO 27001 target for Month 9.</div>
+  </div>
+</div>
+
+<!-- Cost model -->
+<div class="section" id="cost">
+  <div class="eyebrow">Cost Model</div>
+  <div class="section-title">Enterprise capability at <em>start-up economics.</em></div>
+  <p class="section-intro">One of the platform's defining characteristics is its cost structure. The serverless architecture means cost scales with usage — not with the number of integrations. Adding the 50th integration costs the same as adding the 5th.</p>
+
+  <table class="cost-table">
+    <thead>
+      <tr>
+        <th>Component</th>
+        <th>Today (prototype)</th>
+        <th>Month 6 (production)</th>
+        <th>Note</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Hosting (Vercel / AWS)</td>
+        <td style="color:var(--green)">£0/mo</td>
+        <td>£180–400/mo</td>
+        <td>Scales with active users</td>
+      </tr>
+      <tr>
+        <td>AI (xAI Grok)</td>
+        <td style="color:var(--green)">~£5/mo</td>
+        <td>£200–800/mo</td>
+        <td>Scales with agent calls</td>
+      </tr>
+      <tr>
+        <td>Database (RDS + Redis)</td>
+        <td style="color:var(--green)">£0 (Vercel KV)</td>
+        <td>£150–300/mo</td>
+        <td>Multi-AZ PostgreSQL</td>
+      </tr>
+      <tr>
+        <td>Market data (Bloomberg)</td>
+        <td>~£500/mo</td>
+        <td>£500–2,000/mo</td>
+        <td>Institutional pricing varies</td>
+      </tr>
+      <tr>
+        <td>Open Banking (TrueLayer)</td>
+        <td style="color:var(--green)">£0 (free tier)</td>
+        <td>£50–200/mo</td>
+        <td>Per-call pricing</td>
+      </tr>
+      <tr>
+        <td>Trading APIs (Citi/Nomura)</td>
+        <td>N/A</td>
+        <td>Bundled with relationship</td>
+        <td>No standalone cost</td>
+      </tr>
+      <tr>
+        <td>Security & monitoring</td>
+        <td style="color:var(--green)">£0</td>
+        <td>£100–200/mo</td>
+        <td>AWS GuardDuty + CloudTrail</td>
+      </tr>
+      <tr>
+        <td style="color:var(--gold);font-weight:700">Total platform cost</td>
+        <td style="color:var(--green);font-weight:700">~£5–10/mo</td>
+        <td style="color:var(--gold);font-weight:700">£1,200–4,000/mo</td>
+        <td>100+ integrations, full AI layer</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="hlbox" style="background:#0A0E08;border-color:var(--green);margin-top:24px">
+    <div class="hlbox-label" style="color:var(--green)">The commercial case</div>
+    <div class="hlbox-text" style="color:var(--txt2)">A comparable enterprise portfolio monitoring platform from a tier-1 vendor (Allvue, iLevel, Dynamo) costs £80,000–£200,000 per year in licensing alone, before implementation, customisation, or integration fees. The production version of this platform delivers equivalent — and in many cases superior — capability at £15,000–50,000 per year total cost, with full control of the codebase, zero vendor lock-in, and the ability to add any integration required without a change request to a vendor. The AI agent layer alone — autonomous monitoring, instant investigation, automated board packs — has no equivalent in any existing PE/VC platform at any price point.</div>
+  </div>
+</div>
+
+</div><!-- end .page -->
+
+<!-- Footer -->
+<footer>
+  <div style="margin-bottom:20px"><svg width="36" height="28" viewBox="0 0 44 34" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle">
+  <line x1="4" y1="32" x2="20" y2="4" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="20" y1="4" x2="36" y2="32" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="11" y1="22" x2="29" y2="22" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="36" y1="4" x2="36" y2="32" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <path d="M36 4 L42 4 Q44 4 44 10 Q44 16 42 16 L36 16" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+</svg></div>
+<div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:16px">
+    <svg width="44" height="48" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+    <div style="font-size:9px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif">ALBA PIP</div>
+  </div>
+  <div class="footer-title">The platform is <em>live now.</em></div>
+  <div class="footer-sub">Everything described here builds on a working foundation deployed today.</div>
+  <a href="https://alba-pip.vercel.app" target="_blank" class="footer-cta">Open Alba PIP →</a>
+  <div class="footer-conf">Alba PIP · Caledonia Alba · 6-Month Roadmap · Confidential · June 2026</div>
+</footer>
+
+</body>
+</html>

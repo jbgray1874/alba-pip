@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alba PIP — Platform Overview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050505;
+    --card: #0A0A08;
+    --card2: #0D0D0B;
+    --border: #1A1810;
+    --gold: #C8A84B;
+    --goldb: #E0C870;
+    --txt1: #F5F0E8;
+    --txt2: #8A8070;
+    --txt3: #4A4030;
+    --green: #3FB984;
+    --amber: #F5A524;
+    --red: #E25563;
+    --blue: #5B8DEF;
+    --purple: #9B6DFF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--txt1);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(8,11,20,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+
+  .nav-brand {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    color: var(--gold);
+    white-space: nowrap;
+    padding: 16px 0;
+    margin-right: 24px;
+    flex-shrink: 0;
+  }
+
+  nav a {
+    color: var(--txt3);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 16px 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: color 0.15s;
+  }
+  nav a:hover { color: var(--gold); }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 80px 24px 64px;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    padding: 6px 16px;
+    background: #C8A84B15;
+    border: 1px solid #C8A84B30;
+    border-radius: 20px;
+  }
+
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--txt1);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: clamp(14px, 2.5vw, 17px);
+    color: var(--txt2);
+    max-width: 600px;
+    margin: 0 auto 32px;
+    line-height: 1.7;
+  }
+
+  .hero-url {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    color: var(--txt1);
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+  .hero-url:hover { background: #C8A84B15; }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    text-align: center;
+    padding: 12px 28px;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-val {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+  }
+
+  /* ── Section wrapper ── */
+  .section {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 64px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section:last-of-type { border-bottom: none; }
+
+  .section-eyebrow {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 300;
+    color: var(--txt1);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+
+  .section-title em { font-style: italic; color: var(--gold); }
+
+  .section-intro {
+    font-size: 14px;
+    color: var(--txt2);
+    max-width: 680px;
+    line-height: 1.8;
+    margin-bottom: 32px;
+  }
+
+  /* ── Cards ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .card-icon {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt1);
+    margin-bottom: 6px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--txt2);
+    line-height: 1.6;
+  }
+
+  /* ── Integration list ── */
+  .int-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .int-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .int-item:last-child { border-bottom: none; }
+
+  .int-status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+  }
+
+  .int-body { flex: 1; }
+
+  .int-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt1);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .int-desc {
+    font-size: 12px;
+    color: var(--txt2);
+    line-height: 1.6;
+  }
+
+  .badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  .b-live { background: #3FB98420; color: var(--green); }
+  .b-soon { background: #5B8DEF20; color: var(--blue); }
+  .b-sim  { background: #F5A52420; color: var(--amber); }
+  .b-ai   { background: #9B6DFF20; color: var(--purple); }
+
+  /* ── Drill-down visual ── */
+  .drill {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  .drill-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .drill-levels {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .drill-level {
+    display: flex;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .drill-level:last-child { border-bottom: none; }
+
+  .level-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--gold);
+    flex-shrink: 0;
+    font-family: 'Fraunces', serif;
+  }
+
+  .level-text {
+    font-size: 13px;
+    color: var(--txt2);
+    line-height: 1.5;
+    padding-top: 3px;
+  }
+
+  .level-text strong { color: var(--txt1); }
+
+  /* ── AI Agent cards ── */
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+
+  .agent-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .agent-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--purple), var(--blue));
+  }
+
+  .agent-card.live::before {
+    background: linear-gradient(90deg, var(--green), var(--blue));
+  }
+
+  .agent-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--txt1);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .agent-desc {
+    font-size: 12px;
+    color: var(--txt2);
+    line-height: 1.6;
+    margin-bottom: 10px;
+  }
+
+  .agent-tools {
+    font-size: 10px;
+    color: var(--txt3);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Scale section ── */
+  .scale-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+
+  .scale-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .scale-num {
+    font-family: 'Fraunces', serif;
+    font-size: 36px;
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .scale-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--txt1);
+    margin-bottom: 6px;
+  }
+
+  .scale-desc {
+    font-size: 11px;
+    color: var(--txt3);
+    line-height: 1.5;
+  }
+
+  /* ── Timeline ── */
+  .timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .tl-item {
+    display: flex;
+    gap: 20px;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tl-item:last-child { border-bottom: none; }
+
+  .tl-marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 60px;
+  }
+
+  .tl-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+
+  .tl-dot.done { background: var(--green); border-color: var(--green); }
+  .tl-dot.next { background: var(--gold); border-color: var(--gold); }
+
+  .tl-day {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--txt3);
+    margin-top: 6px;
+    text-align: center;
+  }
+
+  .tl-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--txt1);
+    margin-bottom: 4px;
+  }
+
+  .tl-desc {
+    font-size: 12px;
+    color: var(--txt2);
+    line-height: 1.6;
+  }
+
+  /* ── Highlight box ── */
+  .highlight {
+    background: linear-gradient(135deg, #0A0A08, #0A0A08);
+    border: 1px solid var(--blue);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin: 24px 0;
+  }
+
+  .highlight-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 10px;
+  }
+
+  .highlight-text {
+    font-size: 14px;
+    color: var(--txt2);
+    line-height: 1.8;
+  }
+
+  /* ── Footer ── */
+  footer {
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 40px 24px;
+    text-align: center;
+  }
+
+  .footer-title {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    color: var(--txt1);
+    margin-bottom: 8px;
+  }
+
+  .footer-sub {
+    font-size: 13px;
+    color: var(--txt3);
+    margin-bottom: 20px;
+  }
+
+  .footer-url {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--gold);
+    color: #050505;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 12px 28px;
+    border-radius: 8px;
+  }
+
+  .footer-conf {
+    margin-top: 24px;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--txt3);
+  }
+
+  @media (max-width: 600px) {
+    .stat { padding: 12px 16px; }
+    .stat-val { font-size: 24px; }
+    .hero { padding: 48px 20px 40px; }
+    .section { padding: 48px 20px; }
+    .card-grid, .agent-grid, .scale-grid { grid-template-columns: 1fr; }
+  }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-brand" style="display:flex;align-items:center;gap:10px"><svg width="38" height="42" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg><span>Alba PIP</span></div>
+  <a href="javascript:void(0)" onclick="document.getElementById('platform')?.scrollIntoView({behavior:'smooth'});return false;">Platform</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('integrations')?.scrollIntoView({behavior:'smooth'});return false;">Integrations</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('drilldowns')?.scrollIntoView({behavior:'smooth'});return false;">Drill-Downs</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('agents')?.scrollIntoView({behavior:'smooth'});return false;">AI Agents</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('scale')?.scrollIntoView({behavior:'smooth'});return false;">Scale</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('roadmap')?.scrollIntoView({behavior:'smooth'});return false;">Roadmap</a>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div style="margin-bottom:20px"><svg width="64" height="70" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+      <div style="font-size:10px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.4);font-family:'Space Grotesk',sans-serif;margin-top:10px">A L B A &nbsp; P I P</div>
+    </div>
+    <div class="hero-eyebrow">Caledonia Alba · Portfolio Intelligence Platform</div>
+  <h1>The operating system<br>for <em>private capital.</em></h1>
+  <p class="hero-sub">A working portfolio intelligence platform connecting real accounting systems, live market data, AI agents, and CRM — built to give PE/VC fund managers a single, intelligent view of everything that matters.</p>
+  <a href="https://alba-pip.vercel.app" target="_blank" class="hero-url">
+    <div class="live-dot"></div>
+    alba-pip.vercel.app
+  </a>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stat"><div class="stat-val">9</div><div class="stat-label">Screens</div></div>
+  <div class="stat"><div class="stat-val">6</div><div class="stat-label">Live integrations</div></div>
+  <div class="stat"><div class="stat-val">4</div><div class="stat-label">Drill-down levels</div></div>
+  <div class="stat"><div class="stat-val">12</div><div class="stat-label">AI agents</div></div>
+  <div class="stat"><div class="stat-val">100+</div><div class="stat-label">Integration ready</div></div>
+</div>
+
+<!-- Platform screens -->
+<div class="section" id="platform">
+  <div class="section-eyebrow">The Platform</div>
+  <div class="section-title">Nine screens. <em>One intelligence layer.</em></div>
+  <p class="section-intro">Every screen is live and accessible now at alba-pip.vercel.app. The platform is designed for fund managers, portfolio company executives, and their boards — each with their own tailored view.</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-icon">⬡</div>
+      <div class="card-title">GP Dashboard</div>
+      <div class="card-desc">All portfolio companies with health scores, runway, revenue vs budget, EBITDA, and 12-month sparkline trends. Sort by any metric. Click any company to drill deeper.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">◈</div>
+      <div class="card-title">Client Portal</div>
+      <div class="card-desc">Role-based views for CEO, CFO, Sales, and HR at each portfolio company. Each executive sees only their relevant modules and KPIs.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">◉</div>
+      <div class="card-title">Live Data</div>
+      <div class="card-desc">Real-time market data — GBP/USD, GBP/EUR, NASDAQ, S&P 500 — alongside live Xero accounting feed, Stripe billing, and HubSpot CRM activity stream.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📰</div>
+      <div class="card-title">News & Sentiment</div>
+      <div class="card-desc">Per-company news monitoring with AI sentiment scoring. Flags relevant coverage across the portfolio so nothing material is missed.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">AI Agents</div>
+      <div class="card-desc">Investigation agent, Q&A agent, and board pack drafting — all powered by live Grok AI. Ask a plain-English question and get a cited, data-grounded answer.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📊</div>
+      <div class="card-title">Portfolio Analytics</div>
+      <div class="card-desc">Fund KPI banner, RAG heatmap, scenario planning, IRR/MOIC returns tracker, attention required panel, and one-click board pack export.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📅</div>
+      <div class="card-title">Delivery Plan</div>
+      <div class="card-desc">7-day prototype timeline and 12-month production roadmap — a Gantt view tracking the platform's own build and deployment milestones.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">✦</div>
+      <div class="card-title">UI Improvements</div>
+      <div class="card-desc">Priority stack of 28 tracked improvements — live backlog management built into the platform itself.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔌</div>
+      <div class="card-title">Integration Plan</div>
+      <div class="card-desc">Live vs mock status across 22 systems with cost and effort mapping — the full integration estate visible in one place.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Integrations -->
+<div class="section" id="integrations">
+  <div class="section-eyebrow">Integrations</div>
+  <div class="section-title">Six live today. <em>Built to connect everything.</em></div>
+  <p class="section-intro">Every integration uses the provider's official API with OAuth or secure key-based authentication. Credentials are stored in Vercel's encrypted environment — never in code.</p>
+
+  <div class="int-list">
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">Xero <span class="badge b-live">LIVE</span></div>
+        <div class="int-desc">Full OAuth 2.0 integration pulling real invoices (ACCREC), accounts receivable aging, overdue debtors, bills payable, and P&L via the Xero API. Connected to the Demo Company sandbox with real financial data. Token persists via secure browser cookie — connection survives page reloads. Feeds directly into the four-level finance drill-downs.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div>
+      <div class="int-body">
+        <div class="int-name">xAI Grok <span class="badge b-ai">AI · LIVE</span></div>
+        <div class="int-desc">Live AI powering all three agents on the platform — investigation, Q&A, and board pack generation. Uses the grok-2-1212 model via xAI's OpenAI-compatible API. Structured JSON responses for board packs, plain-text for investigation and Q&A. Falls back to representative content without the key so the demo never breaks.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">Yahoo Finance <span class="badge b-live">LIVE</span></div>
+        <div class="int-desc">Live NASDAQ and S&P 500 index data pulled continuously. No API key required — open feed. Updates in real time and is tagged as "live" in the data source indicators.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">Alpha Vantage <span class="badge b-live">LIVE</span></div>
+        <div class="int-desc">Live GBP/USD and GBP/EUR foreign exchange rates. Free API key authenticated. Feeds the market data ticker across the top of the Live Data screen and the FX KPI cards.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">Stripe <span class="badge b-live">LIVE</span></div>
+        <div class="int-desc">Stripe test mode connected via secret key. Pulls active subscriptions to calculate MRR, charges over the last 30 days for revenue figures, customer count, and recent transaction activity. Feeds the Portfolio Analytics KPI banner and Live Data activity stream.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">HubSpot <span class="badge b-live">LIVE</span></div>
+        <div class="int-desc">Connected via HubSpot Service Key. Pulls active deals with stage, value, and close probability to calculate pipeline value and weighted pipeline. Pulls contact and company counts. Feeds the CRM Pipeline tab in Portfolio Analytics with live deal data.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--border)"></div>
+      <div class="int-body">
+        <div class="int-name">Salesforce, NetSuite, Workday, BambooHR, Zendesk <span class="badge b-sim">REPRESENTATIVE</span></div>
+        <div class="int-desc">Enterprise systems shown as high-fidelity representative data shaped exactly like their live API responses. Real integrations require enterprise licensing — these are the next tier of connections on the 12-month roadmap.</div>
+      </div>
+    </div>
+
+    <div class="int-item">
+      <div class="int-status" style="background:var(--blue)"></div>
+      <div class="int-body">
+        <div class="int-name">TrueLayer, NewsAPI, Plaid <span class="badge b-soon">NEXT</span></div>
+        <div class="int-desc">Bank feed, news sentiment, and open banking integrations — serverless functions are built and API-ready. Connecting requires account setup and key configuration only.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drill-downs -->
+<div class="section" id="drilldowns">
+  <div class="section-eyebrow">Finance Drill-Downs</div>
+  <div class="section-title">From red flag to <em>root cause in four clicks.</em></div>
+  <p class="section-intro">The drill-down system is the platform's headline feature. Start from a single amber or red metric on the GP Dashboard and drill through four reconciling levels to the individual transactions behind it. Every number at every level ties back to the top-line figure.</p>
+
+  <div class="drill">
+    <div class="drill-title">Cash Runway Drill — Meridian SaaS (Xero live)</div>
+    <div class="drill-levels">
+      <div class="drill-level">
+        <div class="level-num">1</div>
+        <div class="level-text"><strong>Cash Runway Overview</strong> — Current cash balance, monthly burn rate, projected runway in months, trend vs prior period. Source: Xero bank accounts + calculated burn.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">2</div>
+        <div class="level-text"><strong>Burn by Category</strong> — Breakdown of monthly burn across Payroll, Infrastructure, Sales & Marketing, Operations, and Other. Identifies the dominant cost driver.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">3</div>
+        <div class="level-text"><strong>Accounts Receivable Detail</strong> — Total AR, overdue total, aging breakdown (current / 30 days / 60 days / 90+ days). Identifies the cash collection gap vs book revenue.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">4</div>
+        <div class="level-text"><strong>Individual Overdue Invoices</strong> — Real invoice numbers, counterparty names, amounts, and days overdue pulled live from Xero. DIISR, Rex Media Group, Port & Philip Freight — the actual debtors behind the number.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drill">
+    <div class="drill-title">Revenue vs Budget Drill</div>
+    <div class="drill-levels">
+      <div class="drill-level">
+        <div class="level-num">1</div>
+        <div class="level-text"><strong>Revenue vs Budget</strong> — Actual vs budgeted revenue, variance in £ and %, trend line over 12 months.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">2</div>
+        <div class="level-text"><strong>Revenue by Product</strong> — Breakdown across product lines showing which products are tracking above or below plan.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">3</div>
+        <div class="level-text"><strong>Revenue by Region</strong> — Geographic split with budget vs actual by territory. Identifies where the variance is concentrated.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">4</div>
+        <div class="level-text"><strong>Top Customer Deals</strong> — Individual named accounts, contract values, and renewal dates. The customer-level picture behind the regional aggregate.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="drill">
+    <div class="drill-title">EBITDA Margin Drill</div>
+    <div class="drill-levels">
+      <div class="drill-level">
+        <div class="level-num">1</div>
+        <div class="level-text"><strong>EBITDA Margin</strong> — Actual EBITDA, margin %, bridge vs prior period, trend.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">2</div>
+        <div class="level-text"><strong>Margin Bridge</strong> — Waterfall showing the contribution of each factor (revenue change, gross margin movement, opex change) to the EBITDA shift.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">3</div>
+        <div class="level-text"><strong>Cost Line Detail</strong> — Individual cost lines against budget. Identifies the specific lines driving margin compression.</div>
+      </div>
+      <div class="drill-level">
+        <div class="level-num">4</div>
+        <div class="level-text"><strong>Outstanding Bills</strong> — Individual supplier invoices pulled from Xero accounts payable. The actual liabilities behind the cost line.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="highlight">
+    <div class="highlight-label">Why this matters</div>
+    <div class="highlight-text">A traditional portfolio dashboard shows you the number. This platform shows you why the number is what it is — and takes you to the individual invoice or customer deal behind it, without leaving the screen. That's the difference between a reporting tool and an intelligence platform.</div>
+  </div>
+</div>
+
+<!-- AI Agents -->
+<div class="section" id="agents">
+  <div class="section-eyebrow">AI Agents</div>
+  <div class="section-title">From answering questions<br>to <em>acting autonomously.</em></div>
+  <p class="section-intro">The AI agent layer is the platform's most differentiated capability. Today the agents answer questions and generate documents. The roadmap takes them to autonomous action — investigating problems, sending briefings, and managing workflows without being asked.</p>
+
+  <p style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:16px;letter-spacing:1px;text-transform:uppercase;">Live today</p>
+
+  <div class="agent-grid">
+    <div class="agent-card live">
+      <div class="agent-name">🔍 Investigation Agent <span class="badge b-live">LIVE</span></div>
+      <div class="agent-desc">Diagnoses why a company is in trouble. Cites specific metrics, identifies root cause, and recommends the single most important action for this week. Powered by Grok reasoning across live portfolio data.</div>
+      <div class="agent-tools">Tools: portfolio data, health scores, runway metrics</div>
+    </div>
+
+    <div class="agent-card live">
+      <div class="agent-name">💬 Q&A Agent <span class="badge b-live">LIVE</span></div>
+      <div class="agent-desc">Plain-English questions, data-grounded answers. "Why is CareOS burning faster than PayFlo?" — returns a cited, specific response in seconds. Works across any company or portfolio-level question.</div>
+      <div class="agent-tools">Tools: all company data, cross-portfolio comparison</div>
+    </div>
+
+    <div class="agent-card live">
+      <div class="agent-name">📋 Board Pack Agent <span class="badge b-live">LIVE</span></div>
+      <div class="agent-desc">Generates a full structured board pack in under 30 seconds — executive summary, key metrics vs plan, risks, opportunities, recommended actions, and outlook. Exports as a formatted document.</div>
+      <div class="agent-tools">Tools: Grok grok-2-1212, structured JSON output, HTML export</div>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:16px;letter-spacing:1px;text-transform:uppercase;">Coming this week</p>
+
+  <div class="agent-grid">
+    <div class="agent-card">
+      <div class="agent-name">🛠 Tool-Use Investigation Agent <span class="badge b-soon">MONDAY</span></div>
+      <div class="agent-desc">The next generation of the investigation agent — one that doesn't just reason from data already in the prompt, but actively fetches it. When asked about CareOS, it calls the Xero API, checks Stripe MRR, pulls HubSpot pipeline, and reasons across all of it.</div>
+      <div class="agent-tools">Tools: get_xero_invoices, get_stripe_mrr, get_hubspot_pipeline, get_company_metrics</div>
+    </div>
+
+    <div class="agent-card">
+      <div class="agent-name">🌅 Morning Briefing Agent <span class="badge b-soon">MONDAY</span></div>
+      <div class="agent-desc">Runs automatically at 7am. Checks every portfolio company against health thresholds, identifies what's changed overnight, generates a prioritised briefing, and emails it. The platform works while you sleep.</div>
+      <div class="agent-tools">Tools: portfolio scan, threshold detection, email dispatch, Grok narrative generation</div>
+    </div>
+
+    <div class="agent-card">
+      <div class="agent-name">💬 Multi-Turn Conversation <span class="badge b-soon">TUESDAY</span></div>
+      <div class="agent-desc">Persistent conversation interface where each turn has context from the previous one. "Tell me about CareOS" → "Why is burn high?" → "What would a bridge look like?" — like having an analyst on call 24/7.</div>
+      <div class="agent-tools">Tools: conversation history, all data APIs, Grok with system context</div>
+    </div>
+
+    <div class="agent-card">
+      <div class="agent-name">🎯 Domain-Specialist Agents <span class="badge b-soon">TUESDAY</span></div>
+      <div class="agent-desc">Dedicated agents per domain — Finance Agent with deep accounting expertise, Sales Agent that understands pipeline dynamics, Risk Agent that monitors covenant and compliance thresholds. Each with specialist prompting and relevant tool access.</div>
+      <div class="agent-tools">Tools: domain-specific APIs, specialist system prompts, cross-agent coordination</div>
+    </div>
+  </div>
+</div>
+
+<!-- Scale to 100 systems -->
+<div class="section" id="scale">
+  <div class="section-eyebrow">Scaling to 100+ integrations</div>
+  <div class="section-title">Built for <em>enterprise scale</em> from day one.</div>
+  <p class="section-intro">The platform's architecture was designed with 100+ integrations in mind, not retrofitted for it. Every integration follows the same pattern — a serverless function, a set of environment variables, and a data mapper. Adding a new system is a predictable, repeatable process.</p>
+
+  <div class="scale-grid">
+    <div class="scale-card">
+      <div class="scale-num">~2h</div>
+      <div class="scale-label">Per new integration</div>
+      <div class="scale-desc">A new API-key integration (e.g. a new data provider) takes roughly 2 hours to build, test, and deploy. An OAuth integration (like Xero) takes 4-6 hours including the auth flow.</div>
+    </div>
+
+    <div class="scale-card">
+      <div class="scale-num">£0</div>
+      <div class="scale-label">Infrastructure cost to add</div>
+      <div class="scale-desc">Vercel's serverless model means each new integration adds zero fixed infrastructure cost. Functions only run when called — the platform scales to 100 integrations without a server resize.</div>
+    </div>
+
+    <div class="scale-card">
+      <div class="scale-num">1</div>
+      <div class="scale-label">File per integration</div>
+      <div class="scale-desc">Each integration is a single serverless function file. Xero is 5 files (due to OAuth complexity). Stripe, HubSpot, and every future API-key integration is a single file.</div>
+    </div>
+
+    <div class="scale-card">
+      <div class="scale-num">∞</div>
+      <div class="scale-label">Portfolio companies</div>
+      <div class="scale-desc">The five current companies are seed data. The data layer is built to accept any number of portfolio companies — each connecting their own Xero, Stripe, HubSpot accounts to their own view.</div>
+    </div>
+  </div>
+
+  <div class="highlight" style="margin-top:24px">
+    <div class="highlight-label">The 100-system architecture</div>
+    <div class="highlight-text">Every integration follows the same four-layer pattern: (1) a serverless API function that authenticates and fetches data, (2) a data mapper that normalises the response into the platform's standard shape, (3) a source tag that marks the data as live, simulated, or stale, and (4) a fallback to representative data if the connection is unavailable. This means any of the 100 integrations can go offline without breaking a single screen. The pattern is proven with six live integrations — the remaining 94 are repetitions of the same process, not new engineering problems.</div>
+  </div>
+
+  <p style="font-size:13px;font-weight:600;color:var(--txt1);margin:32px 0 16px;text-transform:uppercase;letter-spacing:1px;">What 100 integrations looks like</p>
+
+  <div class="int-list">
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">Accounting & Finance <span class="badge b-live">6 live</span></div>
+        <div class="int-desc">Xero ✓, QuickBooks, Sage X3, NetSuite, FreeAgent, Kashflow, Exact — any cloud accounting system with an API connects in the same pattern as Xero.</div>
+      </div>
+    </div>
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">CRM & Sales <span class="badge b-live">1 live</span></div>
+        <div class="int-desc">HubSpot ✓, Salesforce, Pipedrive, Zoho CRM, Monday Sales, Close, Copper — all follow the same deal/contact/company data pattern.</div>
+      </div>
+    </div>
+    <div class="int-item">
+      <div class="int-status" style="background:var(--green)"></div>
+      <div class="int-body">
+        <div class="int-name">Billing & Revenue <span class="badge b-live">1 live</span></div>
+        <div class="int-desc">Stripe ✓, Chargebee, Recurly, Paddle, Braintree, GoCardless — all expose MRR, churn, and subscription data in the same shape.</div>
+      </div>
+    </div>
+    <div class="int-item">
+      <div class="int-status" style="background:var(--blue)"></div>
+      <div class="int-body">
+        <div class="int-name">HR & People</div>
+        <div class="int-desc">BambooHR, Workday, HiBob, Personio, CharlieHR, Factorial — headcount, attrition, and payroll data for the people module.</div>
+      </div>
+    </div>
+    <div class="int-item">
+      <div class="int-status" style="background:var(--blue)"></div>
+      <div class="int-body">
+        <div class="int-name">Banking & Treasury</div>
+        <div class="int-desc">TrueLayer, Plaid, Yapily, Nordigen — Open Banking feeds for real cash balances across multiple bank accounts.</div>
+      </div>
+    </div>
+    <div class="int-item">
+      <div class="int-status" style="background:var(--blue)"></div>
+      <div class="int-body">
+        <div class="int-name">Operations & Support</div>
+        <div class="int-desc">Zendesk, Intercom, Freshdesk, Jira, Linear, Asana — ticket volumes, SLA performance, and engineering velocity metrics.</div>
+      </div>
+    </div>
+    <div class="int-item">
+      <div class="int-status" style="background:var(--blue)"></div>
+      <div class="int-body">
+        <div class="int-name">Market Data & Intelligence</div>
+        <div class="int-desc">Yahoo Finance ✓, Alpha Vantage ✓, Bloomberg API, Refinitiv, PitchBook, Dealroom — market context and comparable company data.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Roadmap -->
+<div class="section" id="roadmap">
+  <div class="section-eyebrow">Roadmap</div>
+  <div class="section-title">From prototype to <em>product.</em></div>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-marker">
+        <div class="tl-dot done"></div>
+        <div class="tl-day">Today</div>
+      </div>
+      <div>
+        <div class="tl-title">Demo-ready prototype ✓</div>
+        <div class="tl-desc">Six live integrations, nine screens, four-level finance drill-downs, AI board pack generation, scenario planning, IRR/MOIC tracker, RAG heatmap. Deployed and accessible now.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-marker">
+        <div class="tl-dot next"></div>
+        <div class="tl-day">Mon</div>
+      </div>
+      <div>
+        <div class="tl-title">Caledonia branding + AI agent depth</div>
+        <div class="tl-desc">Full Caledonia Alba identity applied throughout. Tool-use AI agents that fetch live data autonomously. Morning briefing agent. Mobile responsive layout.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-marker">
+        <div class="tl-dot next"></div>
+        <div class="tl-day">Tue</div>
+      </div>
+      <div>
+        <div class="tl-title">Multi-turn conversation + domain agents + rehearsal</div>
+        <div class="tl-desc">Persistent AI conversation interface. Specialist Finance, Sales, and Risk agents. Demo script. End-to-end rehearsal across devices. Final deploy.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-marker">
+        <div class="tl-dot"></div>
+        <div class="tl-day">12 mo</div>
+      </div>
+      <div>
+        <div class="tl-title">Production platform</div>
+        <div class="tl-desc">Multi-tenancy (each portfolio company has their own secure instance), enterprise integrations, full security and compliance audit, the complete AI agent layer, and a commercial licensing model.</div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-marker">
+        <div class="tl-dot"></div>
+        <div class="tl-day">Phase 2</div>
+      </div>
+      <div>
+        <div class="tl-title">FP&A workspace</div>
+        <div class="tl-desc">Budgeting, variance analysis, rolling forecasts, and live scenario modelling — turning the platform from an intelligence layer into a full planning tool. The platform becomes the system of record, not just the view on top of it.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div style="margin-bottom:16px"><svg width="36" height="28" viewBox="0 0 44 34" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block;vertical-align:middle">
+  <line x1="4" y1="32" x2="20" y2="4" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="20" y1="4" x2="36" y2="32" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="11" y1="22" x2="29" y2="22" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <line x1="36" y1="4" x2="36" y2="32" stroke="white" stroke-width="3" stroke-linecap="square"/>
+  <path d="M36 4 L42 4 Q44 4 44 10 Q44 16 42 16 L36 16" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="square"/>
+</svg></div>
+  <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:16px">
+    <svg width="44" height="48" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+    <div style="font-size:9px;font-weight:600;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.5);font-family:'Space Grotesk',sans-serif">ALBA PIP</div>
+  </div>
+  <div class="footer-title">See it for yourself.</div>
+  <div class="footer-sub">The platform is live now. Open it on a laptop for the full experience.</div>
+  <a href="https://alba-pip.vercel.app" target="_blank" class="footer-url">
+    Open Alba PIP →
+  </a>
+  <div class="footer-conf">Alba PIP · Caledonia Alba · Portfolio Intelligence Platform · Confidential</div>
+</footer>
+
+</body>
+</html>

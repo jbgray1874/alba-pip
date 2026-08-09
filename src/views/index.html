@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Caledonia Alba — Alba PIP. The AI Operating System for Private Capital. Built for PE and VC fund managers in Southeast Asia and the Middle East.">
+<title>Alba PIP — Caledonia Alba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,600&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+:root{
+  --black:#050505;
+  --black2:#0A0A08;
+  --gold:#C8A84B;
+  --goldb:#E0C870;
+  --golddim:#8A7030;
+  --white:#F5F0E8;
+  --grey:#8A8070;
+  --greydim:#3A3528;
+  --border:#1E1C12;
+}
+
+body{
+  background:var(--black);
+  color:var(--white);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:16px;
+  line-height:1.65;
+  overflow-x:hidden;
+}
+
+::selection{background:rgba(200,168,75,0.3);color:var(--white)}
+
+/* ─── TYPOGRAPHY ─── */
+.serif{font-family:'Fraunces',serif}
+.mono{font-family:'JetBrains Mono',monospace}
+.gold{color:var(--gold)}
+.label{
+  font-size:10px;font-weight:600;
+  letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);
+}
+.rule{width:40px;height:1px;background:var(--gold);display:block;margin:16px 0}
+
+/* ─── NAV ─── */
+.nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:20px 48px;
+  transition:background 0.3s,padding 0.3s;
+}
+.nav.scrolled{
+  background:rgba(5,5,5,0.96);
+  backdrop-filter:blur(20px);
+  padding:14px 48px;
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  display:flex;align-items:center;gap:14px;
+  text-decoration:none;
+}
+.nav-wordmark{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:13px;font-weight:600;
+  letter-spacing:5px;text-transform:uppercase;
+  color:var(--white);
+}
+.nav-links{
+  display:flex;align-items:center;gap:6px;
+}
+.nav-links a{
+  font-size:11px;font-weight:500;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--grey);text-decoration:none;
+  padding:8px 14px;
+  transition:color 0.2s;
+}
+.nav-links a:hover{color:var(--white)}
+.nav-enquire{
+  font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--gold);
+  padding:9px 20px;
+  border:1px solid rgba(200,168,75,0.5);
+  border-radius:0;
+  text-decoration:none;
+  transition:all 0.2s;
+  margin-left:8px;
+}
+.nav-enquire:hover{background:var(--gold);color:var(--black)}
+.nav-burger{
+  display:none;background:none;border:none;
+  color:var(--grey);font-size:20px;cursor:pointer;
+}
+
+/* ─── HERO ─── */
+.hero{
+  min-height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;
+  padding:120px 48px 80px;
+  position:relative;overflow:hidden;
+  gap:60px;
+}
+
+/* Golden pyramid visual — CSS only */
+.hero-visual{
+  position:relative;
+  display:flex;align-items:center;justify-content:center;
+  min-height:500px;
+}
+.pyramid-wrap{
+  position:relative;
+  width:400px;height:400px;
+}
+.pyramid-glow{
+  position:absolute;
+  bottom:0;left:50%;
+  transform:translateX(-50%);
+  width:300px;height:200px;
+  background:radial-gradient(ellipse at center bottom,rgba(200,168,75,0.35) 0%,transparent 70%);
+  pointer-events:none;
+}
+.pyramid-outer{
+  position:absolute;
+  bottom:30px;left:50%;
+  transform:translateX(-50%);
+  width:0;height:0;
+  border-left:160px solid transparent;
+  border-right:160px solid transparent;
+  border-bottom:240px solid transparent;
+  border-image:none;
+  filter:drop-shadow(0 0 30px rgba(200,168,75,0.4));
+}
+.pyramid-lines{
+  position:absolute;
+  bottom:30px;left:50%;
+  transform:translateX(-50%);
+  width:320px;height:240px;
+}
+.pyramid-apex-glow{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:6px;height:6px;
+  border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 20px 8px rgba(200,168,75,0.5),0 0 60px 20px rgba(200,168,75,0.2);
+}
+.grid-lines{
+  position:absolute;bottom:0;left:0;right:0;
+  height:120px;
+  background:
+    repeating-linear-gradient(90deg,rgba(200,168,75,0.1) 0px,transparent 1px,transparent 40px,rgba(200,168,75,0.1) 40px),
+    repeating-linear-gradient(0deg,rgba(200,168,75,0.1) 0px,transparent 1px,transparent 30px,rgba(200,168,75,0.1) 30px);
+  mask-image:linear-gradient(to top,rgba(0,0,0,0.5),transparent);
+}
+
+.hero-content{position:relative;z-index:2}
+.hero-tag{
+  display:inline-block;
+  font-size:10px;font-weight:500;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:32px;
+}
+.hero h1{
+  font-family:'Fraunces',serif;
+  font-size:clamp(36px,4.5vw,60px);
+  font-weight:300;line-height:1.05;
+  color:var(--white);
+  margin-bottom:24px;
+}
+.hero h1 .accent{color:var(--gold);font-style:italic}
+.hero-sub{
+  font-size:15px;color:var(--grey);
+  line-height:1.8;
+  margin-bottom:40px;
+  max-width:440px;
+  font-weight:300;
+}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.btn-outline{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--white);
+  padding:13px 26px;
+  border:1px solid rgba(255,255,255,0.25);
+  text-decoration:none;
+  transition:all 0.2s;
+}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.btn-gold{
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--black);
+  padding:13px 26px;
+  background:var(--gold);
+  text-decoration:none;
+  transition:all 0.2s;
+  border:1px solid var(--gold);
+}
+.btn-gold:hover{background:var(--goldb)}
+
+/* ─── DIVIDER ─── */
+.divider{
+  border:none;
+  border-top:1px solid var(--border);
+  margin:0;
+}
+
+/* ─── SECTION BASE ─── */
+.section{padding:96px 48px}
+.section-inner{max-width:1200px;margin:0 auto}
+
+/* ─── WHAT IT DOES ─── */
+.what-section{
+  background:var(--black2);
+  padding:96px 48px;
+}
+.what-inner{
+  max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 2fr;
+  gap:80px;align-items:center;
+}
+.radar-icon{
+  width:120px;height:120px;
+  position:relative;
+  flex-shrink:0;
+}
+.radar-ring{
+  position:absolute;border-radius:50%;
+  border:1px solid rgba(200,168,75,0.2);
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+}
+.radar-center{
+  position:absolute;
+  width:8px;height:8px;border-radius:50%;
+  background:var(--gold);
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  box-shadow:0 0 16px 4px rgba(200,168,75,0.4);
+}
+.what-headline{
+  font-family:'Fraunces',serif;
+  font-size:clamp(28px,3.5vw,48px);
+  font-weight:300;line-height:1.2;
+  color:var(--white);
+}
+.what-headline .accent{color:var(--gold);font-style:italic}
+
+/* ─── PILLARS ─── */
+.pillars{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-top:1px solid var(--border);
+  border-left:1px solid var(--border);
+}
+.pillar{
+  padding:36px 28px;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  transition:background 0.2s;
+}
+.pillar:hover{background:rgba(200,168,75,0.04)}
+.pillar-icon{font-size:20px;margin-bottom:14px;opacity:0.7}
+.pillar-title{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--white);margin-bottom:10px;
+}
+.pillar-desc{font-size:12px;color:var(--grey);line-height:1.7;font-weight:300}
+
+/* ─── PLATFORM SECTION ─── */
+.platform-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:0;
+  border:1px solid var(--border);
+  margin-top:56px;
+}
+.platform-item{
+  padding:36px;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
+.platform-item:nth-child(3n){border-right:none}
+.platform-item:nth-last-child(-n+3){border-bottom:none}
+.platform-item:hover{background:rgba(200,168,75,0.03)}
+.pi-num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--golddim);
+  margin-bottom:16px;
+}
+.pi-title{font-size:16px;font-weight:500;color:var(--white);margin-bottom:10px}
+.pi-desc{font-size:13px;color:var(--grey);line-height:1.7;font-weight:300}
+.pi-tag{
+  display:inline-block;margin-top:14px;
+  font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--gold);
+  padding:4px 10px;border:1px solid var(--golddim);
+}
+
+/* ─── MARKETS ─── */
+.markets-bg{background:var(--black2)}
+.markets-split{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:0;margin-top:56px;
+  border:1px solid var(--border);
+}
+.market-col{
+  padding:48px;
+  border-right:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.market-col:last-child{border-right:none}
+.market-region-label{
+  font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:20px;
+}
+.market-aum{
+  font-family:'Fraunces',serif;
+  font-size:56px;font-weight:300;
+  color:var(--white);line-height:1;
+  margin-bottom:6px;
+}
+.market-aum-sub{font-size:12px;color:var(--grey);margin-bottom:28px}
+.market-body{font-size:14px;color:var(--grey);line-height:1.8;font-weight:300}
+.market-cities{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:24px;
+}
+.city{
+  font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--grey);padding:5px 12px;border:1px solid var(--border);
+}
+
+/* ─── INTEGRATIONS ─── */
+.int-row{
+  display:flex;flex-wrap:wrap;gap:0;
+  border-top:1px solid var(--border);
+  border-left:1px solid var(--border);
+  margin-top:48px;
+}
+.int-item{
+  padding:16px 24px;
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  min-width:150px;
+}
+.int-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.int-name{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--grey)}
+.int-status{
+  font-size:8px;letter-spacing:1px;text-transform:uppercase;
+  margin-left:auto;font-weight:600;
+}
+
+/* ─── TEAM ─── */
+.team-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:0;margin-top:56px;
+  border:1px solid var(--border);
+}
+.team-member{
+  padding:56px 48px;
+  border-right:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.team-member:last-child{border-right:none}
+.member-initials{
+  width:64px;height:64px;
+  border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Fraunces',serif;font-size:22px;font-weight:300;
+  color:var(--gold);margin-bottom:28px;
+}
+.member-name{
+  font-family:'Fraunces',serif;
+  font-size:28px;font-weight:300;
+  color:var(--white);margin-bottom:6px;
+}
+.member-role{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:24px;
+}
+.member-bio{font-size:14px;color:var(--grey);line-height:1.8;font-weight:300;margin-bottom:24px}
+.member-tags{display:flex;flex-direction:column;gap:6px}
+.member-tag{
+  font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--greydim);
+}
+.member-locations{
+  display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;
+}
+.loc-chip{
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--grey);
+  padding:4px 10px;border:1px solid var(--border);
+}
+
+/* ─── APPROACH ─── */
+.approach-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:0;margin-top:56px;
+  border:1px solid var(--border);
+}
+.approach-item{
+  padding:44px 36px;
+  border-right:1px solid var(--border);
+}
+.approach-item:last-child{border-right:none}
+.approach-num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--golddim);
+  letter-spacing:1px;margin-bottom:20px;
+}
+.approach-title{
+  font-family:'Fraunces',serif;
+  font-size:22px;font-weight:300;
+  color:var(--white);margin-bottom:14px;
+  font-style:italic;
+}
+.approach-body{font-size:13px;color:var(--grey);line-height:1.8;font-weight:300}
+
+/* ─── INVESTORS ─── */
+.investors-bg{background:var(--black2)}
+.investors-row{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:80px;align-items:start;
+  margin-top:56px;
+}
+.inv-raise{
+  border:1px solid var(--border);
+  padding:40px;
+}
+.inv-raise-title{
+  font-family:'Fraunces',serif;
+  font-size:36px;font-weight:300;
+  color:var(--white);margin-bottom:8px;
+}
+.inv-raise-title em{color:var(--gold);font-style:italic}
+.inv-raise-sub{font-size:13px;color:var(--grey);margin-bottom:28px;font-weight:300}
+.inv-metrics{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);
+  margin-bottom:28px;
+}
+.inv-metric{
+  background:var(--black);
+  padding:20px;text-align:center;
+}
+.inv-metric-val{
+  font-family:'Fraunces',serif;
+  font-size:24px;color:var(--gold);line-height:1;margin-bottom:4px;
+}
+.inv-metric-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--grey)}
+.inv-talking{margin-top:36px}
+.inv-talking-title{
+  font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+  color:var(--grey);margin-bottom:16px;
+}
+.inv-firm{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.inv-firm:first-of-type{border-top:1px solid var(--border)}
+.inv-firm-name{color:var(--white);font-weight:400}
+.inv-firm-loc{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--grey)}
+.inv-body{
+  font-size:14px;color:var(--grey);line-height:1.85;font-weight:300;
+}
+.inv-body p+p{margin-top:16px}
+
+/* ─── ENQUIRE ─── */
+.enquire-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:80px;align-items:start;
+  margin-top:56px;
+}
+.enquire-info h3{
+  font-family:'Fraunces',serif;
+  font-size:28px;font-weight:300;
+  color:var(--white);margin-bottom:16px;
+  font-style:italic;
+}
+.enquire-info p{font-size:14px;color:var(--grey);line-height:1.8;font-weight:300;margin-bottom:24px}
+.enquire-detail{
+  display:flex;gap:20px;
+  padding:14px 0;border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+.enquire-detail:first-child{border-top:1px solid var(--border)}
+.ed-label{
+  font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--grey);min-width:80px;padding-top:1px;
+}
+.ed-val{color:var(--white);font-weight:300}
+.enquire-form{border:1px solid var(--border);padding:40px}
+.form-group{margin-bottom:20px}
+.form-label{
+  display:block;font-size:10px;font-weight:600;
+  letter-spacing:2px;text-transform:uppercase;
+  color:var(--grey);margin-bottom:8px;
+}
+.form-control{
+  width:100%;background:transparent;
+  border:none;border-bottom:1px solid var(--border);
+  color:var(--white);font-family:'Space Grotesk',sans-serif;
+  font-size:14px;font-weight:300;
+  padding:10px 0;outline:none;
+  transition:border-color 0.2s;
+}
+.form-control:focus{border-color:var(--gold)}
+.form-control::placeholder{color:var(--greydim)}
+select.form-control option{background:var(--black2);color:var(--white)}
+.form-btn{
+  width:100%;padding:14px;
+  background:transparent;
+  border:1px solid var(--gold);
+  color:var(--gold);
+  font-family:'Space Grotesk',sans-serif;
+  font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;margin-top:8px;
+  transition:all 0.2s;
+}
+.form-btn:hover{background:var(--gold);color:var(--black)}
+.form-note{font-size:11px;color:var(--grey);text-align:center;margin-top:12px}
+
+/* ─── FOOTER ─── */
+.footer{
+  background:var(--black);
+  border-top:1px solid var(--border);
+  padding:60px 48px 40px;
+}
+.footer-top{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:48px;
+  flex-wrap:wrap;gap:40px;
+}
+.footer-logo-area{max-width:320px}
+.footer-brand{
+  font-size:10px;font-weight:600;letter-spacing:3px;
+  text-transform:uppercase;color:var(--white);
+  margin-top:16px;margin-bottom:10px;
+}
+.footer-tagline{font-size:12px;color:var(--grey);line-height:1.7;font-weight:300}
+.footer-links{display:flex;gap:60px;flex-wrap:wrap}
+.footer-col-title{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--grey);margin-bottom:16px;
+}
+.footer-col ul{list-style:none}
+.footer-col ul li{margin-bottom:10px}
+.footer-col ul a{
+  font-size:13px;color:var(--grey);text-decoration:none;
+  font-weight:300;transition:color 0.15s;
+}
+.footer-col ul a:hover{color:var(--gold)}
+.footer-bottom{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:28px;border-top:1px solid var(--border);
+  flex-wrap:wrap;gap:12px;
+}
+.manifesto{
+  font-size:10px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--grey);
+}
+.footer-legal{font-size:11px;color:var(--greydim)}
+
+/* ─── MOBILE MENU ─── */
+.mobile-menu{
+  display:none;position:fixed;
+  top:60px;left:0;right:0;bottom:0;z-index:190;
+  background:rgba(5,5,5,0.98);
+  backdrop-filter:blur(20px);
+  padding:40px 28px;
+  flex-direction:column;gap:2px;
+}
+.mobile-menu.open{display:flex}
+.mobile-menu a{
+  font-size:13px;font-weight:500;letter-spacing:3px;text-transform:uppercase;
+  color:var(--grey);text-decoration:none;
+  padding:16px 0;border-bottom:1px solid var(--border);
+  transition:color 0.15s;
+}
+.mobile-menu a:hover,
+.mobile-menu a:last-of-type{color:var(--gold)}
+
+/* ─── SCROLL REVEAL ─── */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.7s ease,transform 0.7s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:0.1s}
+.reveal-delay-2{transition-delay:0.2s}
+.reveal-delay-3{transition-delay:0.3s}
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1024px){
+  .hero{grid-template-columns:1fr;padding:100px 28px 60px}
+  .hero-visual{display:none}
+  .what-inner{grid-template-columns:1fr;gap:36px}
+  .pillars{grid-template-columns:1fr 1fr}
+  .platform-grid{grid-template-columns:1fr 1fr}
+  .markets-split{grid-template-columns:1fr}
+  .market-col{border-right:none;border-bottom:1px solid var(--border)}
+  .market-col:last-child{border-bottom:none}
+  .team-grid{grid-template-columns:1fr}
+  .team-member{border-right:none;border-bottom:1px solid var(--border)}
+  .team-member:last-child{border-bottom:none}
+  .approach-grid{grid-template-columns:1fr}
+  .approach-item{border-right:none;border-bottom:1px solid var(--border)}
+  .approach-item:last-child{border-bottom:none}
+  .investors-row{grid-template-columns:1fr}
+  .enquire-grid{grid-template-columns:1fr}
+  .footer-top{flex-direction:column}
+  .section{padding:72px 28px}
+  .what-section{padding:72px 28px}
+}
+@media(max-width:768px){
+  .nav{padding:16px 20px}
+  .nav.scrolled{padding:12px 20px}
+  .nav-links{display:none}
+  .nav-burger{display:block}
+  .hero{padding:90px 20px 56px}
+  .section{padding:56px 20px}
+  .what-section{padding:56px 20px}
+  .pillars{grid-template-columns:1fr}
+  .platform-grid{grid-template-columns:1fr}
+  .platform-item{border-right:none}
+  .inv-metrics{grid-template-columns:1fr 1fr}
+  .footer{padding:48px 20px 32px}
+  .footer-bottom{flex-direction:column;text-align:center}
+  .team-member{padding:36px 24px}
+  .enquire-form{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a href="javascript:void(0)" onclick="document.getElementById('vision')?.scrollIntoView({behavior:'smooth'});return false;" class="nav-logo">
+    <!-- AP Monogram SVG -->
+    <svg width="38" height="42" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+    <span class="nav-wordmark">Alba</span>
+  </a>
+  <div class="nav-links">
+    <a href="javascript:void(0)" onclick="document.getElementById('vision')?.scrollIntoView({behavior:'smooth'});return false;">Vision</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('platform')?.scrollIntoView({behavior:'smooth'});return false;">Platform</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('approach')?.scrollIntoView({behavior:'smooth'});return false;">Approach</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('team')?.scrollIntoView({behavior:'smooth'});return false;">Team</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('enquire')?.scrollIntoView({behavior:'smooth'});return false;" class="nav-enquire">Enquire</a>
+  </div>
+  <button class="nav-burger" id="burger">☰</button>
+</nav>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="javascript:void(0)" onclick="document.getElementById('vision')?.scrollIntoView({behavior:'smooth'});return false;" onclick="closeMobile()">Vision</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('platform')?.scrollIntoView({behavior:'smooth'});return false;" onclick="closeMobile()">Platform</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('approach')?.scrollIntoView({behavior:'smooth'});return false;" onclick="closeMobile()">Approach</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('team')?.scrollIntoView({behavior:'smooth'});return false;" onclick="closeMobile()">Team</a>
+  <a href="javascript:void(0)" onclick="document.getElementById('enquire')?.scrollIntoView({behavior:'smooth'});return false;" onclick="closeMobile()">Enquire</a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="vision">
+  <div class="hero-content">
+    <div class="hero-tag reveal">Caledonia Alba · Portfolio Intelligence</div>
+    <h1 class="reveal reveal-delay-1">
+      Alba is the<br>
+      <span class="accent">AI Operating System</span><br>
+      for Private Capital.
+    </h1>
+    <p class="hero-sub reveal reveal-delay-2">Intelligence beyond the horizon.<br>Built for how private markets operate.</p>
+    <div class="hero-actions reveal reveal-delay-3">
+      <a href="https://alba-pip.vercel.app" target="_blank" class="btn-outline">Explore the Vision →</a>
+      <a href="javascript:void(0)" onclick="document.getElementById('enquire')?.scrollIntoView({behavior:'smooth'});return false;" class="btn-gold">Enquire</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <!-- Golden pyramid / horizon visual -->
+    <div class="pyramid-wrap">
+      <!-- Ambient glow -->
+      <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:360px;height:280px;background:radial-gradient(ellipse at center bottom,rgba(200,168,75,0.18) 0%,transparent 65%);pointer-events:none;"></div>
+      <!-- SVG pyramid with lines -->
+      <svg width="400" height="400" viewBox="0 0 400 400" fill="none" style="position:absolute;bottom:0;left:50%;transform:translateX(-50%)">
+        <!-- Ground grid -->
+        <line x1="0" y1="340" x2="400" y2="340" stroke="rgba(200,168,75,0.15)" stroke-width="1"/>
+        <line x1="0" y1="360" x2="400" y2="360" stroke="rgba(200,168,75,0.1)" stroke-width="1"/>
+        <line x1="0" y1="375" x2="400" y2="375" stroke="rgba(200,168,75,0.07)" stroke-width="1"/>
+        <!-- Perspective grid verticals -->
+        <line x1="200" y1="340" x2="60" y2="400" stroke="rgba(200,168,75,0.08)" stroke-width="1"/>
+        <line x1="200" y1="340" x2="120" y2="400" stroke="rgba(200,168,75,0.08)" stroke-width="1"/>
+        <line x1="200" y1="340" x2="180" y2="400" stroke="rgba(200,168,75,0.08)" stroke-width="1"/>
+        <line x1="200" y1="340" x2="220" y2="400" stroke="rgba(200,168,75,0.08)" stroke-width="1"/>
+        <line x1="200" y1="340" x2="280" y2="400" stroke="rgba(200,168,75,0.08)" stroke-width="1"/>
+        <line x1="200" y1="340" x2="340" y2="400" stroke="rgba(200,168,75,0.08)" stroke-width="1"/>
+        <!-- Main pyramid outline -->
+        <polygon points="200,60 80,340 320,340" stroke="rgba(200,168,75,0.6)" stroke-width="1" fill="none"/>
+        <!-- Inner pyramid lines -->
+        <polygon points="200,100 100,320 300,320" stroke="rgba(200,168,75,0.25)" stroke-width="0.5" fill="none"/>
+        <polygon points="200,140 120,310 280,310" stroke="rgba(200,168,75,0.15)" stroke-width="0.5" fill="none"/>
+        <!-- Center vertical line -->
+        <line x1="200" y1="60" x2="200" y2="340" stroke="rgba(200,168,75,0.2)" stroke-width="0.5" stroke-dasharray="4,6"/>
+        <!-- Horizontal lines within pyramid -->
+        <line x1="140" y1="200" x2="260" y2="200" stroke="rgba(200,168,75,0.2)" stroke-width="0.5"/>
+        <line x1="120" y1="240" x2="280" y2="240" stroke="rgba(200,168,75,0.15)" stroke-width="0.5"/>
+        <line x1="105" y1="280" x2="295" y2="280" stroke="rgba(200,168,75,0.1)" stroke-width="0.5"/>
+        <!-- Apex glow -->
+        <circle cx="200" cy="60" r="3" fill="#C8A84B" opacity="0.9"/>
+        <circle cx="200" cy="60" r="12" fill="none" stroke="rgba(200,168,75,0.3)" stroke-width="1"/>
+        <circle cx="200" cy="60" r="24" fill="none" stroke="rgba(200,168,75,0.15)" stroke-width="0.5"/>
+      </svg>
+      <!-- Floating data cards -->
+      <div style="position:absolute;top:80px;right:0;background:rgba(10,10,8,0.9);border:1px solid rgba(200,168,75,0.25);padding:14px 18px;font-family:'Space Grotesk',sans-serif;">
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#8A8070;margin-bottom:4px;">Portfolio Health</div>
+        <div style="font-family:'Fraunces',serif;font-size:22px;color:#C8A84B;">68/100</div>
+        <div style="font-size:9px;color:#3A3528;letter-spacing:1px;margin-top:2px;">AVG ACROSS 5 COMPANIES</div>
+      </div>
+      <div style="position:absolute;bottom:120px;left:-20px;background:rgba(10,10,8,0.9);border:1px solid rgba(200,168,75,0.2);padding:12px 16px;font-family:'Space Grotesk',sans-serif;">
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#8A8070;margin-bottom:4px;">AI Agent</div>
+        <div style="font-size:11px;color:#F5F0E8;font-weight:500;">Investigation Complete</div>
+        <div style="font-size:9px;color:#C8A84B;margin-top:2px;">Root cause identified</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WHAT IT DOES -->
+<div class="what-section" id="platform">
+  <div class="what-inner">
+    <div class="reveal">
+      <div class="label">What it does</div>
+      <hr class="rule">
+      <div class="radar-icon" style="width:80px;height:80px;position:relative;margin-top:8px">
+        <div class="radar-ring" style="width:80px;height:80px"></div>
+        <div class="radar-ring" style="width:52px;height:52px"></div>
+        <div class="radar-ring" style="width:26px;height:26px"></div>
+        <div class="radar-center"></div>
+      </div>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <h2 class="what-headline">
+        It gives investment firms<br>
+        <span class="accent">real-time visibility</span><br>
+        into every portfolio company.
+      </h2>
+      <p style="font-size:15px;color:var(--grey);line-height:1.8;margin-top:20px;font-weight:300;max-width:520px">
+        From a single red flag on the fund dashboard to the individual invoice behind it — in four clicks. 
+        Connected to the real systems each company uses. Powered by AI agents that investigate, diagnose, and brief — autonomously.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- PILLARS -->
+<div class="section" style="padding-top:0;padding-bottom:0">
+  <div class="section-inner">
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="pillar-icon">◎</div>
+        <div class="pillar-title">Real-Time Visibility</div>
+        <div class="pillar-desc">Live health scores across every portfolio company, every department. The moment a threshold breaches, the platform knows.</div>
+      </div>
+      <div class="pillar reveal reveal-delay-1">
+        <div class="pillar-icon">◈</div>
+        <div class="pillar-title">AI-Powered Insights</div>
+        <div class="pillar-desc">Agents that investigate root causes, draft board packs, and send morning briefings without being asked.</div>
+      </div>
+      <div class="pillar reveal reveal-delay-2">
+        <div class="pillar-icon">◇</div>
+        <div class="pillar-title">Enterprise-Grade Security</div>
+        <div class="pillar-desc">OAuth-authenticated integrations, encrypted credentials, audit trails, and multi-region data residency on the production roadmap.</div>
+      </div>
+      <div class="pillar reveal reveal-delay-3">
+        <div class="pillar-icon">◉</div>
+        <div class="pillar-title">Built for Private Markets</div>
+        <div class="pillar-desc">PE and VC fund structures, multi-entity consolidation, IRR and MOIC tracking. Not adapted from a generic dashboard — purpose-built.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PLATFORM DETAIL -->
+<div class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="label">Platform capabilities</div>
+      <h2 class="serif" style="font-size:clamp(26px,3vw,38px);font-weight:300;color:var(--white);margin-top:12px;line-height:1.2">
+        Nine screens. Twelve agents.<br><em style="color:var(--gold)">One intelligence layer.</em>
+      </h2>
+    </div>
+    <div class="platform-grid">
+      <div class="platform-item reveal">
+        <div class="pi-num">01</div>
+        <div class="pi-title">GP Dashboard</div>
+        <div class="pi-desc">All portfolio companies with health score, runway, revenue vs budget, and 12-month trend. Sort by any metric. One view of everything.</div>
+        <span class="pi-tag">Live now</span>
+      </div>
+      <div class="platform-item reveal reveal-delay-1">
+        <div class="pi-num">02</div>
+        <div class="pi-title">Finance Drill-Downs</div>
+        <div class="pi-desc">Click any metric and go four levels deep — from cash runway to the individual overdue invoices behind it. Real Xero data at the bottom. Everything reconciles.</div>
+        <span class="pi-tag">Xero live</span>
+      </div>
+      <div class="platform-item reveal reveal-delay-2">
+        <div class="pi-num">03</div>
+        <div class="pi-title">AI Investigation Agent</div>
+        <div class="pi-desc">When a company hits red, the agent fetches live data across all connected systems, identifies the root cause, and recommends the single most important action.</div>
+        <span class="pi-tag">Grok powered</span>
+      </div>
+      <div class="platform-item reveal">
+        <div class="pi-num">04</div>
+        <div class="pi-title">Board Pack Generation</div>
+        <div class="pi-desc">Select a company. Click generate. A full structured board pack — executive summary, metrics, risks, opportunities, actions — in under 30 seconds.</div>
+        <span class="pi-tag">AI generated</span>
+      </div>
+      <div class="platform-item reveal reveal-delay-1">
+        <div class="pi-num">05</div>
+        <div class="pi-title">Scenario Planning</div>
+        <div class="pi-desc">Drag burn rate and revenue sliders. Watch cash runway and the 6-month projection recalculate live. The kind of tool a CFO uses in a board meeting.</div>
+        <span class="pi-tag">Interactive</span>
+      </div>
+      <div class="platform-item reveal reveal-delay-2">
+        <div class="pi-num">06</div>
+        <div class="pi-title">Morning Portfolio Brief</div>
+        <div class="pi-desc">Delivered at 7am. Checks every company across every connected system. Flags what changed overnight, what breached a threshold, what needs action today.</div>
+        <span class="pi-tag">Autonomous</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INTEGRATIONS -->
+<div class="section" style="padding-top:0" id="integrations">
+  <div class="section-inner">
+    <div class="label reveal" style="margin-bottom:8px">Connected systems</div>
+    <div class="int-row reveal">
+      <div class="int-item"><div class="int-dot" style="background:#3FB984"></div><span class="int-name">Xero</span><span class="int-status" style="color:#3FB984">Live</span></div>
+      <div class="int-item"><div class="int-dot" style="background:#9B6DFF"></div><span class="int-name">xAI Grok</span><span class="int-status" style="color:#9B6DFF">Live</span></div>
+      <div class="int-item"><div class="int-dot" style="background:#3FB984"></div><span class="int-name">Stripe</span><span class="int-status" style="color:#3FB984">Live</span></div>
+      <div class="int-item"><div class="int-dot" style="background:#3FB984"></div><span class="int-name">HubSpot</span><span class="int-status" style="color:#3FB984">Live</span></div>
+      <div class="int-item"><div class="int-dot" style="background:#3FB984"></div><span class="int-name">Yahoo Finance</span><span class="int-status" style="color:#3FB984">Live</span></div>
+      <div class="int-item"><div class="int-dot" style="background:#3FB984"></div><span class="int-name">Alpha Vantage</span><span class="int-status" style="color:#3FB984">Live</span></div>
+      <div class="int-item"><div class="int-dot" style="background:var(--golddim)"></div><span class="int-name">Bloomberg</span><span class="int-status" style="color:var(--golddim)">Roadmap</span></div>
+      <div class="int-item"><div class="int-dot" style="background:var(--golddim)"></div><span class="int-name">Sage X3</span><span class="int-status" style="color:var(--golddim)">Roadmap</span></div>
+      <div class="int-item"><div class="int-dot" style="background:var(--golddim)"></div><span class="int-name">Citi Velocity</span><span class="int-status" style="color:var(--golddim)">Roadmap</span></div>
+      <div class="int-item"><div class="int-dot" style="background:var(--golddim)"></div><span class="int-name">Nomura</span><span class="int-status" style="color:var(--golddim)">Roadmap</span></div>
+      <div class="int-item"><div class="int-dot" style="background:var(--golddim)"></div><span class="int-name">Salesforce</span><span class="int-status" style="color:var(--golddim)">Roadmap</span></div>
+      <div class="int-item"><div class="int-dot" style="background:var(--golddim)"></div><span class="int-name">Workday</span><span class="int-status" style="color:var(--golddim)">Roadmap</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- MARKETS / APPROACH -->
+<div class="section markets-bg" id="approach">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="label">Market focus</div>
+      <h2 class="serif" style="font-size:clamp(26px,3vw,38px);font-weight:300;color:var(--white);margin-top:12px;line-height:1.2">
+        The two fastest-growing private capital<br>markets in the world. <em style="color:var(--gold)">Both underserved.</em>
+      </h2>
+      <p style="font-size:14px;color:var(--grey);line-height:1.8;margin-top:16px;font-weight:300;max-width:640px">
+        Western PE monitoring platforms cost £80,000–200,000 per year, are built for US and European fund structures, and offer no meaningful AI. Neither Southeast Asia nor the Middle East has a native, AI-first alternative. We are building it.
+      </p>
+    </div>
+    <div class="markets-split">
+      <div class="market-col reveal">
+        <div class="market-region-label">Southeast Asia</div>
+        <div class="market-aum">$340B+</div>
+        <div class="market-aum-sub">PE & private capital AUM managed from Singapore</div>
+        <div class="market-body">
+          The fastest-growing PE market globally. Fund managers overseeing assets across Indonesia, Vietnam, Thailand, Malaysia, and the Philippines are dealing with multi-currency complexity, fragmented data, and no adequate monitoring tooling. Most are still on Excel.<br><br>
+          Singapore as the regional hub gives access to Temasek, GIC, Vertex Ventures, and Insignia Ventures — both as potential investors in Caledonia Alba and as the LP base of our target clients.
+        </div>
+        <div class="market-cities">
+          <span class="city">Singapore</span>
+          <span class="city">Jakarta</span>
+          <span class="city">Kuala Lumpur</span>
+          <span class="city">Bangkok</span>
+          <span class="city">Ho Chi Minh City</span>
+        </div>
+      </div>
+      <div class="market-col reveal reveal-delay-1">
+        <div class="market-region-label">Middle East</div>
+        <div class="market-aum">$700B+</div>
+        <div class="market-aum-sub">Saudi PIF AUM alone</div>
+        <div class="market-body">
+          Vision 2030 is deploying capital at unprecedented pace. The UAE hosts Mubadala, ADIA, and hundreds of family offices managing generational wealth. Price sensitivity is low. Appetite for premium AI technology is high — government-backed AI mandates actively drive adoption.<br><br>
+          Abu Dhabi and Dubai are the twin hubs — DIFC and ADGM as the regulatory frameworks, FAB, Emirates NBD, and the sovereign vehicles as the anchor relationships.
+        </div>
+        <div class="market-cities">
+          <span class="city">Dubai</span>
+          <span class="city">Abu Dhabi</span>
+          <span class="city">Riyadh</span>
+          <span class="city">Doha</span>
+          <span class="city">Manama</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- APPROACH -->
+<div class="section">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="label">Our approach</div>
+      <h2 class="serif" style="font-size:clamp(26px,3vw,38px);font-weight:300;color:var(--white);margin-top:12px">
+        Three principles. <em style="color:var(--gold)">Non-negotiable.</em>
+      </h2>
+    </div>
+    <div class="approach-grid">
+      <div class="approach-item reveal">
+        <div class="approach-num">01</div>
+        <div class="approach-title">Data before narrative.</div>
+        <div class="approach-body">Every insight the platform surfaces is grounded in a real data source. Every AI output cites its evidence. The morning briefing isn't a summary of what was already known — it's a diagnosis of what changed, with the data to back it. We never generate confident numbers without the underlying data to support them.</div>
+      </div>
+      <div class="approach-item reveal reveal-delay-1">
+        <div class="approach-num">02</div>
+        <div class="approach-title">Integration as the moat.</div>
+        <div class="approach-body">A platform that connects deeply to an organisation's accounting system, bank feeds, CRM, billing, and HR is extraordinarily difficult to displace. Every integration we add deepens the switching cost and increases the platform's value. We are building for depth of connection, not breadth of features.</div>
+      </div>
+      <div class="approach-item reveal reveal-delay-2">
+        <div class="approach-num">03</div>
+        <div class="approach-title">Built independent.</div>
+        <div class="approach-body">Caledonia Alba is not funded by a strategic investor with a conflicting agenda. We have no obligation to any single data provider, integration partner, or market. The platform is built to serve the fund manager, full stop. Independence is a design principle, not a marketing claim.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- TEAM -->
+<div class="section" id="team">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="label">Team</div>
+      <h2 class="serif" style="font-size:clamp(26px,3vw,38px);font-weight:300;color:var(--white);margin-top:12px;line-height:1.2">
+        Built by people who<br><em style="color:var(--gold)">lived the problem.</em>
+      </h2>
+    </div>
+    <div class="team-grid">
+      <div class="team-member reveal">
+        <div class="member-initials">JG</div>
+        <div class="member-name">James Gray</div>
+        <div class="member-role">Co-Founder · Technology &amp; AI</div>
+        <div class="member-bio">
+          James brings deep front-office investment banking experience — building and leading technology platforms handling real-time position data, P&L, and risk analytics across institutional trading operations at major banks.
+          <br><br>
+          As an AI and Systems executive, he combines financial markets domain expertise with hands-on AI platform architecture. He built the first version of Alba PIP in days — demonstrating the kind of execution velocity that comes from knowing exactly what the problem is and exactly how to solve it.
+          <br><br>
+          Based in the UK, James now applies the rigour of institutional trading infrastructure to portfolio intelligence for private capital.
+        </div>
+        <div class="member-tags">
+          <span class="member-tag">Technology · Innovation · Execution</span>
+        </div>
+        <div class="member-locations">
+          <span class="loc-chip">United Kingdom</span>
+          <span class="loc-chip">Investment Banking</span>
+          <span class="loc-chip">AI Architecture</span>
+        </div>
+      </div>
+      <div class="team-member reveal reveal-delay-1">
+        <div class="member-initials">GM</div>
+        <div class="member-name">Gerard Milligan</div>
+        <div class="member-role">Co-Founder · Strategy &amp; Markets</div>
+        <div class="member-bio">
+          Gerard has 20 years of experience building and scaling organisations across Europe, Asia, and the Middle East. As Chief of Staff for a multi-industry group with Fintech and Telecoms arms delivering over $0.5Bn in revenue, he ran programmes, built teams, and executed across some of the most complex operating environments in private markets.
+          <br><br>
+          As Country Manager and Board Member in Singapore, he grew operations by over 80% in four years. A Master's graduate in Software Engineering with a fractional CTO background, he sits at the intersection of commercial leadership and technical fluency — the combination that makes Caledonia Alba credible in both the boardroom and the machine room.
+          <br><br>
+          Based across Singapore and Abu Dhabi, Gerard is the reason Caledonia Alba is a Southeast Asia and Middle East company, not a Western product being sold into those markets.
+        </div>
+        <div class="member-tags">
+          <span class="member-tag">Leadership · Intelligence · Execution</span>
+        </div>
+        <div class="member-locations">
+          <span class="loc-chip">Singapore</span>
+          <span class="loc-chip">Abu Dhabi</span>
+          <span class="loc-chip">Strategy & Markets</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- INVESTORS -->
+<div class="section investors-bg">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="label">Investment opportunity</div>
+      <h2 class="serif" style="font-size:clamp(26px,3vw,38px);font-weight:300;color:var(--white);margin-top:12px">
+        Pre-seed round. <em style="color:var(--gold)">Open now.</em>
+      </h2>
+    </div>
+    <div class="investors-row">
+      <div>
+        <div class="inv-raise reveal">
+          <div class="inv-raise-title">$500k — <em>$1M</em></div>
+          <div class="inv-raise-sub">Pre-seed round · market entry and integration depth</div>
+          <div class="inv-metrics">
+            <div class="inv-metric">
+              <div class="inv-metric-val">~£5</div>
+              <div class="inv-metric-label">Monthly run cost</div>
+            </div>
+            <div class="inv-metric">
+              <div class="inv-metric-val">Days</div>
+              <div class="inv-metric-label">Time to build v1</div>
+            </div>
+            <div class="inv-metric">
+              <div class="inv-metric-val">6</div>
+              <div class="inv-metric-label">Live integrations</div>
+            </div>
+            <div class="inv-metric">
+              <div class="inv-metric-val">100+</div>
+              <div class="inv-metric-label">Integration ready</div>
+            </div>
+          </div>
+          <a href="javascript:void(0)" onclick="document.getElementById('enquire')?.scrollIntoView({behavior:'smooth'});return false;" class="btn-outline" style="display:inline-flex;margin-top:8px">Request the Deck →</a>
+        </div>
+        <div class="inv-talking reveal" style="margin-top:28px">
+          <div class="inv-talking-title">Investors in conversation</div>
+          <div class="inv-firm"><span class="inv-firm-name">Kadan Capital</span><span class="inv-firm-loc">Singapore · AI & Fintech</span></div>
+          <div class="inv-firm"><span class="inv-firm-name">Insignia Ventures Partners</span><span class="inv-firm-loc">Singapore · Southeast Asia</span></div>
+          <div class="inv-firm"><span class="inv-firm-name">Shorooq Partners</span><span class="inv-firm-loc">Abu Dhabi · MENA</span></div>
+          <div class="inv-firm"><span class="inv-firm-name">Motive Partners</span><span class="inv-firm-loc">London / New York · Institutional Fintech</span></div>
+          <div class="inv-firm"><span class="inv-firm-name">Air Street Capital</span><span class="inv-firm-loc">London · AI Focus</span></div>
+          <div class="inv-firm"><span class="inv-firm-name">Global Ventures</span><span class="inv-firm-loc">Dubai · Early Stage</span></div>
+        </div>
+      </div>
+      <div class="inv-body reveal reveal-delay-1">
+        <p>The product exists, works, and is live at <strong style="color:var(--white)">alba-pip.vercel.app</strong>. This is not a product-building round. This is a market entry round — turning a working prototype into the dominant intelligence platform for PE and VC in the two fastest-growing private capital markets in the world.</p>
+        <p>Use of funds covers the 6-month integration roadmap (Bloomberg, regional Open Banking, trading platforms), Singapore entity and operational presence, regional data and banking partnerships, and the first two enterprise pilots in Southeast Asia and the Middle East.</p>
+        <p>What we are not doing: raising to build a team before we have product-market fit, hiring ahead of revenue, or spending on marketing before we have clients. The capital goes into deepening the integration estate and establishing the market presence needed to close the first enterprise contracts.</p>
+        <p style="color:var(--gold);font-weight:400">The platform is the pitch. Open it before you read the deck.</p>
+        <div style="margin-top:28px">
+          <a href="https://alba-pip.vercel.app" target="_blank" class="btn-outline">Open Alba PIP →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ENQUIRE -->
+<div class="section" id="enquire">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="label">Enquire</div>
+      <h2 class="serif" style="font-size:clamp(26px,3vw,38px);font-weight:300;color:var(--white);margin-top:12px">
+        Let's talk about <em style="color:var(--gold)">your portfolio.</em>
+      </h2>
+    </div>
+    <div class="enquire-grid">
+      <div class="enquire-info reveal">
+        <h3>We work with fund managers who are serious.</h3>
+        <p>Whether you're a PE or VC fund manager looking for real-time portfolio intelligence, an investor who wants to understand the opportunity, or a potential strategic partner — we respond to every enquiry personally, within 48 hours.</p>
+        <div class="enquire-detail">
+          <span class="ed-label">Platform</span>
+          <a href="https://alba-pip.vercel.app" target="_blank" style="color:var(--gold);text-decoration:none;font-family:'JetBrains Mono',monospace;font-size:12px">alba-pip.vercel.app</a>
+        </div>
+        <div class="enquire-detail">
+          <span class="ed-label">Markets</span>
+          <span class="ed-val">Southeast Asia · Middle East</span>
+        </div>
+        <div class="enquire-detail">
+          <span class="ed-label">Stage</span>
+          <span class="ed-val">Pre-seed · actively raising</span>
+        </div>
+        <div class="enquire-detail">
+          <span class="ed-label">HQ</span>
+          <span class="ed-val">Singapore · Abu Dhabi · UK</span>
+        </div>
+        <div class="enquire-detail">
+          <span class="ed-label">Email</span>
+          <a href="mailto:hello@alba-pip.com" style="color:var(--white);text-decoration:none">hello@alba-pip.com</a>
+        </div>
+      </div>
+      <div class="enquire-form reveal reveal-delay-1">
+        <form onsubmit="handleForm(event)">
+          <div class="form-group">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" placeholder="Your full name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" placeholder="you@firm.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Organisation</label>
+            <input type="text" class="form-control" placeholder="Fund or firm name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">I am a</label>
+            <select class="form-control">
+              <option value="">Select...</option>
+              <option>PE / VC fund manager</option>
+              <option>Family office</option>
+              <option>Sovereign wealth fund</option>
+              <option>Investor in Caledonia Alba</option>
+              <option>Strategic partner</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-control" rows="3" placeholder="Tell us about your portfolio or what you are looking for..."></textarea>
+          </div>
+          <button type="submit" class="form-btn">Send Enquiry</button>
+          <div class="form-note" id="formNote">We respond personally within 48 hours.</div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-logo-area">
+      <a href="javascript:void(0)" onclick="document.getElementById('vision')?.scrollIntoView({behavior:'smooth'});return false;" style="display:flex;align-items:center;gap:12px;text-decoration:none">
+        <svg width="44" height="48" viewBox="0 0 205 225" fill="white" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="2,218 25,218 80,26 57,26"/>
+  <polygon points="80,26 103,26 158,218 135,218"/>
+  <rect x="34" y="138" width="98" height="22"/>
+  <rect x="107" y="6" width="23" height="212"/>
+  <path fill-rule="evenodd" d="M130,6 L130,148 Q202,148 202,77 Q202,6 130,6 Z M130,115 Q172,115 172,77 Q172,38 130,38 Z"/>
+</svg>
+      </a>
+      <div class="footer-brand">Caledonia Alba</div>
+      <div class="footer-tagline">The AI Operating System for Private Capital. Built for PE and VC fund managers in Southeast Asia and the Middle East.</div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <div class="footer-col-title">Platform</div>
+        <ul>
+          <li><a href="javascript:void(0)" onclick="document.getElementById('platform')?.scrollIntoView({behavior:'smooth'});return false;">What it does</a></li>
+          <li><a href="https://alba-pip.vercel.app" target="_blank">Open Alba PIP</a></li>
+          <li><a href="javascript:void(0)" onclick="document.getElementById('integrations')?.scrollIntoView({behavior:'smooth'});return false;">Integrations</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Company</div>
+        <ul>
+          <li><a href="javascript:void(0)" onclick="document.getElementById('approach')?.scrollIntoView({behavior:'smooth'});return false;">Approach</a></li>
+          <li><a href="javascript:void(0)" onclick="document.getElementById('team')?.scrollIntoView({behavior:'smooth'});return false;">Team</a></li>
+          <li><a href="javascript:void(0)" onclick="document.getElementById('enquire')?.scrollIntoView({behavior:'smooth'});return false;">Investors</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Connect</div>
+        <ul>
+          <li><a href="javascript:void(0)" onclick="document.getElementById('enquire')?.scrollIntoView({behavior:'smooth'});return false;">Enquire</a></li>
+          <li><a href="mailto:hello@alba-pip.com">hello@alba-pip.com</a></li>
+          <li><a href="https://alba-pip.vercel.app" target="_blank">Live Platform</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div class="manifesto">Built independent · Driven by insight · Focused on what matters</div>
+    <div class="footer-legal">© 2026 Caledonia Alba · All rights reserved</div>
+  </div>
+</footer>
+
+<script>
+// Nav scroll
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
+});
+
+// Mobile menu
+const burger = document.getElementById('burger');
+const menu = document.getElementById('mobileMenu');
+burger.addEventListener('click', () => {
+  const open = menu.classList.toggle('open');
+  burger.textContent = open ? '✕' : '☰';
+});
+function closeMobile() {
+  menu.classList.remove('open');
+  burger.textContent = '☰';
+}
+
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }});
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Form
+function handleForm(e) {
+  e.preventDefault();
+  const note = document.getElementById('formNote');
+  note.textContent = '✓ Enquiry received — we will be in touch within 48 hours.';
+  note.style.color = '#C8A84B';
+  e.target.reset();
+}
+</script>
+</body>
+</html>
