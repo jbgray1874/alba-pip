@@ -5,6 +5,13 @@
 //  back to the level above. Shaped to mirror a Xero / accounting API response so
 //  that when the live integration connects, Level 3 (transactions) swaps from
 //  these seeded records to real invoices with no structural change.
+//
+//  Sparklines now come from portfolioSeries.js — one eighteen-month ledger per
+//  company — instead of trend() drawing an independent straight line back from
+//  each metric. FIN_SEED is unchanged and still defines the present; the ledger
+//  is calibrated onto it. Every figure this file returned before returns the
+//  same value now. What is added is history, and the ability to say what a
+//  number is being compared with.
 // ════════════════════════════════════════════════════════════════════════════
 
 // Core reconciling seeds per company (£k unless noted)
@@ -15,6 +22,8 @@ const FIN_SEED = {
   careos:     { cash:426,  burn:185, revenue:162, budget:253, gm:55, ebitdaPct:-31 },
   forgetech:  { cash:1974, burn:210, revenue:618, budget:600, gm:38, ebitdaPct:18  },
 };
+
+import { buildSeries, seriesOf, MONTH_KEYS } from "./portfolioSeries.js";
 
 const MONTHS = ["Dec","Jan","Feb","Mar","Apr","May"];
 const k = (n) => `£${Math.round(n).toLocaleString()}k`;
@@ -41,21 +50,19 @@ const REV_REGIONS = [
 
 const CUSTOMERS = ["Acme Corporation","Beta Holdings","TechVentures Ltd","Delta Systems","Gamma Industries","Orion Retail","Vertex Group","Halo Logistics"];
 
-function trend(end, mo = 6, growthToEnd = 0.12) {
-  // returns array rising to `end` over `mo` months
-  const start = end * (1 - growthToEnd);
-  return Array.from({ length: mo }, (_, i) => +(start + (end - start) * (i / (mo - 1))).toFixed(1));
-}
-
 export function buildFinance(co) {
-  const s = FIN_SEED[co.id] || FIN_SEED.meridian;
+  const id = FIN_SEED[co.id] ? co.id : "meridian";
+  const s = FIN_SEED[id];
   const runway = +(s.cash / s.burn).toFixed(1);
   const cs = co.status; // company RAG
+
+  // The ledger behind every sparkline below. Calibrated so month 18 is `s`.
+  const ledger = buildSeries(id, s);
 
   // ── Burn categories ──
   const burnCats = BURN_SPLIT.map((b) => {
     const val = s.burn * b.prop;
-    return { ...b, value: val, series: trend(val, 6, 0.14) };
+    return { ...b, value: val, series: seriesOf(ledger, "netBurn", b.prop) };
   });
 
   // ── AR / overdue debtors (the cash story) ──
@@ -78,7 +85,7 @@ export function buildFinance(co) {
   ];
 
   // ── Revenue breakdowns ──
-  const revByProduct = REV_PRODUCTS.map((p) => ({ ...p, value: s.revenue * p.prop, series: trend(s.revenue * p.prop, 6, 0.06) }));
+  const revByProduct = REV_PRODUCTS.map((p) => ({ ...p, value: s.revenue * p.prop, series: seriesOf(ledger, "revenue", p.prop) }));
   const revByRegion  = REV_REGIONS.map((r) => ({ ...r, value: s.revenue * r.prop }));
   const revDeals = CUSTOMERS.slice(0, 6).map((c, i) => ({
     party: c,
@@ -106,16 +113,26 @@ export function buildFinance(co) {
     { label:"EBITDA",         value: ebitda,         kind:"end" },
   ];
   const opexLines = [
-    { label:"Sales & Marketing", value: opexTotal*0.34, series: trend(opexTotal*0.34,6,0.1) },
-    { label:"Research & Development", value: opexTotal*0.35, series: trend(opexTotal*0.35,6,0.08) },
-    { label:"General & Admin", value: opexTotal*0.31, series: trend(opexTotal*0.31,6,0.05) },
+    { label:"Sales & Marketing",      value: opexTotal*0.34, series: seriesOf(ledger, "opex", 0.34) },
+    { label:"Research & Development", value: opexTotal*0.35, series: seriesOf(ledger, "opex", 0.35) },
+    { label:"General & Admin",        value: opexTotal*0.31, series: seriesOf(ledger, "opex", 0.31) },
   ];
 
   // Cash projection (declining)
   const cashProj = Array.from({ length: 9 }, (_, i) => ({ m: ["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan"][i], v: Math.round(s.cash - s.burn * i) })).filter(p => p.v > -s.burn);
 
+  // Additive: the ledger the sparklines are drawn from, so any figure can be
+  // opened and asked "compared with when?". Existing consumers ignore these.
+  const asOf = MONTH_KEYS[MONTH_KEYS.length - 1];
+  const history = {
+    months: MONTH_KEYS,
+    cash: ledger.map((m) => ({ month: m.month, balance: Math.round(m.cashClose), burn: Math.round(m.netBurn) })),
+    revenue: ledger.map((m) => ({ month: m.month, actual: Math.round(m.revenue), budget: Math.round(m.planRevenue) })),
+    ebitda: ledger.map((m) => ({ month: m.month, value: +m.ebitda.toFixed(1), marginPct: +m.ebitdaMarginPct.toFixed(1), grossMarginPct: +m.grossMarginPct.toFixed(1) })),
+  };
+
   return {
-    seed: s, runway, status: cs,
+    seed: s, runway, status: cs, asOf, history,
     cash: { balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj },
     revenue: { total: s.revenue, budget: s.budget, byProduct: revByProduct, byRegion: revByRegion, deals: revDeals },
     ebitda: { pct: s.ebitdaPct, value: ebitda, bridge, opexLines, grossMargin: s.gm },
