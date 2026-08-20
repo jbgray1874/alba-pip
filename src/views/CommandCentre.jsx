@@ -91,7 +91,7 @@ function statusPips(c) {
   ];
 }
 
-export default function CommandCentre({ onOpenCompany }) {
+export default function CommandCentre({ onOpenCompany, onGuide }) {
   const portfolio = usePortfolio();
   const [f, setF] = useState({ fund: "all", sector: "all", geo: "all", status: "all" });
   const [selected, setSelected] = useState(null);
@@ -143,6 +143,12 @@ export default function CommandCentre({ onOpenCompany }) {
           <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>Portfolio Health</h1>
           <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
             {roll.count} companies · reported in {REPORTING} · FX {fx.detail} · as of {portfolio[0]?.fin.asOf}
+            {onGuide && <>{" · "}
+              <button onClick={onGuide} style={{ background: "transparent", border: "none", padding: 0,
+                color: T.blue, fontSize: 10, cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>
+                📖 how to read this screen
+              </button>
+            </>}
           </div>
         </div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>

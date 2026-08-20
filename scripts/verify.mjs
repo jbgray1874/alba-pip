@@ -386,6 +386,69 @@ check("the no-key board pack quotes the company it was asked for", () => {
   return mrr === expected || `board pack says ${mrr}, finance model says ${expected}`;
 });
 
+// ── 11. Shell ───────────────────────────────────────────────────────────────
+section("Shell — navigation, landing pages and interface scale");
+
+const appSrc = await codeOf("../src/App.jsx");
+const { HOMES, SCALES, loadPrefs, savePrefs } = await import("../src/lib/prefs.js");
+
+check("every nav entry renders something", () => {
+  // A view added to the VIEWS list without a matching render branch shows an
+  // empty pane rather than an error, which is the kind of thing that is only
+  // noticed in front of an audience.
+  const ids = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)'/g)].map((m) => m[1]);
+  if (ids.length < 10) return `only found ${ids.length} nav entries — the parse is wrong`;
+  const orphans = ids.filter((id) => !appSrc.includes(`view==='${id}'`));
+  return orphans.length === 0 || `no render branch for: ${orphans.join(", ")}`;
+});
+
+check("both landing pages are real views", () => {
+  const missing = HOMES.filter((h) => !appSrc.includes(`view==='${h.id}'`)).map((h) => h.id);
+  return missing.length === 0 || `home points at a view that does not render: ${missing.join(", ")}`;
+});
+
+const commandSrc = await codeOf("../src/views/CommandCentre.jsx");
+const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
+
+check("the user guide is reachable from both landing pages", () => {
+  if (!appSrc.includes("onGuide")) return "App does not pass onGuide to either landing page";
+  if (!commandSrc.includes("onGuide")) return "Portfolio Health has no guide link";
+  if (!gpSrc.includes("onGuide")) return "GP Dashboard has no guide link";
+  return true;
+});
+
+check("no view sets its own viewport height inside the scaled shell", () => {
+  // `100vh` inside a `zoom` context resolves in scaled units and overflows the
+  // shell. Views live inside App's pane and should size to it, not the window.
+  const offenders = [];
+  for (const [name, src] of [["CommandCentre.jsx", commandSrc], ["GPDashboard.jsx", gpSrc]]) {
+    if (/height:\s*["']100vh["']/.test(src)) offenders.push(name);
+  }
+  return offenders.length === 0 || `${offenders.join(", ")} still sets height:100vh`;
+});
+
+check("preferences reject a value that no longer exists", () => {
+  // A stored id from an older build must not render a blank screen on load.
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, v),
+  };
+  store.set("alba.prefs.v1", JSON.stringify({ home: "a-view-that-was-deleted", scale: 99 }));
+  const p = loadPrefs();
+  if (!HOMES.some((h) => h.id === p.home)) return `fell back to an invalid home: ${p.home}`;
+  if (!SCALES.some((s) => s.id === p.scale)) return `fell back to an invalid scale: ${p.scale}`;
+  savePrefs({ home: "gp", scale: 1.3 });
+  const back = loadPrefs();
+  return (back.home === "gp" && back.scale === 1.3) || "a saved preference did not survive a round trip";
+});
+
+check("interface scale covers a useful range and starts at the design density", () => {
+  if (SCALES[0].id !== 1) return "the first scale is not 100%";
+  if (Math.max(...SCALES.map((s) => s.id)) < 1.4) return "no setting large enough for a projector or a screenshot";
+  return true;
+});
+
 // ── Result ──────────────────────────────────────────────────────────────────
 console.log(`\n${"─".repeat(72)}`);
 if (failures === 0) {
