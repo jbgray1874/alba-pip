@@ -106,6 +106,7 @@ export function buildMargin(opts = {}) {
 
   const insight = makeInsight({
     id: "margin-erosion-forgetech",
+    raisedOn: fin.asOf,
     type: "risk",
     companyId: co.id,
     companyName: co.name,

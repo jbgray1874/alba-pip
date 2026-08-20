@@ -267,6 +267,7 @@ export function buildCash(opts = {}) {
 
   const insight = makeInsight({
     id: "cash-position-nusantara",
+    raisedOn: fin.asOf,
     type: "risk",
     companyId: co.id,
     companyName: co.name,

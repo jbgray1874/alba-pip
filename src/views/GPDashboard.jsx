@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
-import { forDashboard, financeOf } from "../lib/companies.js";
+import { forDashboard } from "../lib/companies.js";
+import { modulesFor } from "../lib/companyModules.js";
+import { trackedActions, actionSummary } from "../lib/actionTracker.js";
 import { buildInvestigation } from "../lib/investigation.js";
 
 const T = {
@@ -25,148 +27,12 @@ const COMPANIES = forDashboard();
 // ── KPI DATA ──────────────────────────────────────────────────────────────────
 const mk = vals => MO.map((m,i) => ({ m, v: vals[i] }));
 
-const MF = financeOf("meridian");
-
-const MODULES = {
-  meridian: {
-    finance:{
-      src:"Xero · TrueLayer · 4h ago", qual:98,
-      kpis:[
-        // The six tiles FIN_SEED covers are derived, not restated. Cash read
-        // "£412k" here against a seed of £663k — a £251k disagreement on a tile
-        // labelled as coming from TrueLayer, on the fund's main dashboard.
-        { label:"Cash Balance",       value:`£${MF.cashK}k`,        status:"amber", delta:"-£28k MoM",  src:"TrueLayer",  threshold:"Warn <£300k",  confidence:98 },
-        { label:"Cash Runway",        value:`${MF.runway} mo`,      status:"red",   delta:"-1.2 mo",    src:"Xero",       threshold:"Red <6 mo",    confidence:98 },
-        { label:"Monthly Burn",       value:`£${MF.burnK}k`,        status:"amber", delta:"+£12k MoM",  src:"Xero",       threshold:"Warn +10% MoM",confidence:96 },
-        { label:"Revenue vs Budget",  value:`${MF.rvb}%`,           status:"amber", delta:"-4% MoM",    src:"Xero",       threshold:"Red <85%",     confidence:99 },
-        { label:"Gross Margin",       value:`${MF.grossMargin}%`,   status:"green", delta:"+1%",         src:"Xero",       threshold:"Green >60%",   confidence:97 },
-        { label:"EBITDA Margin",      value:`${MF.ebitdaPct}%`,     status:"red",   delta:"-2%",         src:"Xero",       threshold:"Red <-15%",   confidence:97 },
-        { label:"ARR",                value:"£3.1M",   status:"amber", delta:"+£80k QoQ",  src:"Stripe",     threshold:"Watch",        confidence:100 },
-        { label:"NRR",                value:"94%",     status:"amber", delta:"-3%",         src:"Stripe",     threshold:"Red <90%",    confidence:100 },
-        { label:"DSO",                value:"47 days", status:"red",   delta:"+15 days",   src:"Xero",       threshold:"Red >45 days", confidence:94 },
-        { label:"Burn Multiple",      value:"2.8×",    status:"amber", delta:"+0.4×",      src:"Derived",    threshold:"Red >3×",     confidence:92 },
-        { label:"Working Capital",    value:"£274k",   status:"amber", delta:"-£42k",      src:"Xero",       threshold:"Watch",        confidence:97 },
-        { label:"Covenant Headroom",  value:"18%",     status:"green", delta:"-3%",         src:"Xero",       threshold:"Red <10%",    confidence:90 },
-      ],
-      rev:  MO.map((m,i)=>({m,actual:[210,224,235,248,255,261,268,272,261,255,258,261][i],budget:[240,248,255,262,270,278,285,292,298,304,310,315][i]})),
-      cash: [{m:"May",v:1100},{m:"Jun",v:980},{m:"Jul",v:860},{m:"Aug",v:740},{m:"Sep",v:620},{m:"Oct",v:500},{m:"Nov",v:380},{m:"Dec",v:250},{m:"Jan",v:120}],
-      burn: mk([118,121,124,126,129,131,133,135,136,137,138,138]),
-      arAging:[{bucket:"Current",val:142},{bucket:"1–30d",val:58},{bucket:"31–60d",val:34},{bucket:"61–90d",val:22},{bucket:">90d",val:18}],
-    },
-    sales:{
-      src:"Salesforce · HubSpot · 47m ago", qual:100,
-      kpis:[
-        { label:"Revenue vs Budget",  value:"87%",     status:"amber", delta:"-4%",        src:"Xero",       threshold:"Red <85%",     confidence:99 },
-        { label:"Pipeline Coverage",  value:"2.1×",    status:"red",   delta:"-0.4×",      src:"Salesforce", threshold:"Red <2×",     confidence:100 },
-        { label:"Win Rate",           value:"28%",     status:"amber", delta:"-4%",         src:"Salesforce", threshold:"Warn <30%",   confidence:100 },
-        { label:"Avg Deal Size",      value:"£24k",    status:"green", delta:"+£2k",        src:"Salesforce", threshold:"Watch",        confidence:100 },
-        { label:"Quota Attainment",   value:"82%",     status:"amber", delta:"-5%",         src:"Salesforce", threshold:"Red <75%",    confidence:100 },
-        { label:"Logo Churn",         value:"8%",      status:"amber", delta:"+2%",         src:"Stripe",     threshold:"Red >10%",    confidence:100 },
-        { label:"Sales Cycle",        value:"47 days", status:"amber", delta:"+8 days",    src:"Salesforce", threshold:"Warn >45d",   confidence:100 },
-        { label:"Forecast Accuracy",  value:"74%",     status:"amber", delta:"-6%",         src:"Salesforce", threshold:"Red <70%",    confidence:98 },
-        { label:"NRR",                value:"94%",     status:"amber", delta:"-3%",         src:"Stripe",     threshold:"Red <90%",    confidence:100 },
-        { label:"New Logos",          value:"3",       status:"red",   delta:"-4 MoM",     src:"Salesforce", threshold:"Watch",        confidence:100 },
-        { label:"Customer Conc. Top3",value:"38%",     status:"amber", delta:"+3%",         src:"Salesforce", threshold:"Warn >40%",   confidence:95 },
-        { label:"GRR",                value:"92%",     status:"green", delta:"-1%",         src:"Stripe",     threshold:"Red <85%",    confidence:100 },
-      ],
-      pipe: MO.map((m,i)=>({m,pipe:[1800,1920,1850,2100,2050,1980,1900,1820,1750,1680,1620,1580][i],target:2100})),
-      funnel:[{stage:"Leads",v:380},{stage:"Qualified",v:142},{stage:"Demo",v:68},{stage:"Proposal",v:41},{stage:"Negotiation",v:22},{stage:"Closed Won",v:12}],
-    },
-    hr:{
-      src:"BambooHR · Greenhouse · 12h ago", qual:97,
-      kpis:[
-        { label:"Headcount",          value:"29",      status:"amber", delta:"vs plan 32", src:"BambooHR",   threshold:"Watch",        confidence:100 },
-        { label:"Attrition Rate",     value:"14%",     status:"amber", delta:"+3% MoM",   src:"BambooHR",   threshold:"Red >20%",     confidence:97 },
-        { label:"Voluntary Attrition",value:"11%",     status:"amber", delta:"+2%",        src:"BambooHR",   threshold:"Watch",        confidence:97 },
-        { label:"Time to Hire",       value:"38 days", status:"amber", delta:"+6 days",   src:"Greenhouse", threshold:"Warn >35d",   confidence:100 },
-        { label:"Open Roles",         value:"6",       status:"red",   delta:"3 critical", src:"Greenhouse", threshold:"Watch critical",confidence:100 },
-        { label:"Offer Accept Rate",  value:"71%",     status:"amber", delta:"-9%",        src:"Greenhouse", threshold:"Red <65%",    confidence:100 },
-        { label:"Payroll vs Budget",  value:"94%",     status:"green", delta:"-6%",        src:"BambooHR",   threshold:"Green <100%", confidence:97 },
-        { label:"Avg Tenure",         value:"18 mo",   status:"amber", delta:"-2 mo",     src:"BambooHR",   threshold:"Watch",        confidence:97 },
-        { label:"Span of Control",    value:"5.8",     status:"green", delta:"stable",     src:"BambooHR",   threshold:"Green 4–8",   confidence:97 },
-      ],
-      att: MO.map((m,i)=>({m,att:[8,9,9,10,10,11,12,12,13,13,14,14][i],bench:10})),
-      hcWaterfall:[{m:"Aug",hires:2,leavers:-1},{m:"Sep",hires:1,leavers:-2},{m:"Oct",hires:3,leavers:-1},{m:"Nov",hires:0,leavers:-3},{m:"Dec",hires:2,leavers:-2},{m:"Jan",hires:1,leavers:-2}],
-    },
-    ops:{
-      src:"Jira · Zendesk · 1h ago", qual:96,
-      kpis:[
-        { label:"SLA Adherence",      value:"91%",     status:"amber", delta:"-3%",        src:"Zendesk",    threshold:"Red <90%",     confidence:99 },
-        { label:"Ticket Backlog",     value:"184",     status:"amber", delta:"+22 MoM",   src:"Jira",       threshold:"Warn >150",    confidence:100 },
-        { label:"Sprint Velocity",    value:"42 pts",  status:"green", delta:"+4 pts",     src:"Jira",       threshold:"Watch",        confidence:100 },
-        { label:"Cycle Time",         value:"4.2 days",status:"amber", delta:"+0.8d",     src:"Jira",       threshold:"Warn >4d",    confidence:100 },
-        { label:"CSAT Score",         value:"8.1/10",  status:"green", delta:"+0.2",       src:"Zendesk",    threshold:"Red <7",      confidence:98 },
-        { label:"Incident Rate",      value:"3/wk",    status:"green", delta:"-1/wk",     src:"Jira",       threshold:"Warn >5/wk",  confidence:100 },
-        { label:"Defect Rate",        value:"2.4%",    status:"green", delta:"-0.3%",      src:"Jira",       threshold:"Red >5%",     confidence:100 },
-        { label:"On-Time Delivery",   value:"94%",     status:"green", delta:"+1%",        src:"Internal",   threshold:"Red <90%",    confidence:92 },
-        { label:"Utilisation Rate",   value:"78%",     status:"green", delta:"+2%",        src:"Internal",   threshold:"Warn >90%",   confidence:88 },
-      ],
-      chart: mk([88,89,90,91,90,91,92,91,91,91,91,91]),
-    },
-    procurement:{
-      src:"Xero · Internal · 4h ago", qual:96,
-      kpis:[
-        { label:"Spend vs Budget",    value:"97%",     status:"green", delta:"-3%",        src:"Xero",       threshold:"Red >110%",    confidence:98 },
-        { label:"Supplier Conc.",     value:"44%",     status:"amber", delta:"+4%",        src:"Xero",       threshold:"Warn >40%",   confidence:95 },
-        { label:"Contract Coverage",  value:"78%",     status:"amber", delta:"+2%",        src:"Internal",   threshold:"Warn <80%",   confidence:88 },
-        { label:"Maverick Spend",     value:"12%",     status:"amber", delta:"-2%",        src:"Xero",       threshold:"Red >15%",    confidence:95 },
-        { label:"Savings Delivered",  value:"£24k",    status:"green", delta:"vs £20k tgt",src:"Xero",       threshold:"Watch",        confidence:95 },
-        { label:"Overdue Renewals",   value:"3",       status:"amber", delta:"30–60 days", src:"Internal",   threshold:"Watch",        confidence:90 },
-        { label:"PO Compliance",      value:"84%",     status:"amber", delta:"+3%",        src:"Xero",       threshold:"Warn <85%",   confidence:95 },
-        { label:"Avg Payment Terms",  value:"32 days", status:"green", delta:"stable",     src:"Xero",       threshold:"Green <45d",  confidence:98 },
-        { label:"Critical Suppliers", value:"7",       status:"green", delta:"stable",     src:"Internal",   threshold:"Watch",        confidence:85 },
-      ],
-      chart: mk([94,96,97,98,97,97,98,97,97,97,97,97]),
-    },
-    technology:{
-      src:"Jira · AWS · 1h ago", qual:96,
-      kpis:[
-        { label:"Uptime",             value:"99.7%",   status:"green", delta:"stable",     src:"AWS",        threshold:"Red <99%",     confidence:100 },
-        { label:"Incidents / Month",  value:"3",       status:"green", delta:"-2 MoM",    src:"Jira",       threshold:"Warn >5",     confidence:100 },
-        { label:"MTTR",               value:"48 min",  status:"green", delta:"-12 min",   src:"Jira",       threshold:"Warn >2h",    confidence:100 },
-        { label:"Cloud Spend",        value:"£12.4k",  status:"amber", delta:"+£1.2k MoM",src:"AWS",        threshold:"Warn +10%",   confidence:100 },
-        { label:"Deploy Frequency",   value:"8/wk",    status:"green", delta:"+2/wk",     src:"Jira",       threshold:"Green >5/wk", confidence:100 },
-        { label:"Change Fail Rate",   value:"4%",      status:"green", delta:"-1%",        src:"Jira",       threshold:"Red >10%",    confidence:100 },
-        { label:"Security Patches",   value:"98%",     status:"green", delta:"current",   src:"Internal",   threshold:"Red <95%",    confidence:90 },
-        { label:"Active Users",       value:"284",     status:"green", delta:"+18 MoM",   src:"Internal",   threshold:"Watch",        confidence:88 },
-        { label:"Vulnerability Count",value:"2 low",   status:"green", delta:"-1 MoM",   src:"Internal",   threshold:"Red: any crit",confidence:90 },
-      ],
-      chart: mk([99.8,99.9,99.7,99.8,99.9,99.7,99.8,99.9,99.7,99.8,99.7,99.7]),
-    },
-    compliance:{
-      src:"Internal · 1d ago", qual:94,
-      kpis:[
-        { label:"KYC Completion",     value:"96%",     status:"green", delta:"+2%",        src:"Internal",   threshold:"Red <90%",     confidence:92 },
-        { label:"Overdue KYC",        value:"4",       status:"amber", delta:"+2 MoM",    src:"Internal",   threshold:"Warn >3",     confidence:92 },
-        { label:"AML Alerts Open",    value:"1",       status:"green", delta:"-2 MoM",    src:"Internal",   threshold:"Watch",        confidence:92 },
-        { label:"GDPR Training",      value:"100%",    status:"green", delta:"complete",  src:"Internal",   threshold:"Red <90%",    confidence:95 },
-        { label:"Policy Attestations",value:"94%",     status:"green", delta:"+4%",        src:"Internal",   threshold:"Red <85%",    confidence:90 },
-        { label:"Open Audit Issues",  value:"3",       status:"amber", delta:"2 med, 1 lo",src:"Internal",  threshold:"Watch",        confidence:90 },
-        { label:"Risk Score",         value:"Low",     status:"green", delta:"stable",    src:"Internal",   threshold:"Watch",        confidence:85 },
-        { label:"Data Incidents",     value:"0",       status:"green", delta:"YTD clean", src:"Internal",   threshold:"Red: any",    confidence:95 },
-        { label:"Regulatory Filings", value:"Current", status:"green", delta:"all filed", src:"Internal",   threshold:"Red: overdue", confidence:95 },
-      ],
-      chart: mk([90,91,92,93,93,94,94,95,95,96,96,96]),
-    },
-    crossFunctional:{
-      src:"Xero · Salesforce · BambooHR · Derived", qual:94,
-      kpis:[
-        { label:"Revenue per Employee",value:"£107k",  status:"amber", delta:"-£4k",      src:"Derived",    threshold:"Watch",        confidence:96 },
-        { label:"Burn per Employee",   value:"£4.8k",  status:"amber", delta:"+£0.4k",   src:"Derived",    threshold:"Watch",        confidence:96 },
-        { label:"Sales Efficiency",    value:"0.42",    status:"amber", delta:"-0.06",     src:"Derived",    threshold:"Green >0.5",  confidence:95 },
-        { label:"Rule of 40",          value:"29",      status:"amber", delta:"-4",        src:"Derived",    threshold:"Red <20",     confidence:94 },
-        { label:"CAC Payback",         value:"18 mo",   status:"amber", delta:"+2 mo",    src:"Derived",    threshold:"Warn >18 mo", confidence:90 },
-        { label:"LTV / CAC",           value:"3.2×",    status:"green", delta:"-0.2×",    src:"Derived",    threshold:"Red <3×",     confidence:88 },
-        { label:"Cash Conv. Cycle",    value:"52 days", status:"red",   delta:"+12 days", src:"Derived",    threshold:"Red >45d",    confidence:92 },
-        { label:"ARR per Employee",    value:"£107k",   status:"amber", delta:"+£3k",     src:"Derived",    threshold:"Watch",        confidence:94 },
-      ],
-    },
-  },
-};
-// Populate other companies from Meridian base
-["payflo","swiftlogix","careos","forgetech"].forEach(id => {
-  MODULES[id] = JSON.parse(JSON.stringify(MODULES.meridian));
-});
+// Module data for every company, derived from the finance model. This was a
+// literal with one key — `meridian` — so eight of the eleven tabs rendered
+// nothing for the other eight companies, and the finance drill-down they launch
+// was unreachable. See src/lib/companyModules.js for what is derived and what
+// is modelled.
+const MODULES = Object.fromEntries(COMPANIES.map(c => [c.id, modulesFor(c.id)]));
 
 // ── ALERTS ────────────────────────────────────────────────────────────────────
 const ALERTS_DATA = [
@@ -226,12 +92,12 @@ function Sparkline({data,color,w=58,h=22}){
   return(<svg width={w} height={h} style={{display:"block",overflow:"visible"}}><defs><linearGradient id={`sg${color}${data[0]}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={lc} stopOpacity="0.25"/><stop offset="100%" stopColor={lc} stopOpacity="0"/></linearGradient></defs><polyline points={`0,${h} ${pts} ${w},${h}`} fill={`url(#sg${color}${data[0]})`} stroke="none"/><polyline points={pts} fill="none" stroke={lc} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/><circle cx={lx} cy={ly} r="2" fill={lc}/></svg>);
 }
 
-function KpiCard({label,value,status,delta,src,threshold,confidence,bad}){
+function KpiCard({label,value,status,delta,src,threshold,confidence,bad,modelled}){
   const sc=ragCol(status);
   const [showDetail,setShowDetail]=useState(false);
   return(
     <div onClick={()=>setShowDetail(p=>!p)} style={{padding:"11px 13px",background:T.card,border:`1px solid ${showDetail?T.borderLt:T.border}`,borderLeft:`3px solid ${sc}`,borderRadius:8,cursor:"pointer",transition:"border-color 0.15s"}}>
-      <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{label}</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,marginBottom:4}}><span style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>{label}</span>{modelled&&<span title="Modelled from the company's discipline score — no source system is connected for this metric yet" style={{color:T.amber,fontSize:7.5,border:`1px solid ${T.amber}44`,background:T.amberDim,borderRadius:3,padding:"1px 4px",flexShrink:0}}>MODEL</span>}</div>
       <div style={{color:T.txt1,fontSize:17,fontWeight:700,fontFamily:"monospace",marginBottom:3}}>{value}</div>
       {delta&&<div style={{color:bad!==false&&(delta.startsWith("+")||delta.includes("MoM")||delta.includes("days"))?T.red:T.green,fontSize:10,fontFamily:"monospace"}}>{delta}</div>}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:4}}>
@@ -241,6 +107,7 @@ function KpiCard({label,value,status,delta,src,threshold,confidence,bad}){
       {showDetail&&(
         <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.border}`}}>
           <div style={{color:T.txt3,fontSize:9,marginBottom:2}}>Threshold: <span style={{color:T.txt2}}>{threshold}</span></div>
+          {modelled&&<div style={{color:T.amber,fontSize:8.5,marginBottom:3,lineHeight:1.5}}>Modelled, not measured. No source system is connected for this metric; the value is derived from this company's discipline score so the tab agrees with the health ring above it.</div>}
           <div style={{color:T.txt3,fontSize:9,marginBottom:4}}>Confidence: <span style={{color:confidence>90?T.green:confidence>75?T.amber:T.red,fontFamily:"monospace"}}>{confidence}%</span></div>
           <div style={{height:2,background:T.border,borderRadius:1}}><div style={{height:"100%",borderRadius:1,background:confidence>90?T.green:confidence>75?T.amber:T.red,width:`${confidence}%`}}/></div>
         </div>
@@ -311,6 +178,41 @@ function BenchmarkModule({co}){
 }
 
 // ── CEO / GP COCKPIT ──────────────────────────────────────────────────────────
+// The specification's component 2 asks every company page to carry a
+// data-source and refresh strip. Modelled disciplines are named as such here
+// rather than being allowed to pass as connected feeds.
+function SourceStrip({co,d}){
+  if(!d) return null;
+  const measured=[["Finance",d.finance],["Sales",d.sales],["People",d.hr],["Cross-functional",d.crossFunctional]];
+  const modelled=[["Operations",d.ops],["Procurement",d.procurement],["Technology",d.technology],["Compliance",d.compliance]];
+  return(
+    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"9px 12px",marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,marginBottom:7}}>
+        <span style={{color:T.txt3,fontSize:9,letterSpacing:"0.12em"}}>DATA SOURCES · AS OF {d.meta.asOf} · REPORTED IN {d.meta.currency}</span>
+        <span style={{color:co.freshness>90?T.green:co.freshness>70?T.amber:T.red,fontSize:9,fontFamily:"monospace"}}>
+          {co.freshness}% fresh · updated {co.upd}
+        </span>
+      </div>
+      <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+        {measured.map(([label,m])=>(
+          <span key={label} title={m.src} style={{fontSize:8.5,padding:"2px 7px",borderRadius:3,border:`1px solid ${T.green}33`,background:T.greenDim,color:T.green}}>
+            ● {label} · {m.src.split(" · ")[0]}
+          </span>
+        ))}
+        {modelled.map(([label,m])=>(
+          <span key={label} title={m.src} style={{fontSize:8.5,padding:"2px 7px",borderRadius:3,border:`1px solid ${T.amber}33`,background:T.amberDim,color:T.amber}}>
+            ○ {label} · modelled
+          </span>
+        ))}
+      </div>
+      <div style={{color:T.txt3,fontSize:8.5,marginTop:6,lineHeight:1.5}}>
+        Green is read from a connected source system. Amber is derived from this company's discipline score
+        because no source system is connected for it yet — every such figure carries a MODEL tag on its tile.
+      </div>
+    </div>
+  );
+}
+
 function CockpitView({co}){
   const d=MODULES[co.id];
   const [mode,setMode]=useState("ceo");
@@ -376,7 +278,7 @@ function CompanyView({co,onBack}){
   const d=MODULES[co.id];
   const ic=co.status==="red"?T.red:T.amber;
   const TABS=[{id:"overview",l:"Overview"},{id:"finance",l:"Finance"},{id:"sales",l:"Sales"},{id:"hr",l:"People"},{id:"ops",l:"Operations"},{id:"procurement",l:"Procurement"},{id:"technology",l:"Technology"},{id:"compliance",l:"Compliance"},{id:"crossfunctional",l:"Cross-Functional"},{id:"benchmarks",l:"Benchmarks"},{id:"ai",l:"🤖 AI"}];
-  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><button onClick={onBack} style={{background:"transparent",border:"none",color:T.txt3,cursor:"pointer",fontSize:11,marginBottom:12,padding:0}}>← Portfolio Overview</button><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,paddingBottom:16,borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:14}}><HealthRing score={co.score} size={62}/><div><h1 style={{color:T.txt1,fontSize:19,fontWeight:700,margin:0}}>{co.name}</h1><div style={{color:T.txt3,fontSize:11,marginTop:3}}>{co.sector} · {co.stage} · {co.own}% ownership · {co.geo}</div><div style={{display:"flex",gap:7,alignItems:"center",marginTop:7,flexWrap:"wrap"}}><RagBadge status={co.status}/><span style={{color:T.txt3,fontSize:9}}>Updated {co.upd}</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.freshness>90?T.green:co.freshness>70?T.amber:T.red,fontSize:9,fontFamily:"monospace"}}>Data {co.freshness}% fresh</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.actions>0?T.amber:T.green,fontSize:9}}>{co.actions} actions</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.alerts>0?T.red:T.green,fontSize:9}}>{co.alerts} alerts</span></div></div></div><div style={{background:`${ic}10`,border:`1px solid ${ic}25`,borderRadius:8,padding:"10px 14px",maxWidth:280}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:4}}>PRIMARY ISSUE</div><div style={{color:ic,fontSize:11,lineHeight:1.5}}>{co.issue}</div></div></div><div style={{display:"flex",gap:3,marginBottom:14,flexWrap:"wrap"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 12px",background:tab===t.id?T.blue:"transparent",border:`1px solid ${tab===t.id?T.blue:T.border}`,borderRadius:5,color:tab===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10,fontWeight:tab===t.id?600:400}}>{t.l}</button>)}</div>{tab==="overview"&&<CockpitView co={co}/>}{tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}{tab==="sales"&&d&&<SalesModule d={d.sales}/>}{tab==="hr"&&d&&<HRModule d={d.hr}/>}{tab==="ops"&&d&&<GenericModule d={d.ops}/>}{tab==="procurement"&&d&&<GenericModule d={d.procurement}/>}{tab==="technology"&&d&&<GenericModule d={d.technology}/>}{tab==="compliance"&&d&&<GenericModule d={d.compliance}/>}{tab==="crossfunctional"&&d&&<CrossFunctionalModule d={d.crossFunctional}/>}{tab==="benchmarks"&&<BenchmarkModule co={co}/>}{tab==="ai"&&<AIPanel co={co}/>}{drill&&<FinanceDrilldown company={co} metric={drill} onClose={()=>setDrill(null)}/>}</div>);
+  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><button onClick={onBack} style={{background:"transparent",border:"none",color:T.txt3,cursor:"pointer",fontSize:11,marginBottom:12,padding:0}}>← Portfolio Overview</button><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,paddingBottom:16,borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:14}}><HealthRing score={co.score} size={62}/><div><h1 style={{color:T.txt1,fontSize:19,fontWeight:700,margin:0}}>{co.name}</h1><div style={{color:T.txt3,fontSize:11,marginTop:3}}>{co.sector} · {co.stage} · {co.own}% ownership · {co.geo}</div><div style={{display:"flex",gap:7,alignItems:"center",marginTop:7,flexWrap:"wrap"}}><RagBadge status={co.status}/><span style={{color:T.txt3,fontSize:9}}>Updated {co.upd}</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.freshness>90?T.green:co.freshness>70?T.amber:T.red,fontSize:9,fontFamily:"monospace"}}>Data {co.freshness}% fresh</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.actions>0?T.amber:T.green,fontSize:9}}>{co.actions} actions</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.alerts>0?T.red:T.green,fontSize:9}}>{co.alerts} alerts</span></div></div></div><div style={{background:`${ic}10`,border:`1px solid ${ic}25`,borderRadius:8,padding:"10px 14px",maxWidth:280}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:4}}>PRIMARY ISSUE</div><div style={{color:ic,fontSize:11,lineHeight:1.5}}>{co.issue}</div></div></div><div style={{display:"flex",gap:3,marginBottom:14,flexWrap:"wrap"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 12px",background:tab===t.id?T.blue:"transparent",border:`1px solid ${tab===t.id?T.blue:T.border}`,borderRadius:5,color:tab===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10,fontWeight:tab===t.id?600:400}}>{t.l}</button>)}</div><SourceStrip co={co} d={d}/>{tab==="overview"&&<CockpitView co={co}/>}{tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}{tab==="sales"&&d&&<SalesModule d={d.sales}/>}{tab==="hr"&&d&&<HRModule d={d.hr}/>}{tab==="ops"&&d&&<GenericModule d={d.ops}/>}{tab==="procurement"&&d&&<GenericModule d={d.procurement}/>}{tab==="technology"&&d&&<GenericModule d={d.technology}/>}{tab==="compliance"&&d&&<GenericModule d={d.compliance}/>}{tab==="crossfunctional"&&d&&<CrossFunctionalModule d={d.crossFunctional}/>}{tab==="benchmarks"&&<BenchmarkModule co={co}/>}{tab==="ai"&&<AIPanel co={co}/>}{drill&&<FinanceDrilldown company={co} metric={drill} onClose={()=>setDrill(null)}/>}</div>);
 }
 
 // ── PORTFOLIO VIEW ────────────────────────────────────────────────────────────
@@ -396,9 +298,89 @@ function PortfolioView({onSelect,onGuide}){
 // ── ALERTS, ACTIONS ───────────────────────────────────────────────────────────
 function AlertsView(){const [alerts,setAlerts]=useState(ALERTS_DATA);const toggle=id=>setAlerts(p=>p.map(a=>a.id===id?{...a,st:a.st==="open"?"acknowledged":"open"}:a));const sc={critical:T.red,high:T.amber,watchlist:T.blue};const sb={critical:T.redDim,high:T.amberDim,watchlist:T.blueDim};return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,marginBottom:4}}>Alerts & Exceptions</h1><div style={{color:T.txt3,fontSize:11,marginBottom:18}}><span style={{color:T.red,fontWeight:700}}>{alerts.filter(a=>a.sev==="critical").length} critical</span> · {alerts.filter(a=>a.st==="open").length} open · {alerts.filter(a=>a.st==="acknowledged").length} acknowledged</div>{["critical","high","watchlist"].map(sev=>{const g=alerts.filter(a=>a.sev===sev);if(!g.length)return null;return(<div key={sev} style={{marginBottom:18}}><div style={{color:sc[sev],fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:7}}>{sev} ({g.length})</div>{g.map(a=><div key={a.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${sc[a.sev]}`,borderRadius:7,padding:"12px 13px",marginBottom:5,opacity:a.st==="acknowledged"?0.5:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div style={{flex:1}}><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}><span style={{color:sc[a.sev],fontSize:9,fontWeight:700,background:sb[a.sev],padding:"2px 7px",borderRadius:3}}>{a.sev.toUpperCase()}</span><span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.co}</span><span style={{color:T.txt3,fontSize:9}}>· {a.kpi} · {a.time}</span></div><div style={{color:T.txt2,fontSize:11,lineHeight:1.5}}>{a.msg}</div></div><button onClick={()=>toggle(a.id)} style={{marginLeft:10,padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer",flexShrink:0}}>{a.st==="open"?"Acknowledge":"Re-open"}</button></div></div>)}</div>);})}</div>);}
 
-function ActionsView(){const [actions,setActions]=useState(ACTIONS_DATA);const [f,setF]=useState("all");const pc={critical:T.red,high:T.amber,medium:T.blue,low:T.txt3};const sc2={open:T.amber,in_progress:T.blue,done:T.green};const next=id=>setActions(p=>p.map(a=>a.id===id?{...a,st:a.st==="open"?"in_progress":a.st==="in_progress"?"done":"open"}:a));const vis=f==="all"?actions:actions.filter(a=>a.st===f);return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><div><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,margin:0}}>Action Tracker</h1><div style={{color:T.txt3,fontSize:11,marginTop:2}}>{actions.filter(a=>a.st!=="done").length} open · {actions.filter(a=>a.pri==="critical"||a.pri==="high").length} high+ priority</div></div><div style={{display:"flex",gap:5}}>{["all","open","in_progress","done"].map(v=><button key={v} onClick={()=>setF(v)} style={{padding:"5px 10px",background:f===v?T.blue:"transparent",border:`1px solid ${f===v?T.blue:T.border}`,borderRadius:5,color:f===v?"#fff":T.txt3,cursor:"pointer",fontSize:9}}>{v==="in_progress"?"In Progress":v.charAt(0).toUpperCase()+v.slice(1)}</button>)}</div></div><div style={{display:"flex",flexDirection:"column",gap:5}}>{vis.map(a=><div key={a.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${pc[a.pri]}`,borderRadius:7,padding:"11px 13px",opacity:a.st==="done"?0.5:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div style={{flex:1}}><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}><span style={{color:pc[a.pri],fontSize:9,fontWeight:700,padding:"2px 7px",background:`${pc[a.pri]}18`,borderRadius:3}}>{a.pri.toUpperCase()}</span><span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.co}</span><span style={{color:T.txt3,fontSize:9}}>· {a.dept} · {a.kpi}</span></div><div style={{color:T.txt2,fontSize:11,marginBottom:5,lineHeight:1.4}}>{a.title}</div><div style={{display:"flex",gap:10,flexWrap:"wrap"}}><span style={{color:T.txt3,fontSize:9}}>Owner: <span style={{color:T.txt2}}>{a.owner}</span></span><span style={{color:T.txt3,fontSize:9}}>Due: <span style={{color:T.txt2}}>{a.due}</span></span></div></div><div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0,marginLeft:10}}><span style={{color:sc2[a.st],fontSize:9,fontWeight:700,padding:"2px 8px",background:`${sc2[a.st]}18`,borderRadius:3}}>{a.st==="in_progress"?"In Progress":a.st.charAt(0).toUpperCase()+a.st.slice(1)}</span><button onClick={()=>next(a.id)} style={{padding:"3px 8px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:3,color:T.txt3,fontSize:9,cursor:"pointer"}}>{a.st==="done"?"↩ Re-open":"→ Advance"}</button></div></div></div>)}</div></div>);}
+function ActionsView(){
+  const actions=useMemo(()=>trackedActions(),[]);
+  const summary=useMemo(()=>actionSummary(actions),[actions]);
+  const [f,setF]=useState("all");
+  const [open,setOpen]=useState(null);
+  const pc={critical:T.red,high:T.amber,medium:T.blue,low:T.txt3};
+  const sc2={open:T.amber,in_progress:T.blue,done:T.green};
+  const vc={working:T.green,"no-change":T.txt3,worse:T.red};
+  const vl={working:"Metric improving","no-change":"No movement",worse:"Metric worsening"};
+  const vis=f==="all"?actions:["working","no-change","worse"].includes(f)?actions.filter(a=>a.verdict===f):actions.filter(a=>a.status===f);
+  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}>
+    <div style={{marginBottom:14}}>
+      <h1 style={{color:T.txt1,fontSize:20,fontWeight:700,margin:0}}>Action Tracker</h1>
+      <div style={{color:T.txt3,fontSize:11,marginTop:2}}>
+        Every action names the KPI it was raised against. The verdict is read from the ledger, not set by the owner.
+      </div>
+    </div>
 
-// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:14}}>
+      {[
+        {l:"Open actions",v:summary.open,c:T.txt1,s:`${summary.total} on file across ${summary.companies} companies`},
+        {l:"Metric improving",v:summary.working,c:T.green,s:"moved the intended way since raised"},
+        {l:"Metric worsening",v:summary.worse,c:T.red,s:"the action has not arrested it"},
+        {l:"Completed and delivered",v:`${summary.completedWorking}/${summary.completedTotal}`,c:T.green,s:"closed actions whose KPI actually moved"},
+      ].map(x=><div key={x.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"10px 12px"}}>
+        <div style={{color:T.txt3,fontSize:8,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{x.l}</div>
+        <div style={{color:x.c,fontSize:19,fontWeight:700,fontFamily:"monospace"}}>{x.v}</div>
+        <div style={{color:T.txt3,fontSize:8.5,marginTop:3,lineHeight:1.4}}>{x.s}</div>
+      </div>)}
+    </div>
+
+    <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
+      {["all","open","in_progress","done","working","no-change","worse"].map(v=>
+        <button key={v} onClick={()=>setF(v)} style={{padding:"5px 10px",background:f===v?T.blue:"transparent",border:`1px solid ${f===v?T.blue:T.border}`,borderRadius:5,color:f===v?"#fff":T.txt3,cursor:"pointer",fontSize:9}}>
+          {v==="in_progress"?"In Progress":v==="no-change"?"No movement":v.charAt(0).toUpperCase()+v.slice(1)}
+        </button>)}
+    </div>
+
+    <div style={{display:"flex",flexDirection:"column",gap:5}}>{vis.map(a=>(
+      <div key={a.id} onClick={()=>setOpen(p=>p===a.id?null:a.id)} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${pc[a.priority]}`,borderRadius:7,padding:"11px 13px",cursor:"pointer",opacity:a.status==="done"?0.82:1}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+          <div style={{flex:1}}>
+            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
+              <span style={{color:pc[a.priority],fontSize:9,fontWeight:700,padding:"2px 7px",background:`${pc[a.priority]}18`,borderRadius:3}}>{a.priority.toUpperCase()}</span>
+              <span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.companyName}</span>
+              <span style={{color:T.txt3,fontSize:9}}>· {a.metricLabel} · raised {a.raisedOn}</span>
+            </div>
+            <div style={{color:T.txt2,fontSize:11,marginBottom:6,lineHeight:1.4}}>{a.title}</div>
+            <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
+              <span style={{color:T.txt3,fontSize:9}}>Owner: <span style={{color:T.txt2}}>{a.owner}</span></span>
+              <span style={{color:T.txt3,fontSize:9}}>Due: <span style={{color:T.txt2}}>{a.due}</span></span>
+              <span style={{color:T.txt3,fontSize:9,fontFamily:"monospace"}}>
+                {a.baselineLabel} <span style={{color:T.txt3}}>→</span> <span style={{color:vc[a.verdict]}}>{a.currentLabel}</span>
+              </span>
+            </div>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0}}>
+            <span style={{color:sc2[a.status],fontSize:9,fontWeight:700,padding:"2px 8px",background:`${sc2[a.status]}18`,borderRadius:3}}>
+              {a.status==="in_progress"?"In Progress":a.status.charAt(0).toUpperCase()+a.status.slice(1)}
+            </span>
+            <span style={{color:vc[a.verdict],fontSize:9,fontWeight:700,padding:"2px 8px",background:`${vc[a.verdict]}14`,border:`1px solid ${vc[a.verdict]}33`,borderRadius:3,whiteSpace:"nowrap"}}>
+              {a.verdict==="working"?"▲":a.verdict==="worse"?"▼":"–"} {vl[a.verdict]}
+            </span>
+            <span style={{color:T.txt3,fontSize:8.5,fontFamily:"monospace"}}>{a.pctMove>0?"+":""}{a.pctMove}% in {a.monthsElapsed}mo</span>
+          </div>
+        </div>
+        {open===a.id&&(
+          <div style={{marginTop:10,paddingTop:9,borderTop:`1px solid ${T.border}`}}>
+            <div style={{color:vc[a.verdict],fontSize:10.5,lineHeight:1.6,marginBottom:8}}>{a.outcome}</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
+              {[["Metric",a.metricLabel],["At the time it was raised",`${a.baselineLabel} (${a.raisedOn})`],["Now",`${a.currentLabel} (${a.asOf})`],["Movement",`${a.deltaLabel} · ${a.pctMove>0?"+":""}${a.pctMove}%`],["Better when",a.better==="up"?"rising":"falling"],["Elapsed",`${a.monthsElapsed} months`]].map(([k,v])=>
+                <div key={k}><div style={{color:T.txt3,fontSize:8.5,marginBottom:2}}>{k}</div><div style={{color:T.txt2,fontSize:10}}>{v}</div></div>)}
+            </div>
+            <div style={{color:T.txt3,fontSize:8.5,marginTop:8,lineHeight:1.5}}>
+              Baseline read from the ledger at {a.raisedOn}; current value from {a.asOf}. The verdict is computed from
+              those two figures — a move of less than 2% counts as no movement.
+            </div>
+          </div>
+        )}
+      </div>))}
+    </div>
+  </div>);}
+
 function Sidebar({view,setView}){
   const crit=ALERTS_DATA.filter(a=>a.sev==="critical"&&a.st==="open").length;
   const acts=ACTIONS_DATA.filter(a=>a.st!=="done"&&(a.pri==="critical"||a.pri==="high")).length;

@@ -291,6 +291,7 @@ export function buildProcurement() {
 
   const insight = makeInsight({
     id: "procurement-portfolio",
+    raisedOn: "2026-05",
     type: "opportunity",
     companyId: "portfolio",
     companyName: "Caledonia Alba portfolio",

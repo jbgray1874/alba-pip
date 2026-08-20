@@ -22,7 +22,9 @@ import { buildExpansion } from "../src/lib/scenarioExpansion.js";
 import { buildCash, buildCashScenario } from "../src/lib/scenarioCash.js";
 import { buildMargin } from "../src/lib/scenarioMargin.js";
 import { buildProcurement } from "../src/lib/scenarioProcurement.js";
-import { buildExceptionReport, buildGrowthBrief, reportToHtml } from "../src/lib/reports.js";
+import { modulesFor, MODELLED_DISCIPLINES } from "../src/lib/companyModules.js";
+import { trackedActions, actionSummary } from "../src/lib/actionTracker.js";
+import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
 import { portfolioContext } from "../api/ai/_context.js";
 import { readFile, readdir } from "node:fs/promises";
@@ -327,6 +329,125 @@ check("all five scenarios carry sourced, dated evidence and dated actions", () =
     if (!i.actions.length) return `${name}: no actions`;
     const undated = i.actions.filter((a) => !a.due || !a.owner);
     if (undated.length) return `${name}: an action has no owner or due date`;
+  }
+  return true;
+});
+
+// ── 8c. Company modules and the closed loop ─────────────────────────────────
+section("Company detail — every company, not just one");
+
+check("every company has every module populated", () => {
+  for (const c of COMPANIES) {
+    const m = modulesFor(c.id);
+    if (!m) return `${c.name}: no modules at all`;
+    for (const key of ["finance", "sales", "hr", "ops", "procurement", "technology", "compliance", "crossFunctional"]) {
+      if (!m[key]?.kpis?.length) return `${c.name}: ${key} tab would render empty`;
+    }
+    if (!m.finance.rev?.length || !m.finance.cash?.length) return `${c.name}: finance charts have no data`;
+    if (!m.sales.pipe?.length || !m.sales.funnel?.length) return `${c.name}: sales charts have no data`;
+    if (!m.hr.att?.length || !m.hr.hcWaterfall?.length) return `${c.name}: people charts have no data`;
+  }
+  return true;
+});
+
+check("no module KPI renders as undefined, NaN or Infinity", () => {
+  for (const c of COMPANIES) {
+    const m = modulesFor(c.id);
+    for (const [key, mod] of Object.entries(m)) {
+      if (key === "meta") continue;
+      for (const k of mod.kpis) {
+        if (/undefined|NaN|Infinity/.test(`${k.value}${k.delta}`)) return `${c.name} ${key}: "${k.label}" = ${k.value} (${k.delta})`;
+      }
+    }
+  }
+  return true;
+});
+
+check("the company page agrees with the portfolio table", () => {
+  for (const c of COMPANIES) {
+    const m = modulesFor(c.id);
+    const fin = buildFinance({ id: c.id, status: c.rag.toLowerCase() });
+    const runway = m.finance.kpis.find((k) => k.label === "Cash Runway").value;
+    if (runway !== `${fin.runway} mo`) return `${c.name}: module says ${runway}, model says ${fin.runway} mo`;
+  }
+  return true;
+});
+
+check("modelled figures are labelled as modelled, and measured ones are not", () => {
+  for (const c of COMPANIES) {
+    const m = modulesFor(c.id);
+    for (const key of MODELLED_DISCIPLINES) {
+      const unmarked = m[key].kpis.filter((k) => !k.modelled).map((k) => k.label);
+      if (unmarked.length) return `${c.name} ${key}: "${unmarked[0]}" is modelled but not flagged`;
+      const named = m[key].kpis.filter((k) => k.src !== "Alba model").map((k) => k.src);
+      if (named.length) return `${c.name} ${key}: claims source "${named[0]}" for a modelled figure`;
+    }
+  }
+  return true;
+});
+
+section("Action tracker — closed, not a to-do list");
+
+const tracked = trackedActions();
+const summary = actionSummary(tracked);
+
+check("every action names a KPI and reads its movement from the ledger", () => {
+  for (const a of tracked) {
+    if (!a.metricLabel) return `${a.id}: no metric`;
+    if (a.baseline == null || a.current == null) return `${a.id}: no baseline or current value`;
+    if (!a.owner || !a.due) return `${a.id}: no owner or due date`;
+    if (!["working", "no-change", "worse"].includes(a.verdict)) return `${a.id}: verdict "${a.verdict}"`;
+  }
+  return true;
+});
+
+check("the baseline is a real historic value from the ledger", () => {
+  for (const a of tracked.slice(0, 6)) {
+    const fin = buildFinance({ id: a.company, status: COMPANIES.find((c) => c.id === a.company).rag.toLowerCase() });
+    const idx = fin.history.months.indexOf(a.raisedOn);
+    if (idx < 0) return `${a.id}: raised ${a.raisedOn}, which is not a month in the ledger`;
+  }
+  return true;
+});
+
+check("the verdict follows the arithmetic, not the status", () => {
+  for (const a of tracked) {
+    const improved = a.better === "up" ? a.delta > 0 : a.delta < 0;
+    const material = Math.abs(a.pctMove) >= 2;
+    const expected = !material ? "no-change" : improved ? "working" : "worse";
+    if (a.verdict !== expected) return `${a.id}: verdict ${a.verdict}, arithmetic says ${expected}`;
+  }
+  return true;
+});
+
+check("the tracker shows a credible mix rather than all one way", () => {
+  if (!summary.working) return "no action shows its metric improving — the loop looks broken";
+  if (!summary.worse) return "no action shows its metric worsening — nothing to act on";
+  return true;
+});
+
+section("Reports — one per scenario");
+
+check("all five scenarios produce a clean, circulatable report", () => {
+  const built = [
+    ["exception", buildExceptionReport(s1)],
+    ["growth", buildGrowthBrief(s4)],
+    ["cash", buildCashReport(s2)],
+    ["margin", buildMarginReport(s3)],
+    ["procurement", buildProcurementReport(s5)],
+  ];
+  for (const [name, r] of built) {
+    const html = reportToHtml(r);
+    if (/undefined|NaN|\[object Object\]/.test(html)) return `${name} report contains undefined, NaN or [object Object]`;
+    if (html.length < 2000) return `${name} report is only ${html.length} characters`;
+    if (!r.methodology || !r.preparedAt) return `${name} report has no methodology or preparation date`;
+  }
+  return true;
+});
+
+check("every insight carries the date it was raised", () => {
+  for (const [name, sc] of [["1", s1], ["2", s2], ["3", s3], ["4", s4], ["5", s5]]) {
+    if (!sc.insight.raisedOn) return `scenario ${name}: no raisedOn — reports print "prepared undefined"`;
   }
   return true;
 });

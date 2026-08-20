@@ -23,6 +23,11 @@ export const CONFIDENCE = {
 const REQUIRED = [
   "id", "type", "companyId", "companyName", "headline",
   "whatHappened", "whyItMatters", "evidence", "impact", "confidence", "methodology",
+  // Every report prints this and every card shows it. Omitted, it renders as
+  // "raised undefined" on screen and in a circulated PDF rather than failing
+  // anywhere a build would catch — which is exactly what happened on the three
+  // scenarios added after this list was first written.
+  "raisedOn",
 ];
 
 export function makeInsight(spec) {

@@ -11,6 +11,7 @@
 import { useMemo, useState } from "react";
 import { buildProcurement, CATEGORIES, PARAMS } from "../lib/scenarioProcurement.js";
 import { fmtMoney } from "../lib/fx.js";
+import { buildProcurementReport, downloadReport } from "../lib/reports.js";
 import InsightCard from "../components/InsightCard.jsx";
 
 const T = {
@@ -46,6 +47,7 @@ export default function ScenarioProcurement() {
   const s = useMemo(() => buildProcurement(), []);
   const ccy = s.currency;
   const money = (v) => fmtMoney(v, ccy, { k: true });
+  const report = useMemo(() => buildProcurementReport(s), [s]);
   const t = s.totals;
   const [open, setOpen] = useState(s.vendors[0]?.canonical ?? null);
 
@@ -54,11 +56,18 @@ export default function ScenarioProcurement() {
 
   return (
     <div style={{ height: "100%", overflowY: "auto", padding: "18px 22px", background: T.bg }}>
-      <div style={{ marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+        <div>
         <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>Portfolio procurement</h1>
         <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
           {t.companies} companies · {t.suppliers} shared suppliers · restated into {ccy} at pinned rates · as of 2026-05
         </div>
+        </div>
+        <button onClick={() => downloadReport(report)}
+                style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
+                         color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+          Generate procurement brief
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
