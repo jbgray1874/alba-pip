@@ -54,7 +54,7 @@ function kpisFor(id) {
   const backlog = parseInt(mod.ops.kpis.find((x) => x.label === "Ticket Backlog").value, 10);
 
   return {
-    cash:     { label:"Cash Balance",   v:n.cash*1000,   fmt:(v)=>k(v/1000), status:rag(fin.runway>=12,fin.runway>=6), src:fin.cash.source.label, tier:"live",      thresh:`warn <${k(n.burn*3)}` },
+    cash:     { label:"Cash Balance",   v:n.cash*1000,   fmt:(v)=>k(v/1000), status:rag(fin.runway>=12,fin.runway>=6), src:fin.cash.source.label, tier:"simulated", thresh:`warn <${k(n.burn*3)}` },
     burn:     { label:"Monthly Burn",   v:n.burn*1000,   fmt:(v)=>k(v/1000), status:rag(fin.runway>=12,fin.runway>=6), src:fin.cash.source.label, tier:"simulated", thresh:"warn +10% MoM" },
     pipeline: { label:"Pipeline Value", v:n.budget*3*fin.sales.pipelineCoverage*1000, fmt:(v)=>k(v/1000), status:rag(fin.sales.pipelineCoverage>=3,fin.sales.pipelineCoverage>=2), src:fin.sales.source.label, tier:"simulated", thresh:`target ${k(n.budget*3*3)}` },
     mrr:      { label:"MRR",            v:n.revenue*1000,fmt:(v)=>k(v/1000), status:rag(varPct>=0,varPct>=-5), src:fin.revenue.source.label, tier:"simulated", thresh:`budget ${k(n.budget)}` },
@@ -62,8 +62,8 @@ function kpisFor(id) {
     tickets:  { label:"Open Tickets",   v:backlog, fmt:(v)=>`${Math.round(v)}`, status:mod.ops.kpis[1].status, src:"Alba model", tier:"modelled", thresh:"warn >200" },
     usd:      { label:"GBP / USD",      v:1.2712,  fmt:(v)=>v.toFixed(4), status:"green", src:"Alpha Vantage",  tier:"live", thresh:"live FX" },
     eur:      { label:"GBP / EUR",      v:1.1734,  fmt:(v)=>v.toFixed(4), status:"green", src:"Alpha Vantage",  tier:"live", thresh:"live FX" },
-    nasdaq:   { label:"NASDAQ",         v:18142,   fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Yahoo Finance", tier:"live", thresh:"live index" },
-    sp500:    { label:"S&P 500",        v:5248,    fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Yahoo Finance", tier:"live", thresh:"live index" },
+    nasdaq:   { label:"NASDAQ",         v:18142,   fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Alba model", tier:"simulated", thresh:"no index feed connected" },
+    sp500:    { label:"S&P 500",        v:5248,    fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Alba model", tier:"simulated", thresh:"no index feed connected" },
   };
 }
 
@@ -150,12 +150,12 @@ function useSimulatedBackend(market, companyId) {
   useEffect(() => {
     setKpis(p => ({
       ...p,
-      usd:    { ...p.usd,    v: market.gbpusd },
-      eur:    { ...p.eur,    v: market.gbpeur },
+      usd:    { ...p.usd,    v: market.gbpusd, tier: market.error ? "simulated" : "live", src: market.error ? "Alba model — provider unreachable" : "ExchangeRate-API" },
+      eur:    { ...p.eur,    v: market.gbpeur, tier: market.error ? "simulated" : "live", src: market.error ? "Alba model — provider unreachable" : "ExchangeRate-API" },
       nasdaq: { ...p.nasdaq, v: market.nasdaq },
       sp500:  { ...p.sp500,  v: market.sp500  },
     }));
-  }, [market.gbpusd, market.gbpeur, market.nasdaq, market.sp500]);
+  }, [market.gbpusd, market.gbpeur, market.nasdaq, market.sp500, market.error]);
 
   // Simulate mock backend updates
   useEffect(() => {

@@ -22,7 +22,9 @@ import { COMPANIES, FUNDS, financeOf } from "../lib/companies.js";
 import { buildFinance } from "../lib/financeData.js";
 import { buildRevenueMiss } from "../lib/scenarioRevenueMiss.js";
 import { buildExpansion } from "../lib/scenarioExpansion.js";
-import { fxStatus, fmtMoney } from "../lib/fx.js";
+import { fmtMoney } from "../lib/fx.js";
+import { useLiveRates } from "../lib/liveData.js";
+import LiveBadge from "../components/LiveBadge.jsx";
 import InsightCard from "../components/InsightCard.jsx";
 
 const T = {
@@ -35,7 +37,7 @@ const RAG = { RED: T.red, AMBER: T.amber, GREEN: T.green };
 const REPORTING = "GBP";
 
 /** Everything the table needs, computed once from the ledger. */
-function usePortfolio() {
+function usePortfolio(fxVersion = 0) {
   return useMemo(() => {
     return COMPANIES.map((c) => {
       const fin = buildFinance({ id: c.id, status: c.rag.toLowerCase() }, { reportingCurrency: REPORTING });
@@ -58,7 +60,7 @@ function usePortfolio() {
         winRate: fin.sales.winRatePct,
       };
     });
-  }, []);
+  }, [fxVersion]);
 }
 
 function Stat({ label, value, sub, tone }) {
@@ -92,7 +94,8 @@ function statusPips(c) {
 }
 
 export default function CommandCentre({ onOpenCompany, onGuide }) {
-  const portfolio = usePortfolio();
+  const fx = useLiveRates();
+  const portfolio = usePortfolio(fx.version);
   const [f, setF] = useState({ fund: "all", sector: "all", geo: "all", status: "all" });
   const [selected, setSelected] = useState(null);
 
@@ -132,7 +135,6 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
     return { risks: r, opportunities: o };
   }, [rows]);
 
-  const fx = fxStatus();
 
   return (
     <div style={{ height: "100%", overflowY: "auto", padding: "18px 22px", background: T.bg }}>
@@ -142,7 +144,7 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
         <div>
           <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>Portfolio Health</h1>
           <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
-            {roll.count} companies · reported in {REPORTING} · FX {fx.detail} · as of {portfolio[0]?.fin.asOf}
+            {roll.count} companies · reported in {REPORTING} · as of {portfolio[0]?.fin.asOf}
             {onGuide && <>{" · "}
               <button onClick={onGuide} style={{ background: "transparent", border: "none", padding: 0,
                 color: T.blue, fontSize: 10, cursor: "pointer", textDecoration: "underline", fontFamily: "inherit" }}>
@@ -151,7 +153,23 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
             </>}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          {/* Four of the nine companies report in something other than sterling,
+              so the rate is not a footnote — switching it revalues the table. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginRight: 4 }}>
+            <LiveBadge tier={fx.tier} detail={fx.detail} ago={fx.ago} pulse />
+            <button onClick={fx.isLive || fx.loading ? fx.goPinned : fx.goLive}
+                    title={fx.isLive
+                      ? "Return to the rates pinned for the demo"
+                      : "Fetch today's rates and revalue the four companies that do not report in sterling"}
+                    style={{ padding: "4px 9px", borderRadius: 5, cursor: "pointer", fontFamily: "inherit",
+                             fontSize: 9.5, fontWeight: 600,
+                             background: fx.isLive ? "#00c97a" : "transparent",
+                             border: `1px solid ${fx.isLive ? "#00c97a" : T.border}`,
+                             color: fx.isLive ? "#04140d" : T.txt2 }}>
+              {fx.loading ? "Fetching…" : fx.isLive ? "Live FX on" : "Use live FX"}
+            </button>
+          </div>
           {[["fund", options.fund], ["sector", options.sector], ["geo", options.geo], ["status", options.status]].map(([key, opts]) => (
             <select key={key} value={f[key]} onChange={(e) => setF({ ...f, [key]: e.target.value })}
                     style={{ background: T.card, color: T.txt2, border: `1px solid ${T.border}`, borderRadius: 5, padding: "5px 8px", fontSize: 10 }}>

@@ -17,6 +17,7 @@ import { SOURCES } from "../lib/kpiDefinitions.js";
 import { modulesFor, MODELLED_DISCIPLINES } from "../lib/companyModules.js";
 import { actionSummary } from "../lib/actionTracker.js";
 import { buildProcurement } from "../lib/scenarioProcurement.js";
+import { TIERS } from "../lib/liveData.js";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -358,8 +359,33 @@ export default function UserGuide({ onNavigate }) {
         </Card>
       </Section>
 
-      {/* ── 9 · Reading the screen ──────────────────────────────────────── */}
-      <Section n="9" title="Reading the screen">
+      {/* ── 8b · What is live ───────────────────────────────────────────── */}
+      <Section n="9" title="What is live, and what is not"
+               sub="One vocabulary for provenance, used on every screen. The badge takes its state from the fetch, so it can be wrong.">
+        <Card>
+          {Object.values(TIERS).map((t) => (
+            <div key={t.id} style={{ display: "flex", gap: 12, padding: "7px 0", borderBottom: `1px solid ${T.accent}` }}>
+              <span style={{ flexShrink: 0, width: 92, display: "inline-flex", alignItems: "flex-start" }}>
+                <span style={{ padding: "1px 6px", borderRadius: 3, border: `1px solid ${t.colour}44`,
+                               background: `${t.colour}14`, color: t.colour, fontSize: 8.5, fontWeight: 700,
+                               letterSpacing: "0.06em" }}>{t.label}</span>
+              </span>
+              <span style={{ color: T.txt3, fontSize: 10.5, lineHeight: 1.55 }}>{t.definition}</span>
+            </div>
+          ))}
+          <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>
+            <strong>Foreign exchange is the one genuinely live source.</strong> Four of the {COMPANIES.length} companies
+            report in USD, SGD or AED, so the rate is not a footnote — it sets what they are worth in the fund's
+            reporting currency. Pinned is the default, because a demo that silently revalues itself between the
+            rehearsal and the meeting is worse than one that is a fortnight stale.
+          </div>
+          <Route steps={["Portfolio Health", "Use live FX"]}
+                 note="Fetches today's rates and revalues the four foreign-currency companies. The badge shows the provider and a last-updated that ticks; if the provider cannot be reached it flips to OFFLINE and says the pinned rates are being shown instead. Some embedded viewers block outbound requests, so a shared link will usually show OFFLINE — which is the labelling working, not failing." />
+        </Card>
+      </Section>
+
+      {/* ── 10 · Reading the screen ─────────────────────────────────────── */}
+      <Section n="10" title="Reading the screen">
         <Card>
           <Row k="Every screen, every company" v={`Client Portal and Live Data each carry a company selector, and the GP Dashboard's eleven tabs and benchmarks are populated for all ${COMPANIES.length}. Nothing is pinned to one company any more.`} />
           <Row k="Generating a report" v="Opens it on screen first, with Print and Download inside the panel. A download is silently blocked in some embedded viewers, so the report is shown rather than only offered as a file." />

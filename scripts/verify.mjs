@@ -24,6 +24,7 @@ import { buildMargin } from "../src/lib/scenarioMargin.js";
 import { buildProcurement } from "../src/lib/scenarioProcurement.js";
 import { modulesFor, MODELLED_DISCIPLINES, benchmarksFor } from "../src/lib/companyModules.js";
 import { trackedActions, actionSummary } from "../src/lib/actionTracker.js";
+import { TIERS } from "../src/lib/liveData.js";
 import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
 import { portfolioContext } from "../api/ai/_context.js";
@@ -499,6 +500,62 @@ check("every insight carries the date it was raised", () => {
     if (!sc.insight.raisedOn) return `scenario ${name}: no raisedOn — reports print "prepared undefined"`;
   }
   return true;
+});
+
+// ── 8d. Live data ───────────────────────────────────────────────────────────
+section("Live data — the badge must be able to be wrong");
+
+const liveSrc = await codeOfEarly("../src/lib/liveData.js");
+const realtimeLive = await codeOfEarly("../src/views/RealTime.jsx");
+const commandSrcLive = await codeOfEarly("../src/views/CommandCentre.jsx");
+
+check("there is one vocabulary for where a figure comes from", () => {
+  for (const id of ["live", "simulated", "modelled", "pinned", "unavailable"]) {
+    if (!TIERS[id]) return `no tier "${id}"`;
+    if (!TIERS[id].definition || TIERS[id].definition.length < 40) return `tier "${id}" has no usable definition`;
+  }
+  return true;
+});
+
+check("nothing claims to be live unless it actually fetches", () => {
+  // Five tiles were labelled live. Two fetched. The other three were seeded
+  // from the model and random-walked behind a market-feed label.
+  const claims = [...realtimeLive.matchAll(/tier:\s*"live"/g)].length;
+  const fetches = /fetch\(\s*["'`]https:\/\//.test(realtimeLive);
+  if (claims > 0 && !fetches) return `${claims} tiles claim live but the screen makes no external request`;
+  if (claims > 2) return `${claims} tiles claim live; only the two FX pairs have a provider`;
+  return true;
+});
+
+check("a failed fetch stops the badge claiming live", () => {
+  if (!/tier:\s*market\.error\s*\?/.test(realtimeLive))
+    return "the FX tiles keep their live tier when the provider is unreachable";
+  if (!liveSrc.includes('setState("unavailable")'))
+    return "useLiveRates has no unavailable state";
+  return true;
+});
+
+check("live rates are opt-in, and pinned is the default", () => {
+  if (!liveSrc.includes('useState("pinned")')) return "the hook does not start pinned";
+  if (/useEffect\(\s*\(\)\s*=>\s*\{\s*refresh\(\)/.test(liveSrc)) return "it fetches on load — a demo must not revalue itself silently";
+  return true;
+});
+
+check("switching to live FX actually revalues the portfolio", () => {
+  // Without the version in the dependency list the badge would say live while
+  // every figure stayed exactly where it was — the worst of both.
+  if (!commandSrcLive.includes("usePortfolio(fx.version)")) return "the portfolio does not recompute when rates move";
+  if (!commandSrcLive.includes("[fxVersion]")) return "usePortfolio ignores the rate version";
+  return true;
+});
+
+check("the pinned rates still reproduce the demo figures", () => {
+  // Live FX must be a switch, not a default: with it off, every figure has to
+  // be the one that was rehearsed.
+  const fin = buildFinance({ id: "straits", status: "green" }, { reportingCurrency: "GBP" });
+  const expected = FIN_SEED.straits.revenue / 1.27;
+  return Math.abs(fin.revenue.total - expected) < 1
+    || `Straits restates to ${fin.revenue.total.toFixed(0)}, pinned rates say ${expected.toFixed(0)}`;
 });
 
 // ── 9. Serverless imports ───────────────────────────────────────────────────
