@@ -1,9 +1,12 @@
 import { useState, useMemo } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Button, Metric, MetricRow, Panel, TwoColumn, ProvenanceBar } from "../components/Shell.jsx";
+import { buildRevenueMiss } from "../lib/scenarioRevenueMiss.js";
+import { integrationHealth } from "../lib/liveFeed.js";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
 import { forDashboard } from "../lib/companies.js";
-import { modulesFor, benchmarksFor } from "../lib/companyModules.js";
+import { modulesFor, benchmarksFor, salesQualityFor } from "../lib/companyModules.js";
 import { trackedActions, actionSummary } from "../lib/actionTracker.js";
 import { portfolioAlerts, portfolioActions, alertSummary } from "../lib/alertsFeed.js";
 import LiveStrip from "../components/LiveStrip.jsx";
@@ -266,7 +269,7 @@ function CockpitView({co}){
     {q:"Is further capital at risk?", a:`${co.runway<6?"Yes — current trajectory puts existing invested capital at risk without bridge or cost reduction.":"Not immediately — but continued underperformance may affect follow-on terms."}`},
   ];
   const pts=mode==="ceo"?ceoPoints:gpPoints;
-  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{display:"flex",gap:6,marginBottom:4}}>{["ceo","gp"].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:"7px 16px",background:mode===m?T.blue:"transparent",border:`1px solid ${mode===m?T.blue:T.border}`,borderRadius:6,color:mode===m?"#fff":T.txt3,cursor:"pointer",fontSize:11,fontWeight:mode===m?600:400}}>{m==="ceo"?"CEO Cockpit":"GP Cockpit"}</button>)}</div>{pts.map((p,i)=><div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}><div style={{color:T.txt3,fontSize:10,marginBottom:5}}>Q: {p.q}</div><div style={{color:T.txt1,fontSize:12,lineHeight:1.5}}>{p.a}</div></div>)}<HealthBreakdown co={co}/></div>);
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{display:"flex",gap:6,marginBottom:4}}>{["ceo","gp"].map(m=><button key={m} onClick={()=>setMode(m)} style={{padding:"6px 14px",borderRadius:4,cursor:"pointer",fontFamily:F.sans,fontSize:S.label,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",background:mode===m?C.gold:"transparent",border:`1px solid ${mode===m?C.gold:C.borderLt}`,color:mode===m?C.goldOn:C.txt2}}>{m==="ceo"?"CEO Cockpit":"GP Cockpit"}</button>)}</div>{pts.map((p,i)=><div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}><div style={{color:T.txt3,fontSize:10,marginBottom:5}}>Q: {p.q}</div><div style={{color:T.txt1,fontSize:12,lineHeight:1.5}}>{p.a}</div></div>)}<HealthBreakdown co={co}/></div>);
 }
 
 // ── AI PANEL ──────────────────────────────────────────────────────────────────
@@ -303,17 +306,200 @@ function AIPanel({co}){
     {on?"● GROK · OVER CALCULATED COMPANY DATA":"● CALCULATED · SET XAI_API_KEY FOR THE ANALYTICAL LAYER"}
   </div>);
 
-  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><div style={{color:T.txt1,fontSize:13,fontWeight:600}}>Board-Ready Executive Summary</div><div style={{color:T.txt3,fontSize:10,marginTop:2}}>All KPIs · All data sources · Source-cited · GP action recommendations</div></div><button onClick={gen} disabled={loading} style={{padding:"8px 16px",background:loading?T.borderLt:T.blue,color:loading?T.txt3:"#fff",border:"none",borderRadius:6,cursor:loading?"wait":"pointer",fontSize:11,fontWeight:600}}>{loading?"Analysing…":"Generate Analysis"}</button></div>{narrative&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:14,color:T.txt2,fontSize:12,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{badge(live)}{narrative}</div>}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{color:T.txt1,fontSize:13,fontWeight:600,marginBottom:10}}>Ask a Question</div><div style={{display:"flex",gap:8,marginBottom:8}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder='e.g. "How many months before a cash injection is needed?"' style={{flex:1,padding:"8px 11px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/><button onClick={ask} disabled={qLoad} style={{padding:"8px 16px",background:T.purple,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>{qLoad?"…":"Ask"}</button></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{["How urgent is the cash situation?","What's driving the revenue miss?","Which risks need GP attention this week?","What does Rule of 40 tell us?"].map(qq=><button key={qq} onClick={()=>setQ(qq)} style={{padding:"3px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>{qq}</button>)}</div>{answer&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:12,color:T.txt2,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{badge(qLive)}{answer}</div>}</div></div>);
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><div style={{color:T.txt1,fontSize:13,fontWeight:600}}>Board-Ready Executive Summary</div><div style={{color:T.txt3,fontSize:10,marginTop:2}}>All KPIs · All data sources · Source-cited · GP action recommendations</div></div><button onClick={gen} disabled={loading} style={{padding:"6px 13px",borderRadius:4,cursor:loading?"wait":"pointer",fontFamily:F.sans,fontSize:S.label,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",background:loading?C.borderLt:C.gold,color:loading?C.txt3:C.goldOn,border:`1px solid ${loading?C.borderLt:C.gold}`}}>{loading?"Analysing…":"Generate Analysis"}</button></div>{narrative&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:14,color:T.txt2,fontSize:12,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{badge(live)}{narrative}</div>}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{color:T.txt1,fontSize:13,fontWeight:600,marginBottom:10}}>Ask a Question</div><div style={{display:"flex",gap:8,marginBottom:8}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder='e.g. "How many months before a cash injection is needed?"' style={{flex:1,padding:"8px 11px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/><button onClick={ask} disabled={qLoad} style={{padding:"6px 13px",borderRadius:4,cursor:"pointer",fontFamily:F.sans,fontSize:S.label,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",background:"transparent",border:`1px solid ${C.borderLt}`,color:C.txt2}}>{qLoad?"…":"Ask"}</button></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{["How urgent is the cash situation?","What's driving the revenue miss?","Which risks need GP attention this week?","What does Rule of 40 tell us?"].map(qq=><button key={qq} onClick={()=>setQ(qq)} style={{padding:"3px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>{qq}</button>)}</div>{answer&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:12,color:T.txt2,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{badge(qLive)}{answer}</div>}</div></div>);
 }
 
 // ── COMPANY VIEW ──────────────────────────────────────────────────────────────
+/**
+ * The company page — the reference's screen 7.
+ *
+ * Actual against plan on the left with a forward projection, the early warning
+ * on the right with the indicators that raised it, and sales quality along the
+ * foot. Everything is per company: the panel that used to name one company's
+ * figures under nine different headings is gone.
+ */
+function CompanyOverview({co,onInvestigate}){
+  const fin=useMemo(()=>buildFinance({id:co.id,status:co.status}),[co.id,co.status]);
+  const inv=useMemo(()=>buildInvestigation(co.id),[co.id]);
+  const quality=useMemo(()=>salesQualityFor(co.id),[co.id]);
+  const alerts=ALERTS_DATA.filter(a=>a.companyId===co.id);
+  const m=(v)=>fmtMoney(v,fin.currency,{k:true});
+
+  const rev=fin.history.revenue;
+  const months=fin.history.months;
+  const q=(f)=>rev.slice(-3).reduce((s,x)=>s+x[f],0);
+  const qActual=q("actual"), qPlan=q("budget");
+  const qVar=((qActual-qPlan)/qPlan)*100;
+
+  // A forward projection, not a second forecast model: the last three months'
+  // run rate carried forward, stated as such in the legend.
+  const runRate=qActual/3;
+  const trend=(rev.at(-1).actual-rev.at(-4).actual)/3;
+  const series=[
+    ...rev.map((x,k)=>({m:months[k].slice(2),actual:Math.round(x.actual),plan:Math.round(x.budget)})),
+    ...[1,2,3].map((k)=>({m:`+${k}`,plan:Math.round(rev.at(-1).budget),forecast:Math.round(runRate+trend*k)})),
+  ];
+  // Join the forecast line to the last actual so it does not float.
+  series[rev.length-1].forecast=Math.round(rev.at(-1).actual);
+
+  const indicators=[
+    {l:"Pipeline coverage",from:`${fin.sales.coverageFrom}×`,to:`${fin.sales.pipelineCoverage}×`,worse:fin.sales.pipelineCoverage<fin.sales.coverageFrom},
+    {l:"Win rate",from:`${fin.sales.winRateFrom}%`,to:`${fin.sales.winRatePct}%`,worse:fin.sales.winRatePct<fin.sales.winRateFrom},
+    {l:"Gross margin",from:`${fin.history.ebitda[0].grossMarginPct}%`,to:`${fin.ebitda.grossMargin}%`,worse:fin.ebitda.grossMargin<fin.history.ebitda[0].grossMarginPct},
+    {l:"Net burn",from:m(fin.history.cash[0].burn),to:m(fin.cash.burn),worse:fin.cash.burn>fin.history.cash[0].burn},
+  ];
+
+  const quarterGap=Math.max(0,qPlan-qActual);
+  const warning=inv.underStress
+    ?{label:`Likely next-quarter miss`,amount:m(quarterGap),tone:C.red}
+    :{label:"No threshold breached",amount:`${fin.runway} months`,tone:C.green};
+
+  return(
+    <>
+      <MetricRow items={[
+        {label:"Quarter revenue",value:m(qActual),tone:C.txt1,
+         sub:`Three months to ${fin.asOf}`},
+        {label:"Quarter plan",value:m(qPlan),tone:qVar<0?C.red:C.green,
+         sub:`${qVar>=0?"+":""}${qVar.toFixed(1)}% against plan`},
+        {label:"Pipeline coverage",value:`${fin.sales.pipelineCoverage}×`,
+         tone:fin.sales.pipelineCoverage<2.5?C.red:fin.sales.pipelineCoverage<3?C.gold:C.green,
+         sub:`from ${fin.sales.coverageFrom}× at the start of the period`},
+        {label:"Win rate",value:`${fin.sales.winRatePct}%`,
+         tone:fin.sales.winRatePct<fin.sales.winRateFrom?C.red:C.green,
+         sub:`from ${fin.sales.winRateFrom}%`},
+      ]}/>
+
+      <TwoColumn
+        left={
+          <Panel title="Actual and forecast against plan"
+                 sub={`${months.length} months of ledger, plus three months carried forward at the current run rate`}
+                 right={
+                   <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+                     {[["Actual",C.txt1,"solid"],["Forecast",C.gold,"solid"],["Plan",C.txt3,"dotted"]].map(([l,cc,st])=>(
+                       <span key={l} style={{display:"flex",alignItems:"center",gap:5,color:C.txt3,fontSize:S.micro}}>
+                         <span style={{width:12,height:0,borderTop:`2px ${st} ${cc}`,display:"inline-block"}}/>{l}
+                       </span>))}
+                   </div>
+                 }>
+            <ResponsiveContainer width="100%" height={210}>
+              <LineChart data={series} margin={{top:6,right:8,left:-16,bottom:0}}>
+                <CartesianGrid stroke={C.border} strokeDasharray="2 4" vertical={false}/>
+                <XAxis dataKey="m" stroke={C.txt3} tick={{fontSize:9,fill:C.txt3}}/>
+                <YAxis stroke={C.txt3} tick={{fontSize:9,fill:C.txt3}}/>
+                <Tooltip content={<TT src={fin.revenue.source?.label||"Xero"}/>}/>
+                <Line type="monotone" dataKey="plan" name="Plan" stroke={C.txt3} strokeWidth={1.4} strokeDasharray="3 3" dot={false}/>
+                <Line type="monotone" dataKey="actual" name="Actual" stroke={C.txt1} strokeWidth={2} dot={false}/>
+                <Line type="monotone" dataKey="forecast" name="Forecast" stroke={C.gold} strokeWidth={2} dot={false}/>
+              </LineChart>
+            </ResponsiveContainer>
+          </Panel>
+        }
+        right={
+          <Panel title="Alba early warning">
+            <div style={{...labelStyle(warning.tone),marginBottom:6}}>{warning.label}</div>
+            <div style={{display:"flex",alignItems:"baseline",gap:10,flexWrap:"wrap",marginBottom:10}}>
+              <span style={metricStyle(warning.tone,34)}>{warning.amount}</span>
+              <Chip tone={inv.underStress?"red":"green"}>
+                {inv.contributions.length} {inv.contributions.length===1?"driver":"drivers"} quantified
+              </Chip>
+            </div>
+            <div style={{color:C.txt2,fontSize:S.small,lineHeight:1.65,marginBottom:12}}>{inv.rootCause}</div>
+
+            {indicators.map((x)=>(
+              <div key={x.l} style={{display:"flex",alignItems:"center",gap:9,padding:"6px 0",
+                                     borderBottom:`1px solid ${C.border}`}}>
+                <span style={{width:6,height:6,borderRadius:"50%",flexShrink:0,
+                              background:x.worse?C.red:C.green}}/>
+                <span style={{color:C.txt2,fontSize:S.small,flex:1}}>{x.l}</span>
+                <span style={{color:C.txt3,fontSize:S.small,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>
+                  {x.from} <span style={{color:C.txt3}}>→</span>{" "}
+                  <span style={{color:x.worse?C.red:C.green}}>{x.to}</span>
+                </span>
+              </div>
+            ))}
+
+            <div style={{display:"flex",gap:7,marginTop:13,flexWrap:"wrap"}}>
+              <Button variant="primary" onClick={onInvestigate}>Investigate signal</Button>
+              <Button variant="ghost">View source data</Button>
+            </div>
+            <div style={{color:C.txt3,fontSize:S.micro,marginTop:9,lineHeight:1.55}}>
+              {inv.steps.filter((s)=>s.kind==="finding").length} findings across{" "}
+              {alerts.length} open {alerts.length===1?"alert":"alerts"} · as of {fin.asOf}
+            </div>
+          </Panel>
+        }
+      />
+
+      <div style={{display:"flex",gap:9,flexWrap:"wrap",marginBottom:12}}>
+        {quality.map((x)=>(
+          <div key={x.label} title={x.basis}
+               style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,
+                       padding:"13px 15px",flex:1,minWidth:180}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8,marginBottom:8}}>
+              <span style={labelStyle()}>{x.label}</span>
+              {x.modelled&&<span style={{...labelStyle(C.blue),fontSize:S.micro}}>Model</span>}
+            </div>
+            <div style={metricStyle(x.worse?C.red:C.txt1,S.metricSm)}>{x.value}</div>
+            <div style={{color:C.txt3,fontSize:S.micro,marginTop:6,lineHeight:1.5}}>
+              from {x.from} · {x.source}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function CompanyView({co,onBack}){
   const [tab,setTab]=useState("overview");
   const [drill,setDrill]=useState(null);
   const d=MODULES[co.id];
-  const ic=co.status==="red"?T.red:T.amber;
-  const TABS=[{id:"overview",l:"Overview"},{id:"finance",l:"Finance"},{id:"sales",l:"Sales"},{id:"hr",l:"People"},{id:"ops",l:"Operations"},{id:"procurement",l:"Procurement"},{id:"technology",l:"Technology"},{id:"compliance",l:"Compliance"},{id:"crossfunctional",l:"Cross-Functional"},{id:"benchmarks",l:"Benchmarks"},{id:"ai",l:"🤖 AI"}];
-  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><button onClick={onBack} style={{background:"transparent",border:"none",color:T.txt3,cursor:"pointer",fontSize:11,marginBottom:12,padding:0}}>← Portfolio Overview</button><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,paddingBottom:16,borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:14}}><HealthRing score={co.score} size={62}/><div><h1 style={{color:T.txt1,fontSize:19,fontWeight:700,margin:0}}>{co.name}</h1><div style={{color:T.txt3,fontSize:11,marginTop:3}}>{co.sector} · {co.stage} · {co.own}% ownership · {co.geo}</div><div style={{display:"flex",gap:7,alignItems:"center",marginTop:7,flexWrap:"wrap"}}><RagBadge status={co.status}/><span style={{color:T.txt3,fontSize:9}}>Updated {co.upd}</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.freshness>90?T.green:co.freshness>70?T.amber:T.red,fontSize:9,fontFamily:"monospace"}}>Data {co.freshness}% fresh</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.actions>0?T.amber:T.green,fontSize:9}}>{co.actions} actions</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.alerts>0?T.red:T.green,fontSize:9}}>{co.alerts} alerts</span></div></div></div><div style={{background:`${ic}10`,border:`1px solid ${ic}25`,borderRadius:8,padding:"10px 14px",maxWidth:280}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:4}}>PRIMARY ISSUE</div><div style={{color:ic,fontSize:11,lineHeight:1.5}}>{co.issue}</div></div></div><div style={{display:"flex",gap:3,marginBottom:14,flexWrap:"wrap"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 12px",background:tab===t.id?T.blue:"transparent",border:`1px solid ${tab===t.id?T.blue:T.border}`,borderRadius:5,color:tab===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10,fontWeight:tab===t.id?600:400}}>{t.l}</button>)}</div><SourceStrip co={co} d={d}/>{d&&<CompanyLiveStrip co={co}/>}{tab==="overview"&&<CockpitView co={co}/>}{tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}{tab==="sales"&&d&&<SalesModule d={d.sales}/>}{tab==="hr"&&d&&<HRModule d={d.hr}/>}{tab==="ops"&&d&&<GenericModule d={d.ops}/>}{tab==="procurement"&&d&&<GenericModule d={d.procurement}/>}{tab==="technology"&&d&&<GenericModule d={d.technology}/>}{tab==="compliance"&&d&&<GenericModule d={d.compliance}/>}{tab==="crossfunctional"&&d&&<CrossFunctionalModule d={d.crossFunctional}/>}{tab==="benchmarks"&&<BenchmarkModule co={co}/>}{tab==="ai"&&<AIPanel co={co}/>}{drill&&<FinanceDrilldown company={co} metric={drill} onClose={()=>setDrill(null)}/>}</div>);
+  const TABS=[{id:"overview",l:"Overview"},{id:"finance",l:"Finance"},{id:"sales",l:"Sales"},{id:"hr",l:"People"},{id:"ops",l:"Operations"},{id:"procurement",l:"Procurement"},{id:"technology",l:"Technology"},{id:"compliance",l:"Compliance"},{id:"crossfunctional",l:"Cross-functional"},{id:"benchmarks",l:"Benchmarks"},{id:"ai",l:"AI"}];
+  const chipTone=co.status==="red"?"red":co.status==="amber"?"gold":"green";
+  const chipWord=co.status==="red"?"Critical":co.status==="amber"?"Attention":"Healthy";
+
+  return(
+    <Page>
+      <PageHeader
+        crumbs={["Portfolio","Company Detail",co.name]}
+        title={co.name}
+        chips={<>
+          <Chip tone={chipTone}>{chipWord}</Chip>
+          <Chip tone="muted">{co.score} / 100</Chip>
+        </>}
+        purpose={`${co.sector} · ${co.stage} · ${co.own}% ownership · ${co.geo}`}
+        meta={`Updated ${co.upd} · data ${co.freshness}% fresh · ${co.actions} open ${co.actions===1?"action":"actions"} · ${co.alerts} ${co.alerts===1?"alert":"alerts"} · primary issue: ${co.issue}`}
+        actions={<Button variant="outline" onClick={onBack}>Back to portfolio</Button>}
+      />
+
+      <div style={{display:"flex",gap:3,marginBottom:14,flexWrap:"wrap"}}>
+        {TABS.map(x=>(
+          <button key={x.id} onClick={()=>setTab(x.id)}
+                  style={{padding:"6px 12px",borderRadius:4,cursor:"pointer",fontFamily:F.sans,
+                          fontSize:S.label,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",
+                          background:tab===x.id?C.gold:"transparent",
+                          border:`1px solid ${tab===x.id?C.gold:C.borderLt}`,
+                          color:tab===x.id?C.goldOn:C.txt2}}>{x.l}</button>))}
+      </div>
+
+      <SourceStrip co={co} d={d}/>
+      {d&&<CompanyLiveStrip co={co}/>}
+
+      {tab==="overview"&&<><CompanyOverview co={co} onInvestigate={()=>setTab("finance")}/><CockpitView co={co}/></>}
+      {tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}
+      {tab==="sales"&&d&&<SalesModule d={d.sales}/>}
+      {tab==="hr"&&d&&<HRModule d={d.hr}/>}
+      {tab==="ops"&&d&&<GenericModule d={d.ops}/>}
+      {tab==="procurement"&&d&&<GenericModule d={d.procurement}/>}
+      {tab==="technology"&&d&&<GenericModule d={d.technology}/>}
+      {tab==="compliance"&&d&&<GenericModule d={d.compliance}/>}
+      {tab==="crossfunctional"&&d&&<CrossFunctionalModule d={d.crossFunctional}/>}
+      {tab==="benchmarks"&&<BenchmarkModule co={co}/>}
+      {tab==="ai"&&<AIPanel co={co}/>}
+
+      {drill&&<FinanceDrilldown company={co} metric={drill} onClose={()=>setDrill(null)}/>}
+    </Page>
+  );
 }
 
 // ── PORTFOLIO VIEW ────────────────────────────────────────────────────────────
@@ -326,112 +512,346 @@ function PortfolioView({onSelect,onGuide}){
   const avg=Math.round(COMPANIES.reduce((s,c)=>s+c.score,0)/COMPANIES.length);
   const reds=COMPANIES.filter(c=>c.status==="red").length;
   const openActions=ACTIONS_DATA.filter(a=>a.st!=="done").length;
-  const SortBtn=({k,l})=><button onClick={()=>toggleSort(k)} style={{color:sort===k?T.blue:T.txt3,background:"transparent",border:"none",cursor:"pointer",fontSize:9,padding:0,letterSpacing:"0.1em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:2}}>{l}{sort===k&&<span style={{fontSize:8}}>{asc?"↑":"↓"}</span>}</button>;
-  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><div style={{marginBottom:18}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.2em",textTransform:"uppercase"}}>Caledonia Alba · Portfolio Intelligence Platform</div><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,margin:"3px 0 0"}}>Portfolio Overview</h1>{onGuide&&<button onClick={onGuide} style={{background:"transparent",border:"none",padding:0,marginTop:4,color:T.blue,fontSize:10,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>📖 how to read this screen</button>}</div><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:9,marginBottom:18}}>{[{l:"Companies",v:COMPANIES.length,c:T.txt1},{l:"Avg Health",v:`${avg}/100`,c:avg>=75?T.green:avg>=50?T.amber:T.red},{l:"Red Alerts",v:reds,c:reds>0?T.red:T.green},{l:"Open Actions",v:openActions,c:openActions>0?T.amber:T.green},{l:"Runway <6mo",v:COMPANIES.filter(c=>c.runway<6).length,c:T.red},{l:"Data Freshness",v:`${Math.round(COMPANIES.reduce((s,c)=>s+c.freshness,0)/COMPANIES.length)}%`,c:T.green}].map(s=><div key={s.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"10px 12px"}}><div style={{color:T.txt3,fontSize:8,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{s.l}</div><div style={{color:s.c,fontSize:19,fontWeight:700,fontFamily:"monospace"}}>{s.v}</div></div>)}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 0",marginBottom:6}}><div style={{display:"grid",gridTemplateColumns:"2.4fr 64px 1fr 1fr 1fr 1fr 70px 72px 1.4fr 64px",padding:"5px 14px",gap:4}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>Company</div><SortBtn k="score" l="Score"/><SortBtn k="runway" l="Runway"/><SortBtn k="rvb" l="Rev vs Bdgt"/><SortBtn k="att" l="Attrition"/><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>EBITDA</div><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>Trend</div><SortBtn k="alerts" l="Alerts"/><SortBtn k="freshness" l="Data Fresh"/><div/></div></div><div style={{display:"flex",flexDirection:"column",gap:5}}>{sorted.map(c=>{const lc=ragCol(c.status);return(<div key={c.id} onClick={()=>onSelect(c)} style={{display:"grid",gridTemplateColumns:"2.4fr 64px 1fr 1fr 1fr 1fr 70px 72px 1.4fr 64px",alignItems:"center",padding:"12px 14px",background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${lc}`,borderRadius:8,cursor:"pointer",gap:4}} onMouseEnter={e=>e.currentTarget.style.background=T.cardHov} onMouseLeave={e=>e.currentTarget.style.background=T.card}><div style={{display:"flex",alignItems:"center",gap:9}}><Dot status={c.status}/><div><div style={{color:T.txt1,fontSize:12,fontWeight:600}}>{c.name}</div><div style={{color:T.txt3,fontSize:9}}>{c.sector} · {c.stage}</div></div></div><HealthRing score={c.score} size={35}/><div style={{color:c.runway<6?T.red:c.runway<9?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.runway}mo</div><div style={{color:c.rvb<85?T.red:c.rvb<95?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.rvb}%</div><div style={{color:c.att>20?T.red:c.att>12?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.att}%</div><div style={{color:c.ebitda<0?T.red:c.ebitda<5?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.ebitda}%</div><div title="12-month health score trend"><Sparkline data={c.spark} color={c.trend==="up"?T.green:c.trend==="down"?T.red:T.amber}/></div><div style={{display:"flex",gap:5}}>{c.alerts>0&&<span style={{background:T.redDim,color:T.red,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:700}}>{c.alerts}🔴</span>}{c.actions>0&&<span style={{background:T.amberDim,color:T.amber,fontSize:9,padding:"2px 6px",borderRadius:3}}>{c.actions}⚡</span>}</div><div style={{display:"flex",alignItems:"center",gap:5}}><div style={{flex:1,height:3,background:T.border,borderRadius:2}}><div style={{height:"100%",borderRadius:2,background:c.freshness>90?T.green:c.freshness>70?T.amber:T.red,width:`${c.freshness}%`}}/></div><span style={{color:T.txt3,fontSize:9,fontFamily:"monospace",width:28,textAlign:"right"}}>{c.freshness}%</span></div><button style={{padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>View →</button></div>);})}</div></div>);
+  const health=integrationHealth();
+  const freshness=Math.round(COMPANIES.reduce((s,c)=>s+c.freshness,0)/COMPANIES.length);
+
+  const SortBtn=({k,l})=>(
+    <button onClick={()=>toggleSort(k)}
+            style={{...labelStyle(sort===k?C.gold:C.txt3),background:"transparent",border:"none",
+                    cursor:"pointer",padding:0,display:"flex",alignItems:"center",gap:3,fontFamily:F.sans}}>
+      {l}{sort===k&&<span style={{fontSize:8}}>{asc?"↑":"↓"}</span>}
+    </button>
+  );
+
+  const GRID="2.4fr 60px 74px 82px 76px 76px 66px 78px 1.2fr 62px";
+
+  return(
+    <Page>
+      <PageHeader
+        crumbs={["Portfolio","Company Detail"]}
+        title="Portfolio Overview"
+        chips={reds>0?<Chip tone="red">{reds} critical</Chip>:<Chip tone="green">No company in red</Chip>}
+        purpose={`${COMPANIES.length} companies, ranked on health — open one for its eleven modules and the finance drill-down`}
+        meta={`${health.summary.text} · data ${freshness}% fresh across the portfolio`}
+        actions={onGuide?<Button variant="ghost" onClick={onGuide}>How to read this</Button>:null}
+      />
+
+      <MetricRow items={[
+        {label:"Companies",value:COMPANIES.length,sub:`Average health ${avg}/100`},
+        {label:"In red",value:reds,tone:reds>0?C.red:C.green,sub:"Intervention required"},
+        {label:"Open actions",value:openActions,tone:openActions>0?C.gold:C.green,sub:`of ${ACTIONS_DATA.length} raised`},
+        {label:"Runway under 6mo",value:COMPANIES.filter(c=>c.runway<6).length,tone:C.red,sub:`${COMPANIES.filter(c=>c.runway<9).length} inside nine months`},
+      ]}/>
+
+      <Panel title="Portfolio" sub="Click a row for the company detail" pad={0}>
+        <div style={{overflowX:"auto"}}>
+          <div style={{minWidth:900}}>
+            <div style={{display:"grid",gridTemplateColumns:GRID,padding:"9px 14px",gap:6,
+                         borderBottom:`1px solid ${C.border}`}}>
+              <div style={labelStyle()}>Company</div>
+              <SortBtn k="score" l="Score"/>
+              <SortBtn k="runway" l="Runway"/>
+              <SortBtn k="rvb" l="Rev vs plan"/>
+              <SortBtn k="att" l="Attrition"/>
+              <div style={labelStyle()}>EBITDA</div>
+              <div style={labelStyle()}>Trend</div>
+              <SortBtn k="alerts" l="Alerts"/>
+              <SortBtn k="freshness" l="Data fresh"/>
+              <div/>
+            </div>
+            {sorted.map(c=>{
+              const lc=ragCol(c.status);
+              return(
+                <div key={c.id} onClick={()=>onSelect(c)}
+                     style={{display:"grid",gridTemplateColumns:GRID,alignItems:"center",gap:6,
+                             padding:"11px 14px",borderBottom:`1px solid ${C.border}`,
+                             borderLeft:`2px solid ${lc}`,cursor:"pointer",fontSize:S.small}}
+                     onMouseEnter={e=>e.currentTarget.style.background=C.surfaceUp}
+                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <div style={{display:"flex",alignItems:"center",gap:9,minWidth:0}}>
+                    <Dot status={c.status}/>
+                    <div style={{minWidth:0}}>
+                      <div style={{color:C.txt1}}>{c.name}</div>
+                      <div style={{color:C.txt3,fontSize:S.micro}}>{c.sector} · {c.stage}</div>
+                    </div>
+                  </div>
+                  <HealthRing score={c.score} size={34}/>
+                  <div style={{color:c.runway<6?C.red:c.runway<9?C.gold:C.green,fontVariantNumeric:"tabular-nums"}}>{c.runway}mo</div>
+                  <div style={{color:c.rvb<85?C.red:c.rvb<95?C.gold:C.green,fontVariantNumeric:"tabular-nums"}}>{c.rvb}%</div>
+                  <div style={{color:c.att>20?C.red:c.att>12?C.gold:C.green,fontVariantNumeric:"tabular-nums"}}>{c.att}%</div>
+                  <div style={{color:c.ebitda<0?C.red:c.ebitda<5?C.gold:C.green,fontVariantNumeric:"tabular-nums"}}>{c.ebitda}%</div>
+                  <div title="12-month health score trend">
+                    <Sparkline data={c.spark} color={c.trend==="up"?C.green:c.trend==="down"?C.red:C.gold}/>
+                  </div>
+                  <div style={{display:"flex",gap:4}}>
+                    {c.alerts>0&&<span style={{background:C.redSoft,color:C.red,fontSize:S.micro,padding:"2px 6px",borderRadius:3,fontWeight:700}}>{c.alerts}</span>}
+                    {c.actions>0&&<span style={{background:C.goldSoft,color:C.gold,fontSize:S.micro,padding:"2px 6px",borderRadius:3,fontWeight:700}}>{c.actions}</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{flex:1,height:3,background:C.border,borderRadius:2}}>
+                      <div style={{height:"100%",borderRadius:2,width:`${c.freshness}%`,
+                                   background:c.freshness>90?C.green:c.freshness>70?C.gold:C.red}}/>
+                    </div>
+                    <span style={{color:C.txt3,fontSize:S.micro,width:26,textAlign:"right",fontVariantNumeric:"tabular-nums"}}>{c.freshness}%</span>
+                  </div>
+                  <div style={{textAlign:"right",color:C.txt3,fontSize:S.micro}}>View ›</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </Panel>
+
+      <ProvenanceBar items={[
+        `${COMPANIES.length} companies from the registry`,
+        `${health.rows.length} source systems`,
+        `${ALERTS_DATA.length} threshold breaches open`,
+        `Health scored on five dimensions`,
+      ]}/>
+    </Page>
+  );
 }
 
 // ── ALERTS, ACTIONS ───────────────────────────────────────────────────────────
-function AlertsView(){const [alerts,setAlerts]=useState(ALERTS_DATA);const toggle=id=>setAlerts(p=>p.map(a=>a.id===id?{...a,st:a.st==="open"?"acknowledged":"open"}:a));const sc={critical:T.red,high:T.amber,watchlist:T.blue};const sb={critical:T.redDim,high:T.amberDim,watchlist:T.blueDim};return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,marginBottom:4}}>Alerts & Exceptions</h1><div style={{color:T.txt3,fontSize:11,marginBottom:18}}><span style={{color:T.red,fontWeight:700}}>{alerts.filter(a=>a.sev==="critical").length} critical</span> · {alerts.filter(a=>a.st==="open").length} open · {alerts.filter(a=>a.st==="acknowledged").length} acknowledged</div>{["critical","high","watchlist"].map(sev=>{const g=alerts.filter(a=>a.sev===sev);if(!g.length)return null;return(<div key={sev} style={{marginBottom:18}}><div style={{color:sc[sev],fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:7}}>{sev} ({g.length})</div>{g.map(a=><div key={a.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${sc[a.sev]}`,borderRadius:7,padding:"12px 13px",marginBottom:5,opacity:a.st==="acknowledged"?0.5:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div style={{flex:1}}><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}><span style={{color:sc[a.sev],fontSize:9,fontWeight:700,background:sb[a.sev],padding:"2px 7px",borderRadius:3}}>{a.sev.toUpperCase()}</span><span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.co}</span><span style={{color:T.txt3,fontSize:9}} title={a.thresholdNote||undefined}>· {a.kpi} · {a.reading} against a threshold of {a.threshold} · {a.source} · as of {a.asOf}</span></div><div style={{color:T.txt2,fontSize:11,lineHeight:1.5}}>{a.msg}</div></div><button onClick={()=>toggle(a.id)} style={{marginLeft:10,padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer",flexShrink:0}}>{a.st==="open"?"Acknowledge":"Re-open"}</button></div></div>)}</div>);})}</div>);}
+function AlertsView(){
+  const [acknowledged,setAcknowledged]=useState(()=>new Set());
+  const toggle=id=>setAcknowledged(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+  const summary=alertSummary(ALERTS_DATA);
+  const tone={critical:C.red,high:C.gold,watchlist:C.blue};
+  const chipTone={critical:"red",high:"gold",watchlist:"blue"};
+
+  return(
+    <Page>
+      <PageHeader
+        crumbs={["Portfolio","Alerts and Exceptions"]}
+        title="Alerts and Exceptions"
+        chips={summary.critical>0?<Chip tone="red">{summary.critical} critical</Chip>:<Chip tone="green">Nothing critical</Chip>}
+        purpose="Every alert is a reading that crossed a named threshold — the reading, the threshold and the system it came from are on the row"
+        meta={`${summary.total} open across ${summary.companies} companies · ${acknowledged.size} acknowledged`}
+      />
+
+      <MetricRow items={[
+        {label:"Critical",value:summary.critical,tone:summary.critical?C.red:C.green,sub:"Act this cycle"},
+        {label:"High",value:summary.high,tone:C.gold,sub:"Address before the next board"},
+        {label:"Watchlist",value:summary.watchlist,tone:C.blue,sub:"Monitor"},
+        {label:"Companies affected",value:summary.companies,tone:C.txt1,sub:`of ${COMPANIES.length} in the portfolio`},
+      ]}/>
+
+      {["critical","high","watchlist"].map(sev=>{
+        const g=ALERTS_DATA.filter(a=>a.sev===sev);
+        if(!g.length)return null;
+        return(
+          <Panel key={sev} title={`${sev} (${g.length})`} tone={`${tone[sev]}33`} pad={0}>
+            {g.map(a=>{
+              const ack=acknowledged.has(a.id);
+              return(
+                <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,
+                                        padding:"11px 14px",borderBottom:`1px solid ${C.border}`,opacity:ack?0.5:1}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
+                      <Chip tone={chipTone[a.sev]}>{a.sev}</Chip>
+                      <span style={{color:C.txt1,fontSize:S.body,fontWeight:500}}>{a.co}</span>
+                      <span style={{color:C.txt3,fontSize:S.micro}} title={a.thresholdNote||undefined}>
+                        {a.kpi} · {a.reading} against a threshold of {a.threshold} · {a.source} · as of {a.asOf}
+                      </span>
+                    </div>
+                    <div style={{color:C.txt2,fontSize:S.small,lineHeight:1.55}}>{a.msg}</div>
+                  </div>
+                  <Button variant="outline" onClick={()=>toggle(a.id)}>{ack?"Re-open":"Acknowledge"}</Button>
+                </div>
+              );
+            })}
+          </Panel>
+        );
+      })}
+
+      <ProvenanceBar items={[
+        "Every alert corresponds to a named threshold",
+        `${new Set(ALERTS_DATA.map(a=>a.source)).size} source systems`,
+        "An alert disappears when its reading recovers",
+        "Thresholds are visible on the row, not held back",
+      ]}/>
+    </Page>
+  );
+}
 
 function ActionsView(){
   const actions=useMemo(()=>trackedActions(),[]);
   const summary=useMemo(()=>actionSummary(actions),[actions]);
   const [f,setF]=useState("all");
   const [open,setOpen]=useState(null);
-  const pc={critical:T.red,high:T.amber,medium:T.blue,low:T.txt3};
-  const sc2={open:T.amber,in_progress:T.blue,done:T.green};
-  const vc={working:T.green,"no-change":T.txt3,worse:T.red};
+  const pc={critical:C.red,high:C.gold,medium:C.blue,low:C.txt3};
+  const pchip={critical:"red",high:"gold",medium:"blue",low:"muted"};
+  const sc2={open:C.gold,in_progress:C.blue,done:C.green};
+  const vc={working:C.green,"no-change":C.txt3,worse:C.red};
   const vl={working:"Metric improving","no-change":"No movement",worse:"Metric worsening"};
   const vis=f==="all"?actions:["working","no-change","worse"].includes(f)?actions.filter(a=>a.verdict===f):actions.filter(a=>a.status===f);
-  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}>
-    <div style={{marginBottom:14}}>
-      <h1 style={{color:T.txt1,fontSize:20,fontWeight:700,margin:0}}>Action Tracker</h1>
-      <div style={{color:T.txt3,fontSize:11,marginTop:2}}>
-        Every action names the KPI it was raised against. The verdict is read from the ledger, not set by the owner.
+
+  return(
+    <Page>
+      <PageHeader
+        crumbs={["Portfolio","Action Tracker"]}
+        title="Action Tracker"
+        chips={summary.worse>0?<Chip tone="red">{summary.worse} not working</Chip>:<Chip tone="green">Nothing worsening</Chip>}
+        purpose="Every action names the KPI it was raised against. The verdict is read from the ledger, not set by the owner."
+        meta={`${summary.total} actions on file across ${summary.companies} companies`}
+      />
+
+      <MetricRow items={[
+        {label:"Open actions",value:summary.open,tone:C.txt1,sub:`${summary.total} on file across ${summary.companies} companies`},
+        {label:"Metric improving",value:summary.working,tone:C.green,sub:"Moved the intended way since raised"},
+        {label:"Metric worsening",value:summary.worse,tone:C.red,sub:"The action has not arrested it"},
+        {label:"Completed and delivered",value:`${summary.completedWorking}/${summary.completedTotal}`,tone:C.green,sub:"Closed actions whose KPI actually moved"},
+      ]}/>
+
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={labelStyle()}>Filter</span>
+        {["all","open","in_progress","done","working","no-change","worse"].map(v=>(
+          <button key={v} onClick={()=>setF(v)}
+                  style={{padding:"5px 11px",borderRadius:4,cursor:"pointer",fontFamily:F.sans,
+                          fontSize:S.label,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",
+                          background:f===v?C.gold:"transparent",
+                          border:`1px solid ${f===v?C.gold:C.borderLt}`,
+                          color:f===v?C.goldOn:C.txt2}}>
+            {v==="in_progress"?"In progress":v==="no-change"?"No movement":v.charAt(0).toUpperCase()+v.slice(1)}
+          </button>))}
       </div>
-    </div>
 
-    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))",gap:9,marginBottom:14}}>
-      {[
-        {l:"Open actions",v:summary.open,c:T.txt1,s:`${summary.total} on file across ${summary.companies} companies`},
-        {l:"Metric improving",v:summary.working,c:T.green,s:"moved the intended way since raised"},
-        {l:"Metric worsening",v:summary.worse,c:T.red,s:"the action has not arrested it"},
-        {l:"Completed and delivered",v:`${summary.completedWorking}/${summary.completedTotal}`,c:T.green,s:"closed actions whose KPI actually moved"},
-      ].map(x=><div key={x.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"10px 12px"}}>
-        <div style={{color:T.txt3,fontSize:8,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{x.l}</div>
-        <div style={{color:x.c,fontSize:19,fontWeight:700,fontFamily:"monospace"}}>{x.v}</div>
-        <div style={{color:T.txt3,fontSize:8.5,marginTop:3,lineHeight:1.4}}>{x.s}</div>
-      </div>)}
-    </div>
+      <Panel title={`${vis.length} ${vis.length===1?"action":"actions"}`}
+             sub="Click a row for the baseline, the current reading and how the verdict was computed" pad={0}>
+        {vis.map(a=>(
+          <div key={a.id} onClick={()=>setOpen(p=>p===a.id?null:a.id)}
+               style={{padding:"11px 14px",borderBottom:`1px solid ${C.border}`,cursor:"pointer",
+                       borderLeft:`2px solid ${pc[a.priority]}`,opacity:a.status==="done"?0.82:1}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
+                  <Chip tone={pchip[a.priority]}>{a.priority}</Chip>
+                  <span style={{color:C.txt1,fontSize:S.body,fontWeight:500}}>{a.companyName}</span>
+                  <span style={{color:C.txt3,fontSize:S.micro}}>{a.metricLabel} · raised {a.raisedOn}</span>
+                </div>
+                <div style={{color:C.txt2,fontSize:S.small,marginBottom:6,lineHeight:1.5}}>{a.title}</div>
+                <div style={{display:"flex",gap:14,flexWrap:"wrap",alignItems:"center",color:C.txt3,fontSize:S.micro}}>
+                  <span>Owner <span style={{color:C.txt2}}>{a.owner}</span></span>
+                  <span>Due <span style={{color:C.txt2}}>{a.due}</span></span>
+                  <span style={{fontFamily:F.mono,fontVariantNumeric:"tabular-nums"}}>
+                    {a.baselineLabel} → <span style={{color:vc[a.verdict]}}>{a.currentLabel}</span>
+                  </span>
+                </div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0}}>
+                <span style={{color:sc2[a.status],fontSize:S.micro,fontWeight:700,padding:"2px 8px",
+                              background:`${sc2[a.status]}18`,border:`1px solid ${sc2[a.status]}55`,borderRadius:3,
+                              letterSpacing:"0.1em",textTransform:"uppercase",whiteSpace:"nowrap"}}>
+                  {a.status==="in_progress"?"In progress":a.status}
+                </span>
+                <span style={{color:vc[a.verdict],fontSize:S.micro,fontWeight:700,padding:"2px 8px",
+                              background:`${vc[a.verdict]}14`,border:`1px solid ${vc[a.verdict]}33`,borderRadius:3,
+                              whiteSpace:"nowrap"}}>
+                  {a.verdict==="working"?"▲":a.verdict==="worse"?"▼":"–"} {vl[a.verdict]}
+                </span>
+                <span style={{color:C.txt3,fontSize:S.micro,fontFamily:F.mono,fontVariantNumeric:"tabular-nums"}}>
+                  {a.pctMove>0?"+":""}{a.pctMove}% in {a.monthsElapsed}mo
+                </span>
+              </div>
+            </div>
+            {open===a.id&&(
+              <div style={{marginTop:11,paddingTop:10,borderTop:`1px solid ${C.border}`}}>
+                <div style={{color:vc[a.verdict],fontSize:S.small,lineHeight:1.65,marginBottom:10}}>{a.outcome}</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))",gap:10}}>
+                  {[["Metric",a.metricLabel],
+                    ["At the time it was raised",`${a.baselineLabel} (${a.raisedOn})`],
+                    ["Now",`${a.currentLabel} (${a.asOf})`],
+                    ["Movement",`${a.deltaLabel} · ${a.pctMove>0?"+":""}${a.pctMove}%`],
+                    ["Better when",a.better==="up"?"rising":"falling"],
+                    ["Elapsed",`${a.monthsElapsed} months`]].map(([k,v])=>(
+                    <div key={k}>
+                      <div style={{...labelStyle(),marginBottom:3}}>{k}</div>
+                      <div style={{color:C.txt2,fontSize:S.small}}>{v}</div>
+                    </div>))}
+                </div>
+                <div style={{color:C.txt3,fontSize:S.micro,marginTop:10,lineHeight:1.6}}>
+                  Baseline read from the ledger at {a.raisedOn}; current value from {a.asOf}. The verdict is computed
+                  from those two figures — a move of less than 2% counts as no movement.
+                </div>
+              </div>
+            )}
+          </div>))}
+      </Panel>
 
-    <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>
-      {["all","open","in_progress","done","working","no-change","worse"].map(v=>
-        <button key={v} onClick={()=>setF(v)} style={{padding:"5px 10px",background:f===v?T.blue:"transparent",border:`1px solid ${f===v?T.blue:T.border}`,borderRadius:5,color:f===v?"#fff":T.txt3,cursor:"pointer",fontSize:9}}>
-          {v==="in_progress"?"In Progress":v==="no-change"?"No movement":v.charAt(0).toUpperCase()+v.slice(1)}
-        </button>)}
-    </div>
+      <ProvenanceBar items={[
+        `${summary.total} actions tracked`,
+        "Verdicts computed from the ledger, not reported",
+        "A move under 2% counts as no movement",
+        `${summary.completedWorking} of ${summary.completedTotal} completed actions delivered`,
+      ]}/>
+    </Page>
+  );
+}
 
-    <div style={{display:"flex",flexDirection:"column",gap:5}}>{vis.map(a=>(
-      <div key={a.id} onClick={()=>setOpen(p=>p===a.id?null:a.id)} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${pc[a.priority]}`,borderRadius:7,padding:"11px 13px",cursor:"pointer",opacity:a.status==="done"?0.82:1}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
-              <span style={{color:pc[a.priority],fontSize:9,fontWeight:700,padding:"2px 7px",background:`${pc[a.priority]}18`,borderRadius:3}}>{a.priority.toUpperCase()}</span>
-              <span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.companyName}</span>
-              <span style={{color:T.txt3,fontSize:9}}>· {a.metricLabel} · raised {a.raisedOn}</span>
-            </div>
-            <div style={{color:T.txt2,fontSize:11,marginBottom:6,lineHeight:1.4}}>{a.title}</div>
-            <div style={{display:"flex",gap:10,flexWrap:"wrap",alignItems:"center"}}>
-              <span style={{color:T.txt3,fontSize:9}}>Owner: <span style={{color:T.txt2}}>{a.owner}</span></span>
-              <span style={{color:T.txt3,fontSize:9}}>Due: <span style={{color:T.txt2}}>{a.due}</span></span>
-              <span style={{color:T.txt3,fontSize:9,fontFamily:"monospace"}}>
-                {a.baselineLabel} <span style={{color:T.txt3}}>→</span> <span style={{color:vc[a.verdict]}}>{a.currentLabel}</span>
-              </span>
-            </div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:5,flexShrink:0}}>
-            <span style={{color:sc2[a.status],fontSize:9,fontWeight:700,padding:"2px 8px",background:`${sc2[a.status]}18`,borderRadius:3}}>
-              {a.status==="in_progress"?"In Progress":a.status.charAt(0).toUpperCase()+a.status.slice(1)}
-            </span>
-            <span style={{color:vc[a.verdict],fontSize:9,fontWeight:700,padding:"2px 8px",background:`${vc[a.verdict]}14`,border:`1px solid ${vc[a.verdict]}33`,borderRadius:3,whiteSpace:"nowrap"}}>
-              {a.verdict==="working"?"▲":a.verdict==="worse"?"▼":"–"} {vl[a.verdict]}
-            </span>
-            <span style={{color:T.txt3,fontSize:8.5,fontFamily:"monospace"}}>{a.pctMove>0?"+":""}{a.pctMove}% in {a.monthsElapsed}mo</span>
-          </div>
-        </div>
-        {open===a.id&&(
-          <div style={{marginTop:10,paddingTop:9,borderTop:`1px solid ${T.border}`}}>
-            <div style={{color:vc[a.verdict],fontSize:10.5,lineHeight:1.6,marginBottom:8}}>{a.outcome}</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
-              {[["Metric",a.metricLabel],["At the time it was raised",`${a.baselineLabel} (${a.raisedOn})`],["Now",`${a.currentLabel} (${a.asOf})`],["Movement",`${a.deltaLabel} · ${a.pctMove>0?"+":""}${a.pctMove}%`],["Better when",a.better==="up"?"rising":"falling"],["Elapsed",`${a.monthsElapsed} months`]].map(([k,v])=>
-                <div key={k}><div style={{color:T.txt3,fontSize:8.5,marginBottom:2}}>{k}</div><div style={{color:T.txt2,fontSize:10}}>{v}</div></div>)}
-            </div>
-            <div style={{color:T.txt3,fontSize:8.5,marginTop:8,lineHeight:1.5}}>
-              Baseline read from the ledger at {a.raisedOn}; current value from {a.asOf}. The verdict is computed from
-              those two figures — a move of less than 2% counts as no movement.
-            </div>
-          </div>
-        )}
-      </div>))}
-    </div>
-  </div>);}
-
-function Sidebar({view,setView}){
-  const crit=ALERTS_DATA.filter(a=>a.sev==="critical"&&a.st==="open").length;
+/**
+ * The section bar for this screen's four views.
+ *
+ * This used to be a 50px icon rail with a blue-to-purple gradient mark — a
+ * second navigation column inside a screen that already sits inside the
+ * application's own rail, in colours the brand does not use. It is now a row of
+ * named buttons carrying the same underline the top bar uses, so a viewer moving
+ * between the fund view and this one is looking at one navigation idea.
+ */
+function SectionBar({view,setView}){
+  const crit=ALERTS_DATA.filter(a=>a.sev==="critical").length;
   const acts=ACTIONS_DATA.filter(a=>a.st!=="done"&&(a.pri==="critical"||a.pri==="high")).length;
-  const items=[{id:"portfolio",icon:"⬡",l:"Portfolio"},{id:"alerts",icon:"◉",l:"Alerts",b:crit},{id:"actions",icon:"◈",l:"Actions",b:acts},{id:"reports",icon:"◧",l:"Reports",dis:true}];
-  return(<div style={{width:50,background:T.surface,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 0",gap:3,flexShrink:0}}><div style={{width:30,height:30,borderRadius:7,background:`linear-gradient(135deg,${T.blue},${T.purple})`,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:12,fontWeight:800,marginBottom:14}}>A</div>{items.map(it=><div key={it.id} style={{position:"relative"}}><button onClick={()=>!it.dis&&setView(it.id)} title={it.l} style={{width:36,height:36,borderRadius:6,border:"none",background:view===it.id?T.blue:"transparent",color:view===it.id?"#fff":it.dis?T.border:T.txt3,cursor:it.dis?"default":"pointer",fontSize:14,display:"flex",alignItems:"center",justifyContent:"center"}}>{it.icon}</button>{it.b>0&&<div style={{position:"absolute",top:2,right:2,width:13,height:13,borderRadius:"50%",background:T.red,color:"#fff",fontSize:7,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{it.b}</div>}</div>)}</div>);
+  const items=[
+    {id:"portfolio",l:"Portfolio"},
+    {id:"alerts",l:"Alerts",b:crit,tone:C.red},
+    {id:"actions",l:"Actions",b:acts,tone:C.gold},
+  ];
+  return(
+    <div style={{display:"flex",gap:2,alignItems:"center",borderBottom:`1px solid ${C.border}`,
+                 padding:"0 24px",flexShrink:0,background:C.bgDeep}}>
+      {items.map(it=>{
+        const on=view===it.id||(it.id==="portfolio"&&view==="company");
+        return(
+          <button key={it.id} onClick={()=>setView(it.id)}
+                  style={{padding:"10px 14px",background:"transparent",border:"none",cursor:"pointer",
+                          borderBottom:`2px solid ${on?C.gold:"transparent"}`,
+                          color:on?C.txt1:C.txt3,fontFamily:F.sans,fontSize:S.label,fontWeight:600,
+                          letterSpacing:"0.11em",textTransform:"uppercase",
+                          display:"flex",alignItems:"center",gap:7}}>
+            {it.l}
+            {it.b>0&&(
+              <span style={{padding:"1px 6px",borderRadius:8,background:`${it.tone}22`,color:it.tone,
+                            fontSize:S.micro,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{it.b}</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-export default function GPDashboard({ onGuide, openCompany }){
+export default function GPDashboard({ onGuide, openCompany, initialSection }){
   // Portfolio Health hands over the company that was clicked. Without this the
   // click landed on the portfolio list with the selection discarded, so the
   // route from the fund view to a company's detail was broken in the middle.
   const initial=openCompany?COMPANIES.find(c=>c.id===openCompany):null;
-  const [view,setView]=useState(initial?"company":"portfolio");
+  // `initialSection` lets the alerts and action-tracker sections be opened
+  // directly — by a link, and by the smoke test, which otherwise only ever
+  // rendered the portfolio list and so exercised a quarter of this file.
+  const [view,setView]=useState(initial?"company":(initialSection??"portfolio"));
   const [co,setCo]=useState(initial);
   function sel(c){setCo(c);setView("company");}
   function nav(v){if(v!=="company")setCo(null);setView(v);}
-  return(<div style={{display:"flex",height:"100%",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}><Sidebar view={view} setView={nav}/><div style={{flex:1,overflow:"hidden"}}>{view==="portfolio"&&<PortfolioView onSelect={sel} onGuide={onGuide}/>}{view==="company"&&co&&<CompanyView co={co} onBack={()=>nav("portfolio")}/>}{view==="alerts"&&<AlertsView/>}{view==="actions"&&<ActionsView/>}</div></div>);
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"100%",background:C.bg,overflow:"hidden"}}>
+      <SectionBar view={view} setView={nav}/>
+      <div style={{flex:1,overflow:"hidden",minHeight:0}}>
+        {view==="portfolio"&&<PortfolioView onSelect={sel} onGuide={onGuide}/>}
+        {view==="company"&&co&&<CompanyView co={co} onBack={()=>nav("portfolio")}/>}
+        {view==="alerts"&&<AlertsView/>}
+        {view==="actions"&&<ActionsView/>}
+      </div>
+    </div>
+  );
 }

@@ -34,6 +34,7 @@ import { buildOpportunityRadar } from "../src/lib/opportunityRadar.js";
 import { buildActionPlan } from "../src/lib/actionPlan.js";
 import { portfolioAlerts, portfolioActions, THRESHOLDS } from "../src/lib/alertsFeed.js";
 import { customerBook, debtorProfile } from "../src/lib/customers.js";
+import { salesQualityFor } from "../src/lib/companyModules.js";
 import { portfolioContext } from "../api/ai/_context.js";
 import { readFile, readdir } from "node:fs/promises";
 
@@ -1164,6 +1165,35 @@ check("the receivables ledger reconciles and the ages differ by company", () => 
     oldest.add(Math.max(...f.cash.debtors.map((d) => d.daysOverdue)));
   }
   return oldest.size > 4 || `only ${oldest.size} distinct oldest-debt ages across nine companies`;
+});
+
+check("the company page's sales-quality cards are populated for every company", () => {
+  // The reference draws three cards along the foot of the company page. Showing
+  // them only for the one company whose scenario happens to define sales cycle
+  // and churn would leave eight blank.
+  const seen = new Set();
+  for (const c of COMPANIES) {
+    const rows = salesQualityFor(c.id);
+    if (!rows || rows.length !== 3) return `${c.name} has ${rows?.length ?? 0} cards, not 3`;
+    for (const r of rows) {
+      if (!r.value || !r.basis || !r.source) return `${c.name}: "${r.label}" has no value, basis or source`;
+      if (/NaN|undefined/.test(r.value)) return `${c.name}: "${r.label}" reads ${r.value}`;
+    }
+    seen.add(rows.map((r) => r.value).join("|"));
+  }
+  return seen.size === COMPANIES.length ||
+    `only ${seen.size} distinct sales-quality readings across ${COMPANIES.length} companies`;
+});
+
+check("a modelled figure says so on the tile", () => {
+  for (const c of COMPANIES) {
+    for (const r of salesQualityFor(c.id)) {
+      if (typeof r.modelled !== "boolean") return `${c.name}: "${r.label}" does not declare whether it is modelled`;
+    }
+  }
+  // At least one must be read rather than modelled, or the row is all model.
+  return salesQualityFor(COMPANIES[0].id).some((r) => !r.modelled) ||
+    "every sales-quality figure is modelled — none is read from the ledger";
 });
 
 check("the debtor split always sums to one", () => {

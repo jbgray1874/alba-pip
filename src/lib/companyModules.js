@@ -314,6 +314,65 @@ export function benchmarksFor(id, opts = {}) {
   ];
 }
 
+/**
+ * Sales-cycle length, quarterly churn and deal slip rate, per company.
+ *
+ * The reference company screen carries these three along its foot. Only one of
+ * them can be read straight from the ledger, so the other two are marked as
+ * modelled and each states the basis on the tile rather than in a footnote. The
+ * alternative — showing them for the one company where a scenario happens to
+ * define them and leaving eight cards blank — is the failure mode this build
+ * spent a fortnight removing.
+ *
+ * @param {string} id company id
+ */
+export function salesQualityFor(id, opts = {}) {
+  const co = companyById(id);
+  if (!co) return null;
+  const fin = buildFinance({ id, status: co.rag.toLowerCase() }, opts);
+  const b = SECTOR_BENCHMARKS[co.sector] ?? DEFAULT_BENCHMARK;
+  const s = fin.sales;
+  const r1 = (v) => Math.round(v * 10) / 10;
+
+  // Deal slip: the share of pipeline coverage that has gone. Read, not modelled.
+  const slipRate = Math.max(0, ((s.coverageFrom - s.pipelineCoverage) / s.coverageFrom) * 100);
+
+  // Sales cycle: in a steady-state funnel, average time to close moves inversely
+  // with the conversion rate. Anchored on the sector's CAC payback, which is the
+  // only cycle-length reference the benchmark set carries.
+  const baseCycle = b.cacPayback[0] * 5;                 // months of payback → days of cycle
+  const cycleDays = baseCycle * (s.winRateFrom / Math.max(s.winRatePct, 1));
+
+  // Churn: the sector's own attrition benchmark, scaled by how far this company
+  // is running under its revenue plan. A company at plan sits on the benchmark.
+  const underPlan = Math.max(1, fin.revenue.budget / Math.max(fin.revenue.total, 1));
+  const churnPct = (b.attrition[0] / 4) * underPlan;     // annual → quarterly, then scaled
+
+  return [
+    {
+      label: "Sales cycle", value: `${Math.round(cycleDays)} days`,
+      from: `${Math.round(baseCycle)} days`, worse: cycleDays > baseCycle, modelled: true,
+      basis: `Sector payback ${b.cacPayback[0]} months as the cycle anchor, scaled by win rate ` +
+             `${r1(s.winRateFrom)}% → ${r1(s.winRatePct)}%`,
+      source: "Modelled from HubSpot",
+    },
+    {
+      label: "Quarterly churn", value: `${r1(churnPct)}%`,
+      from: `${r1(b.attrition[0] / 4)}% sector`, worse: churnPct > b.attrition[0] / 4, modelled: true,
+      basis: `Sector benchmark ${b.attrition[0]}% annual, quarterly, scaled by revenue at ` +
+             `${Math.round((fin.revenue.total / fin.revenue.budget) * 100)}% of plan`,
+      source: "Modelled from Stripe",
+    },
+    {
+      label: "Deal slip rate", value: `${r1(slipRate)}%`,
+      from: `${r1(s.coverageFrom)}× coverage`, worse: slipRate > 0, modelled: false,
+      basis: `Pipeline coverage ${r1(s.coverageFrom)}× → ${r1(s.pipelineCoverage)}× over ` +
+             `${fin.history.months.length} months`,
+      source: "HubSpot",
+    },
+  ];
+}
+
 /** Which disciplines are modelled rather than read from a source system. */
 export const MODELLED_DISCIPLINES = ["ops", "procurement", "technology", "compliance"];
 
