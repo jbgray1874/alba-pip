@@ -22,7 +22,7 @@ import { buildExpansion } from "../src/lib/scenarioExpansion.js";
 import { buildCash, buildCashScenario } from "../src/lib/scenarioCash.js";
 import { buildMargin } from "../src/lib/scenarioMargin.js";
 import { buildProcurement } from "../src/lib/scenarioProcurement.js";
-import { modulesFor, MODELLED_DISCIPLINES } from "../src/lib/companyModules.js";
+import { modulesFor, MODELLED_DISCIPLINES, benchmarksFor } from "../src/lib/companyModules.js";
 import { trackedActions, actionSummary } from "../src/lib/actionTracker.js";
 import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
@@ -336,6 +336,14 @@ check("all five scenarios carry sourced, dated evidence and dated actions", () =
 // ── 8c. Company modules and the closed loop ─────────────────────────────────
 section("Company detail — every company, not just one");
 
+const codeOfEarly = async (rel) => (await readFile(new URL(rel, import.meta.url), "utf8"))
+  .replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+const clientSrc = await codeOfEarly("../src/views/ClientPortal.jsx");
+const realtimeSrc = await codeOfEarly("../src/views/RealTime.jsx");
+const scenarioSrcs = await Promise.all(
+  ["ScenarioRevenueMiss", "ScenarioExpansion", "ScenarioCash", "ScenarioMargin", "ScenarioProcurement"]
+    .map(async (n) => [`${n}.jsx`, await codeOfEarly(`../src/views/${n}.jsx`)]));
+
 check("every company has every module populated", () => {
   for (const c of COMPANIES) {
     const m = modulesFor(c.id);
@@ -361,6 +369,47 @@ check("no module KPI renders as undefined, NaN or Infinity", () => {
     }
   }
   return true;
+});
+
+check("benchmarks are the company's own, not another company's", () => {
+  // BenchmarkModule fell back to BENCHMARKS.meridian, so eight companies showed
+  // Meridian's figures under their own name. Silently wrong beats blank for
+  // damage: blank gets reported, wrong gets quoted.
+  const seen = new Map();
+  for (const c of COMPANIES) {
+    const b = benchmarksFor(c.id);
+    if (!b || b.length < 5) return `${c.name}: no benchmarks`;
+    const fin = buildFinance({ id: c.id, status: c.rag.toLowerCase() });
+    const gm = b.find((x) => x.kpi === "Gross Margin");
+    if (Math.abs(gm.company - fin.ebitda.grossMargin) > 0.1)
+      return `${c.name}: benchmark says ${gm.company}% gross margin, model says ${fin.ebitda.grossMargin}%`;
+    const key = b.map((x) => x.company).join(",");
+    if (seen.has(key)) return `${c.name} and ${seen.get(key)} show identical benchmark figures`;
+    seen.set(key, c.name);
+  }
+  return true;
+});
+
+check("no screen is pinned to a single company", () => {
+  // ClientPortal and RealTime both hardcoded Meridian — RealTime seeded cash at
+  // 412,500 against a model that says 663,000, the same stale figure that had
+  // already been found in three other places.
+  const pinned = [];
+  for (const [file, src] of [["ClientPortal.jsx", clientSrc], ["RealTime.jsx", realtimeSrc]]) {
+    if (!src.includes("COMPANIES")) pinned.push(`${file} never reads the registry`);
+    if (/412500|412,500|\b4\.8\b.*runway|runway.*\b4\.8\b/.test(src)) pinned.push(`${file} still carries a hardcoded figure`);
+  }
+  return pinned.length === 0 || pinned.join("; ");
+});
+
+check("generating a report shows it rather than only offering a file", () => {
+  // A download is silently inert in a sandboxed viewer, so the button appeared
+  // to work and produced nothing. Every scenario now opens the report on screen.
+  const missing = [];
+  for (const [file, src] of scenarioSrcs) {
+    if (!src.includes("ReportPanel")) missing.push(file);
+  }
+  return missing.length === 0 || `${missing.join(", ")} still only offers a download`;
 });
 
 check("the company page agrees with the portfolio table", () => {

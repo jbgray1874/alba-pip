@@ -10,8 +10,9 @@
 import { useMemo, useState } from "react";
 import { buildMargin, LINES, PARAMS } from "../lib/scenarioMargin.js";
 import { fmtMoney } from "../lib/fx.js";
-import { buildMarginReport, downloadReport } from "../lib/reports.js";
+import { buildMarginReport } from "../lib/reports.js";
 import InsightCard from "../components/InsightCard.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -36,6 +37,7 @@ export default function ScenarioMargin() {
   const ccy = s.currency;
   const money = (v) => fmtMoney(v, ccy, { k: true });
   const report = useMemo(() => buildMarginReport(s), [s]);
+  const [showReport, setShowReport] = useState(false);
   const [open, setOpen] = useState(s.bridge[0].driver);
 
   const selected = s.bridge.find((b) => b.driver === open);
@@ -53,7 +55,7 @@ export default function ScenarioMargin() {
           {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
         </div>
         </div>
-        <button onClick={() => downloadReport(report)}
+        <button onClick={() => setShowReport(true)}
                 style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
                          color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
           Generate margin review
@@ -211,6 +213,7 @@ export default function ScenarioMargin() {
           <span>{history[history.length - 1].month} · {s.marginNow}%</span>
         </div>
       </Panel>
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
     </div>
   );
 }

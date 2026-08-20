@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
 import { forDashboard } from "../lib/companies.js";
-import { modulesFor } from "../lib/companyModules.js";
+import { modulesFor, benchmarksFor } from "../lib/companyModules.js";
 import { trackedActions, actionSummary } from "../lib/actionTracker.js";
 import { buildInvestigation } from "../lib/investigation.js";
 
@@ -59,16 +59,7 @@ const ACTIONS_DATA = [
 ];
 
 // ── BENCHMARKS ────────────────────────────────────────────────────────────────
-const BENCHMARKS = {
-  meridian: [
-    { kpi:"Gross Margin",     company:71, sectorMedian:72, topQuartile:80, bottomQuartile:60, unit:"%" },
-    { kpi:"NRR",              company:94, sectorMedian:105,topQuartile:120,bottomQuartile:90, unit:"%" },
-    { kpi:"CAC Payback",      company:18, sectorMedian:14, topQuartile:10, bottomQuartile:22, unit:"mo", lowerBetter:true },
-    { kpi:"Rule of 40",       company:29, sectorMedian:35, topQuartile:50, bottomQuartile:20, unit:"" },
-    { kpi:"Revenue per Emp",  company:107,sectorMedian:120,topQuartile:160,bottomQuartile:80, unit:"£k" },
-    { kpi:"Attrition",        company:14, sectorMedian:12, topQuartile:8,  bottomQuartile:18, unit:"%", lowerBetter:true },
-  ],
-};
+
 
 // ── MICRO COMPONENTS ──────────────────────────────────────────────────────────
 function HealthRing({score,size=48}){
@@ -173,7 +164,7 @@ function HRModule({d}){return(<div style={{display:"flex",flexDirection:"column"
 function CrossFunctionalModule({d}){return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.amberDim,border:`1px solid ${T.amber}22`,borderRadius:6,padding:"8px 12px",color:T.amber,fontSize:10}}>⚡ Cross-functional KPIs — the metrics PE/VC actually use for valuation and intervention decisions. Derived from Finance + Sales + HR data. Click any tile to see calculation method and confidence.</div><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:9}}>{d.kpis.map((k,i)=><KpiCard key={i} {...k}/>)}</div></div>);}
 
 function BenchmarkModule({co}){
-  const bm=BENCHMARKS[co.id]||BENCHMARKS.meridian;
+  const bm=benchmarksFor(co.id);
   return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{color:T.txt3,fontSize:10,marginBottom:4}}>Benchmarked against {co.sector} companies at {co.stage} stage. Source: Alpha Vantage · Yahoo Finance · Internal portfolio data.</div>{bm.map((b,i)=>{const isLower=b.lowerBetter;const pos=isLower?(b.company<=b.topQuartile?"green":b.company<=b.sectorMedian?"amber":"red"):(b.company>=b.topQuartile?"green":b.company>=b.sectorMedian?"amber":"red");const range=b.topQuartile-b.bottomQuartile||1;const pct=Math.min(100,Math.max(0,((b.company-b.bottomQuartile)/range)*100));return(<div key={i} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{color:T.txt1,fontSize:12,fontWeight:600}}>{b.kpi}</span><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{color:ragCol(pos),fontSize:13,fontWeight:700,fontFamily:"monospace"}}>{b.company}{b.unit}</span><RagBadge status={pos}/></div></div><div style={{position:"relative",height:8,background:T.border,borderRadius:4,marginBottom:6}}><div style={{position:"absolute",left:`${Math.min(100,Math.max(0,((b.bottomQuartile+(range*0.25)-b.bottomQuartile)/range)*100))}%`,right:`${100-Math.min(100,Math.max(0,((b.topQuartile-b.bottomQuartile*0.25)/range)*100))}%`,top:0,bottom:0,background:`${T.green}22`,borderRadius:4}}/><div style={{position:"absolute",left:`${pct}%`,top:-2,width:12,height:12,borderRadius:"50%",background:ragCol(pos),transform:"translateX(-50%)",border:`2px solid ${T.bg}`}}/></div><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:T.txt3,fontSize:8}}>Bottom Q4: {b.bottomQuartile}{b.unit}</span><span style={{color:T.txt3,fontSize:8}}>Median: {b.sectorMedian}{b.unit}</span><span style={{color:T.green,fontSize:8}}>Top Q1: {b.topQuartile}{b.unit}</span></div></div>);})}</div>);
 }
 

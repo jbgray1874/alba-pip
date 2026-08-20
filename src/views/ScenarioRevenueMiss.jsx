@@ -13,9 +13,10 @@
 import { useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, ReferenceLine } from "recharts";
 import { buildRevenueMiss } from "../lib/scenarioRevenueMiss.js";
-import { buildExceptionReport, downloadReport } from "../lib/reports.js";
+import { buildExceptionReport } from "../lib/reports.js";
 import { fmtMoney } from "../lib/fx.js";
 import InsightCard from "../components/InsightCard.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -94,6 +95,7 @@ export default function ScenarioRevenueMiss() {
   const ccy = s.currency;
   const money = (v) => fmtMoney(v, ccy, { k: true });
   const report = useMemo(() => buildExceptionReport(s), [s]);
+  const [showReport, setShowReport] = useState(false);
 
   const trend = s.fin.sales.history.map((m, i) => ({
     month: m.month.slice(2),
@@ -112,7 +114,7 @@ export default function ScenarioRevenueMiss() {
             {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
           </div>
         </div>
-        <button onClick={() => downloadReport(report)}
+        <button onClick={() => setShowReport(true)}
                 style={{ padding: "7px 14px", background: T.blue, border: "none", borderRadius: 6,
                          color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
           Generate exception report
@@ -205,6 +207,7 @@ export default function ScenarioRevenueMiss() {
           )}
         </div>
       </Panel>
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
     </div>
   );
 }

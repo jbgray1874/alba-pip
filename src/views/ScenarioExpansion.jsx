@@ -12,9 +12,10 @@
 
 import { useMemo, useState } from "react";
 import { buildExpansion, PRODUCTS, WEIGHTS, PRIOR_WINS, PARAMS } from "../lib/scenarioExpansion.js";
-import { buildGrowthBrief, downloadReport } from "../lib/reports.js";
+import { buildGrowthBrief } from "../lib/reports.js";
 import { fmtMoney } from "../lib/fx.js";
 import InsightCard from "../components/InsightCard.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -44,6 +45,7 @@ export default function ScenarioExpansion() {
   const money = (v) => fmtMoney(v, ccy, { k: true });
   const [openAccount, setOpenAccount] = useState(s.qualified[0]?.account ?? null);
   const report = useMemo(() => buildGrowthBrief(s), [s]);
+  const [showReport, setShowReport] = useState(false);
   const t = s.totals;
 
   const selected = s.qualified.find((c) => c.account === openAccount);
@@ -58,7 +60,7 @@ export default function ScenarioExpansion() {
             {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
           </div>
         </div>
-        <button onClick={() => downloadReport(report)}
+        <button onClick={() => setShowReport(true)}
                 style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
                          color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
           Generate growth brief
@@ -169,6 +171,7 @@ export default function ScenarioExpansion() {
           Scoring weights — {Object.entries(WEIGHTS).map(([k, v]) => `${k} ${v}`).join(" · ")}. Qualifying score {PARAMS.qualifyingScore}.
         </div>
       </Panel>
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
     </div>
   );
 }

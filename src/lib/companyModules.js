@@ -267,6 +267,53 @@ export function modulesFor(id, opts = {}) {
            meta: { asOf: fin.asOf, currency: ccy, company: co.name, freshness: co.freshness, updated: co.upd } };
 }
 
+/**
+ * Benchmarks for one company against its sector.
+ *
+ * GPDashboard held a BENCHMARKS literal with one key and fell back to
+ * `BENCHMARKS.meridian` for everything else — so eight companies displayed
+ * Meridian's benchmark figures under their own name. Khaleej, on 29% gross
+ * margin, showed 71%. Silently wrong is worse than blank, because blank gets
+ * reported and wrong gets quoted.
+ *
+ * The company column is read from the finance model. The sector quartiles are
+ * reference ranges per sector — the one thing here that genuinely cannot come
+ * from the portfolio, since it describes companies the fund does not own.
+ */
+const SECTOR_BENCHMARKS = {
+  "B2B SaaS":        { gm: [72, 80, 60], nrr: [105, 120, 90], rule40: [35, 50, 20], revPerHead: [120, 160, 80],  attrition: [12, 8, 18], cacPayback: [14, 10, 22] },
+  "B2B Software":    { gm: [74, 82, 62], nrr: [108, 124, 92], rule40: [36, 52, 20], revPerHead: [125, 168, 84],  attrition: [12, 8, 18], cacPayback: [14, 10, 22] },
+  "FinTech":         { gm: [68, 79, 55], nrr: [110, 128, 94], rule40: [38, 54, 22], revPerHead: [140, 190, 95],  attrition: [11, 7, 17], cacPayback: [13, 9, 20] },
+  "HealthTech":      { gm: [62, 74, 48], nrr: [102, 116, 88], rule40: [28, 44, 14], revPerHead: [105, 145, 70],  attrition: [14, 9, 21], cacPayback: [17, 12, 26] },
+  "Logistics":       { gm: [38, 48, 28], nrr: [98, 110, 86],  rule40: [22, 34, 10], revPerHead: [135, 180, 90],  attrition: [18, 12, 26], cacPayback: [15, 11, 23] },
+  "Manufacturing":   { gm: [42, 52, 32], nrr: [96, 108, 84],  rule40: [20, 32, 9],  revPerHead: [150, 200, 105], attrition: [13, 9, 19], cacPayback: [16, 11, 24] },
+  "Consumer":        { gm: [34, 44, 24], nrr: [94, 106, 82],  rule40: [18, 30, 8],  revPerHead: [115, 155, 78],  attrition: [22, 15, 30], cacPayback: [18, 13, 27] },
+  "Energy Services": { gm: [31, 40, 22], nrr: [97, 109, 85],  rule40: [19, 31, 8],  revPerHead: [160, 215, 110], attrition: [15, 10, 22], cacPayback: [19, 14, 28] },
+};
+const DEFAULT_BENCHMARK = SECTOR_BENCHMARKS["B2B SaaS"];
+
+export function benchmarksFor(id, opts = {}) {
+  const co = companyById(id);
+  if (!co) return null;
+  const fin = buildFinance({ id, status: co.rag.toLowerCase() }, opts);
+  const b = SECTOR_BENCHMARKS[co.sector] ?? DEFAULT_BENCHMARK;
+  const s = co.subScores;
+
+  const arr = fin.revenue.total * 12;
+  const growthPct = ((fin.revenue.total / fin.history.revenue[0].actual) ** (12 / (fin.history.months.length - 1)) - 1) * 100;
+  const row = (kpi, value, [median, top, bottom], unit, lowerBetter = false, modelled = false) =>
+    ({ kpi, company: Math.round(value * 10) / 10, sectorMedian: median, topQuartile: top, bottomQuartile: bottom, unit, lowerBetter, modelled });
+
+  return [
+    row("Gross Margin",    fin.ebitda.grossMargin, b.gm, "%"),
+    row("Rule of 40",      growthPct + fin.ebitda.pct, b.rule40, ""),
+    row("Revenue per Emp", arr / fin.people.headcount, b.revPerHead, `${fin.currency === "GBP" ? "£" : ""}k`),
+    row("Attrition",       fin.people.attritionPct, b.attrition, "%", true),
+    row("NRR",             byScore(s.sales, 84, 100, 124), b.nrr, "%", false, true),
+    row("CAC Payback",     byScore(s.sales, 26, 16, 9), b.cacPayback, "mo", true, true),
+  ];
+}
+
 /** Which disciplines are modelled rather than read from a source system. */
 export const MODELLED_DISCIPLINES = ["ops", "procurement", "technology", "compliance"];
 

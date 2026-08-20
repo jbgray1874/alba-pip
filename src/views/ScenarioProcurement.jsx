@@ -11,8 +11,9 @@
 import { useMemo, useState } from "react";
 import { buildProcurement, CATEGORIES, PARAMS } from "../lib/scenarioProcurement.js";
 import { fmtMoney } from "../lib/fx.js";
-import { buildProcurementReport, downloadReport } from "../lib/reports.js";
+import { buildProcurementReport } from "../lib/reports.js";
 import InsightCard from "../components/InsightCard.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -48,6 +49,7 @@ export default function ScenarioProcurement() {
   const ccy = s.currency;
   const money = (v) => fmtMoney(v, ccy, { k: true });
   const report = useMemo(() => buildProcurementReport(s), [s]);
+  const [showReport, setShowReport] = useState(false);
   const t = s.totals;
   const [open, setOpen] = useState(s.vendors[0]?.canonical ?? null);
 
@@ -63,7 +65,7 @@ export default function ScenarioProcurement() {
           {t.companies} companies · {t.suppliers} shared suppliers · restated into {ccy} at pinned rates · as of 2026-05
         </div>
         </div>
-        <button onClick={() => downloadReport(report)}
+        <button onClick={() => setShowReport(true)}
                 style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
                          color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
           Generate procurement brief
@@ -236,6 +238,7 @@ export default function ScenarioProcurement() {
           Realised over {PARAMS.implementationMonths} months as contracts reach renewal.
         </div>
       </Panel>
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
     </div>
   );
 }

@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useMemo, createContext, useContext } from "react";
+import { COMPANIES, companyById } from "../lib/companies.js";
+import { buildFinance } from "../lib/financeData.js";
+import { modulesFor } from "../lib/companyModules.js";
 import { AreaChart, Area, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 // ── TOKENS ────────────────────────────────────────────────────────────────────
@@ -61,40 +64,78 @@ const WIDGET_REGISTRY = [
 ];
 
 // ── MOCK DATA ─────────────────────────────────────────────────────────────────
-const COMPANY = {
-  name:"Meridian SaaS", score:62, status:"amber",
-  runway:4.8, rvb:87, burn:138, ebitda:-8,
-  pipeline:2.1, winRate:28, quota:82, nrr:94,
-  headcount:29, headcountPlan:32, attrition:14, openRoles:6,
-  sla:91, backlog:184, dso:47, rule40:29,
-  sector:"B2B SaaS", stage:"Series A", fund:"Caledonia Alba",
-};
-const DATA = {
-  rev:   MO.map((m,i)=>({m,actual:[210,224,235,248,255,261,268,272,261,255,258,261][i],budget:[240,248,255,262,270,278,285,292,298,304,310,315][i]})),
-  cash:  [{m:"May",v:1100},{m:"Jun",v:980},{m:"Jul",v:860},{m:"Aug",v:740},{m:"Sep",v:620},{m:"Oct",v:500},{m:"Nov",v:380},{m:"Dec",v:250},{m:"Jan",v:120}],
-  pipe:  MO.map((m,i)=>({m,pipe:[1800,1920,1850,2100,2050,1980,1900,1820,1750,1680,1620,1580][i],target:2100})),
-  att:   MO.map((m,i)=>({m,att:[8,9,9,10,10,11,12,12,13,13,14,14][i],bench:10})),
-  burn:  mk([118,121,124,126,129,131,133,135,136,137,138,138]),
-};
+// The portal was pinned to Meridian: one company, hardcoded, with a cash chart
+// opening at 1100 and a runway of 4.8 typed in beside it. It now takes whichever
+// company is selected and reads every figure from the same model as the rest of
+// the platform.
+const PortalCtx = createContext(null);
+const useCompany = () => useContext(PortalCtx).company;
+const useData = () => useContext(PortalCtx).data;
+
+function portalDataFor(id) {
+  const co = companyById(id);
+  const fin = buildFinance({ id, status: co.rag.toLowerCase() });
+  const mod = modulesFor(id);
+  const arr = fin.revenue.total * 12;
+  const growthPct = ((fin.revenue.total / fin.history.revenue[0].actual) ** (12 / (fin.history.months.length - 1)) - 1) * 100;
+  return {
+    company: {
+      id, name: co.name, score: co.score, status: co.rag.toLowerCase(),
+      runway: fin.runway,
+      rvb: Math.round((fin.revenue.total / fin.revenue.budget) * 100),
+      burn: Math.round(fin.cash.burn),
+      ebitda: fin.ebitda.pct,
+      pipeline: fin.sales.pipelineCoverage,
+      winRate: fin.sales.winRatePct,
+      quota: Math.round((fin.revenue.total / fin.revenue.budget) * 100),
+      headcount: fin.people.headcount,
+      headcountPlan: fin.people.planHeadcount,
+      attrition: fin.people.attritionPct,
+      openRoles: Math.max(0, fin.people.planHeadcount - fin.people.headcount),
+      dso: parseInt(mod.finance.kpis.find((k) => k.label === "DSO").value, 10),
+      rule40: Math.round(growthPct + fin.ebitda.pct),
+      sla: parseInt(mod.ops.kpis.find((k) => k.label === "SLA Adherence").value, 10),
+      backlog: parseInt(mod.ops.kpis.find((k) => k.label === "Ticket Backlog").value, 10),
+      nrr: parseInt(mod.sales.kpis.find((k) => k.label === "Net Revenue Retention").value, 10),
+      arr, currency: fin.native.currency, asOf: fin.asOf,
+      cash: fin.native.cash * 1000, revenue: fin.native.revenue * 1000,
+      sector: co.sector, stage: co.stage, fund: "Caledonia Alba",
+    },
+    data: { rev: mod.finance.rev, cash: mod.finance.cash, pipe: mod.sales.pipe, att: mod.hr.att },
+  };
+}
+
 const MY_ACTIONS = [
   { id:1, title:"Escalate top-5 overdue debtors (£82k outstanding)",      due:"2026-06-02", pri:"critical", st:"open" },
   { id:2, title:"Prepare bridge financing options for next board meeting", due:"2026-06-05", pri:"high",     st:"open" },
   { id:3, title:"Hiring freeze memo — all non-critical roles",            due:"2026-06-01", pri:"high",     st:"in_progress" },
   { id:4, title:"Win/loss analysis — 3 consecutive months declining",     due:"2026-06-10", pri:"medium",   st:"open" },
 ];
-const MY_ALERTS = [
-  { id:1, sev:"high",     msg:"Cash runway at 4.8 months — burn +£12k MoM, DSO +15 days.", time:"4h ago" },
-  { id:2, sev:"high",     msg:"Pipeline coverage 2.1× vs 3× target. Win rate declining.", time:"4h ago" },
-  { id:3, sev:"watchlist",msg:"Attrition 14% — approaching amber/red boundary.", time:"2d ago" },
-];
-const DATA_FIELDS = [
-  { label:"Cash Balance (£)",         val:"412,500",  src:"TrueLayer",  status:"green", lastSent:"4h ago" },
-  { label:"Monthly Revenue (£)",      val:"261,000",  src:"Xero",       status:"green", lastSent:"4h ago" },
-  { label:"Monthly Burn (£)",         val:"138,000",  src:"Xero",       status:"green", lastSent:"4h ago" },
-  { label:"Headcount",                val:"29",        src:"BambooHR",   status:"green", lastSent:"12h ago" },
-  { label:"Pipeline Value (£)",       val:"1,580,000", src:"Salesforce", status:"green", lastSent:"47m ago" },
-  { label:"AR Overdue > 30 days (£)", val:"74,000",   src:"Xero",       status:"amber", lastSent:"4h ago" },
-];
+function alertsFor(c) {
+  const out = [];
+  if (c.runway < 9) out.push({ id:1, sev: c.runway < 5 ? "high" : "watchlist",
+    msg:`Cash runway at ${c.runway} months on burn of ${c.burn}k a month.`, time:"4h ago" });
+  if (c.pipeline < 3) out.push({ id:2, sev: c.pipeline < 2 ? "high" : "watchlist",
+    msg:`Pipeline coverage ${c.pipeline}× against a 3× target. Win rate ${c.winRate}%.`, time:"4h ago" });
+  if (c.attrition > 12) out.push({ id:3, sev: c.attrition > 20 ? "high" : "watchlist",
+    msg:`Attrition ${c.attrition}% with ${c.openRoles} roles unfilled against plan.`, time:"2d ago" });
+  if (c.rvb < 95) out.push({ id:4, sev: c.rvb < 85 ? "high" : "watchlist",
+    msg:`Revenue at ${c.rvb}% of plan.`, time:"4h ago" });
+  return out.length ? out : [{ id:0, sev:"watchlist", msg:"No threshold breached this period.", time:"4h ago" }];
+}
+
+function dataFieldsFor(c) {
+  const n = (v) => Math.round(v).toLocaleString();
+  return [
+    { label:`Cash Balance (${c.currency})`,     val:`${n(c.cash)}`,       src:"Xero bank feed", status:"green", lastSent:"4h ago" },
+    { label:`Monthly Revenue (${c.currency})`,  val:`${n(c.revenue)}`,    src:"Xero",           status:"green", lastSent:"4h ago" },
+    { label:`Monthly Burn (${c.currency})`,     val:`${n(c.burn * 1000)}`,src:"Xero",           status:"green", lastSent:"4h ago" },
+    { label:"Headcount",                        val:`${c.headcount}`,     src:"BambooHR",       status:"green", lastSent:"12h ago" },
+    { label:"Attrition (%)",                    val:`${c.attrition}`,     src:"BambooHR",       status:"green", lastSent:"12h ago" },
+    { label:"Pipeline Coverage (×)",            val:`${c.pipeline}`,      src:"HubSpot",        status:"green", lastSent:"47m ago" },
+  ];
+}
+
 
 // ── TOOLTIP ───────────────────────────────────────────────────────────────────
 const TT = ({active,payload,label}) => {
@@ -307,6 +348,7 @@ function BenchmarksWidget() {
 }
 
 function RevenueChart() {
+  const DATA = useData();
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Revenue — Actual vs Budget (£k)</div>
@@ -325,6 +367,7 @@ function RevenueChart() {
 }
 
 function CashChart() {
+  const DATA = useData();
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Cash Projection (£k)</div>
@@ -343,6 +386,7 @@ function CashChart() {
 }
 
 function PipelineChart() {
+  const DATA = useData();
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Pipeline vs Target (£k)</div>
@@ -361,6 +405,7 @@ function PipelineChart() {
 }
 
 function AttritionChart() {
+  const DATA = useData();
   return (
     <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Attrition vs Benchmark (%)</div>
@@ -379,7 +424,7 @@ function AttritionChart() {
 }
 
 // ── WIDGET RENDERER ───────────────────────────────────────────────────────────
-function renderWidget(id, actions, setActions) {
+function renderWidget(id, actions, setActions, COMPANY, DATA) {
   const co = COMPANY;
   const sc = v => v>=75?"green":v>=50?"amber":"red";
   const widgets = {
@@ -404,17 +449,19 @@ function renderWidget(id, actions, setActions) {
     pipeline_chart: <PipelineChart/>,
     att_chart:      <AttritionChart/>,
     my_actions:     <ActionsList actions={actions} setActions={setActions}/>,
-    data_submit:    <DataSubmission fields={DATA_FIELDS}/>,
+    data_submit:    <DataSubmission fields={dataFieldsFor(COMPANY)}/>,
     gp_view_card:   <GPViewCard company={COMPANY}/>,
     commentary:     <CommentaryBox/>,
     benchmarks:     <BenchmarksWidget/>,
-    alerts_panel:   <AlertsPanel alerts={MY_ALERTS}/>,
+    alerts_panel:   <AlertsPanel alerts={alertsFor(COMPANY)}/>,
   };
   return widgets[id] || <div style={{padding:16,color:T.txt3,fontSize:11}}>Widget not found</div>;
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────────
 function Dashboard({role}) {
+  const COMPANY = useCompany();
+  const DATA = useData();
   const [editMode, setEditMode] = useState(false);
   const [actions, setActions] = useState(MY_ACTIONS);
   const defaultOn = WIDGET_REGISTRY.filter(w=>w.roles.includes(role)).map(w=>w.id);
@@ -467,7 +514,7 @@ function Dashboard({role}) {
           {small.map(w=>(
             <div key={w.id} style={{position:"relative"}}>
               {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:T.red,color:"#fff",border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
-              {renderWidget(w.id,actions,setActions)}
+              {renderWidget(w.id, actions, setActions, COMPANY, DATA)}
             </div>
           ))}
         </div>
@@ -479,7 +526,7 @@ function Dashboard({role}) {
           {medium.map(w=>(
             <div key={w.id} style={{position:"relative"}}>
               {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:T.red,color:"#fff",border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
-              {renderWidget(w.id,actions,setActions)}
+              {renderWidget(w.id, actions, setActions, COMPANY, DATA)}
             </div>
           ))}
         </div>
@@ -489,7 +536,7 @@ function Dashboard({role}) {
       {large.map(w=>(
         <div key={w.id} style={{position:"relative",marginBottom:14}}>
           {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:T.red,color:"#fff",border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
-          {renderWidget(w.id,actions,setActions)}
+          {renderWidget(w.id, actions, setActions, COMPANY, DATA)}
         </div>
       ))}
     </div>
@@ -499,16 +546,23 @@ function Dashboard({role}) {
 // ── ROOT ──────────────────────────────────────────────────────────────────────
 export default function ClientPortal() {
   const [role, setRole] = useState("ceo");
+  const [companyId, setCompanyId] = useState(COMPANIES[0].id);
+  const { company: COMPANY, data: DATA } = useMemo(() => portalDataFor(companyId), [companyId]);
   const active = ROLES.find(r=>r.id===role);
+  const ctx = useMemo(() => ({ company: COMPANY, data: DATA }), [COMPANY, DATA]);
 
   return (
-    <div style={{display:"flex",height:"100vh",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}>
+    <PortalCtx.Provider value={ctx}>
+    <div style={{display:"flex",height:"100%",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}>
       {/* Role sidebar */}
       <div style={{width:180,background:"#fff",borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",padding:"16px 0",flexShrink:0,boxShadow:"1px 0 4px rgba(0,0,0,0.04)"}}>
         <div style={{padding:"0 14px 14px",borderBottom:`1px solid ${T.border}`,marginBottom:10}}>
           <div style={{width:32,height:32,borderRadius:8,background:T.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:800,marginBottom:8}}>A</div>
-          <div style={{color:T.txt1,fontSize:11,fontWeight:700,lineHeight:1.3}}>{COMPANY.name}</div>
-          <div style={{color:T.txt3,fontSize:9,marginTop:2}}>{COMPANY.fund}</div>
+          <select value={companyId} onChange={(e)=>setCompanyId(e.target.value)}
+                  style={{width:"100%",background:"#fff",color:T.txt1,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:11,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>
+            {COMPANIES.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <div style={{color:T.txt3,fontSize:9,marginTop:4}}>{COMPANY.fund} · reports {COMPANY.currency} · as of {COMPANY.asOf}</div>
         </div>
         <div style={{padding:"0 8px"}}>
           <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",padding:"4px 6px",marginBottom:4}}>Log in as</div>
@@ -551,5 +605,6 @@ export default function ClientPortal() {
         <Dashboard key={role} role={role}/>
       </div>
     </div>
+    </PortalCtx.Provider>
   );
 }

@@ -11,8 +11,9 @@
 import { useMemo, useState } from "react";
 import { buildCash, buildCashScenario, PARAMS } from "../lib/scenarioCash.js";
 import { fmtMoney } from "../lib/fx.js";
-import { buildCashReport, downloadReport } from "../lib/reports.js";
+import { buildCashReport } from "../lib/reports.js";
 import InsightCard from "../components/InsightCard.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -41,6 +42,7 @@ export default function ScenarioCash() {
   const ccy = s.currency;
   const money = (v) => fmtMoney(v, ccy, { k: true });
   const report = useMemo(() => buildCashReport(s), [s]);
+  const [showReport, setShowReport] = useState(false);
 
   const [dso, setDso] = useState(0);
   const [pause, setPause] = useState(false);
@@ -67,7 +69,7 @@ export default function ScenarioCash() {
           {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
         </div>
         </div>
-        <button onClick={() => downloadReport(report)}
+        <button onClick={() => setShowReport(true)}
                 style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
                          color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
           Generate cash review
@@ -275,6 +277,7 @@ export default function ScenarioCash() {
           </table>
         </div>
       </Panel>
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
     </div>
   );
 }

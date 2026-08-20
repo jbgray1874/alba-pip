@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { COMPANIES, companyById } from "../lib/companies.js";
+import { buildFinance } from "../lib/financeData.js";
+import { modulesFor } from "../lib/companyModules.js";
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // ── TOKENS ────────────────────────────────────────────────────────────────────
@@ -34,18 +37,36 @@ const EVENT_POOL = [
 ];
 
 // ── INITIAL KPI STATE ─────────────────────────────────────────────────────────
-const INIT_KPIS = {
-  cash:     { label:"Cash Balance",       v:412500,  fmt:(v)=>`£${Math.round(v).toLocaleString()}`, status:"amber", src:"TrueLayer", tier:"live",      thresh:"warn <£350k" },
-  burn:     { label:"Monthly Burn",       v:138200,  fmt:(v)=>`£${Math.round(v/1000)}k`,          status:"amber", src:"Xero",       tier:"simulated", thresh:"warn +10% MoM" },
-  pipeline: { label:"Pipeline Value",     v:1580000, fmt:(v)=>`£${(v/1000000).toFixed(1)}M`,      status:"red",   src:"Salesforce", tier:"simulated", thresh:"target £2.1M" },
-  mrr:      { label:"MRR",                v:261000,  fmt:(v)=>`£${Math.round(v/1000)}k`,          status:"amber", src:"Stripe",     tier:"simulated", thresh:"budget £300k" },
-  headcount:{ label:"Headcount",          v:29,      fmt:(v)=>`${Math.round(v)}`,                  status:"amber", src:"BambooHR",   tier:"simulated", thresh:"plan 32" },
-  tickets:  { label:"Open Tickets",       v:184,     fmt:(v)=>`${Math.round(v)}`,                  status:"amber", src:"Zendesk",    tier:"simulated", thresh:"warn >200" },
-  usd:      { label:"GBP / USD",          v:1.2712,  fmt:(v)=>v.toFixed(4),                        status:"green", src:"Alpha Vantage",tier:"live",    thresh:"live FX" },
-  eur:      { label:"GBP / EUR",          v:1.1734,  fmt:(v)=>v.toFixed(4),                        status:"green", src:"Alpha Vantage",tier:"live",    thresh:"live FX" },
-  nasdaq:   { label:"NASDAQ",             v:18142,   fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Yahoo Finance",tier:"live",    thresh:"live index" },
-  sp500:    { label:"S&P 500",            v:5248,    fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Yahoo Finance",tier:"live",    thresh:"live index" },
-};
+// The live-data screen was seeded with one company's figures typed in — cash
+// 412,500 against a model that says 663,000, and the same £412k that had drifted
+// into three other screens. The company-specific tiles are now seeded from the
+// model for whichever company is selected; the market tiles are genuinely
+// portfolio-independent and stay as they are.
+function kpisFor(id) {
+  const co = companyById(id);
+  const fin = buildFinance({ id, status: co.rag.toLowerCase() });
+  const mod = modulesFor(id);
+  const n = fin.native;
+  const sym = { GBP: "£", USD: "$", SGD: "S$", AED: "AED " }[n.currency] ?? "";
+  const k = (v) => `${sym}${Math.round(v).toLocaleString()}k`;
+  const rag = (good, ok) => (good ? "green" : ok ? "amber" : "red");
+  const varPct = (n.revenue / n.budget - 1) * 100;
+  const backlog = parseInt(mod.ops.kpis.find((x) => x.label === "Ticket Backlog").value, 10);
+
+  return {
+    cash:     { label:"Cash Balance",   v:n.cash*1000,   fmt:(v)=>k(v/1000), status:rag(fin.runway>=12,fin.runway>=6), src:fin.cash.source.label, tier:"live",      thresh:`warn <${k(n.burn*3)}` },
+    burn:     { label:"Monthly Burn",   v:n.burn*1000,   fmt:(v)=>k(v/1000), status:rag(fin.runway>=12,fin.runway>=6), src:fin.cash.source.label, tier:"simulated", thresh:"warn +10% MoM" },
+    pipeline: { label:"Pipeline Value", v:n.budget*3*fin.sales.pipelineCoverage*1000, fmt:(v)=>k(v/1000), status:rag(fin.sales.pipelineCoverage>=3,fin.sales.pipelineCoverage>=2), src:fin.sales.source.label, tier:"simulated", thresh:`target ${k(n.budget*3*3)}` },
+    mrr:      { label:"MRR",            v:n.revenue*1000,fmt:(v)=>k(v/1000), status:rag(varPct>=0,varPct>=-5), src:fin.revenue.source.label, tier:"simulated", thresh:`budget ${k(n.budget)}` },
+    headcount:{ label:"Headcount",      v:fin.people.headcount, fmt:(v)=>`${Math.round(v)}`, status:rag(fin.people.headcount>=fin.people.planHeadcount,fin.people.headcount>=fin.people.planHeadcount-5), src:fin.people.source.label, tier:"simulated", thresh:`plan ${fin.people.planHeadcount}` },
+    tickets:  { label:"Open Tickets",   v:backlog, fmt:(v)=>`${Math.round(v)}`, status:mod.ops.kpis[1].status, src:"Alba model", tier:"modelled", thresh:"warn >200" },
+    usd:      { label:"GBP / USD",      v:1.2712,  fmt:(v)=>v.toFixed(4), status:"green", src:"Alpha Vantage",  tier:"live", thresh:"live FX" },
+    eur:      { label:"GBP / EUR",      v:1.1734,  fmt:(v)=>v.toFixed(4), status:"green", src:"Alpha Vantage",  tier:"live", thresh:"live FX" },
+    nasdaq:   { label:"NASDAQ",         v:18142,   fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Yahoo Finance", tier:"live", thresh:"live index" },
+    sp500:    { label:"S&P 500",        v:5248,    fmt:(v)=>`${Math.round(v).toLocaleString()}`, status:"green", src:"Yahoo Finance", tier:"live", thresh:"live index" },
+  };
+}
+
 
 // ── CHART DATA ────────────────────────────────────────────────────────────────
 const seedChart = (base, count = 20) =>
@@ -99,12 +120,15 @@ function useLiveMarket() {
 }
 
 // ── SIMULATED BACKEND HOOK ────────────────────────────────────────────────────
-function useSimulatedBackend(market) {
-  const [kpis, setKpis] = useState(INIT_KPIS);
+function useSimulatedBackend(market, companyId) {
+  const [kpis, setKpis] = useState(() => kpisFor(companyId));
+  // Switching company reseeds the tiles and the charts from that company's
+  // model rather than continuing to drift the previous one's figures.
+  useEffect(() => { setKpis(kpisFor(companyId)); }, [companyId]);
   const [prev, setPrev] = useState({});
   const [feed, setFeed] = useState([]);
   const [charts, setCharts] = useState({
-    cash:     seedChart(412500),
+    cash:     seedChart(kpisFor(companyId).cash.v),
     pipeline: seedChart(1580000),
     mrr:      seedChart(261000),
     nasdaq:   seedChart(18142),
@@ -141,7 +165,7 @@ function useSimulatedBackend(market) {
     intervals.push(setInterval(() => {
       setKpis(p => { const nv = rw(p.cash.v, 0.002); return { ...p, cash: { ...p.cash, v: nv } }; });
       setSources(p => ({ ...p, "TrueLayer": { ...p["TrueLayer"], lastSync: Date.now() } }));
-      setCharts(p => ({ ...p, cash: [...p.cash.slice(-29), { t: Date.now(), v: rw(p.cash[p.cash.length-1]?.v||412500, 0.003) }] }));
+      setCharts(p => ({ ...p, cash: [...p.cash.slice(-29), { t: Date.now(), v: rw(p.cash[p.cash.length-1]?.v ?? kpis.cash.v, 0.003) }] }));
     }, 8000));
 
     // Pipeline - Salesforce, medium frequency
@@ -474,8 +498,9 @@ const STYLES = `
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
 export default function RealTime() {
+  const [companyId, setCompanyId] = useState(COMPANIES[0].id);
   const market = useLiveMarket();
-  const { kpis, prev, feed, charts, sources } = useSimulatedBackend(market);
+  const { kpis, prev, feed, charts, sources } = useSimulatedBackend(market, companyId);
   const [tab, setTab] = useState("overview");
 
   // Xero connection status
@@ -495,7 +520,7 @@ export default function RealTime() {
   ];
 
   return (
-    <div style={{ background:T.bg, height:"100vh", display:"flex", flexDirection:"column", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color:T.txt1, overflow:"hidden" }}>
+    <div style={{ background:T.bg, height:"100%", display:"flex", flexDirection:"column", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color:T.txt1, overflow:"hidden" }}>
       <style>{STYLES}</style>
 
       {/* Market ticker */}
@@ -517,8 +542,15 @@ export default function RealTime() {
       {/* Header */}
       <div style={{ padding:"10px 24px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <div>
-          <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase" }}>Caledonia Alba · Meridian SaaS</div>
-          <div style={{ color:T.txt1, fontSize:16, fontWeight:800 }}>Real-Time Portfolio Intelligence</div>
+          <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase" }}>Caledonia Alba</div>
+          <div style={{ display:"flex", alignItems:"center", gap:9, flexWrap:"wrap" }}>
+            <div style={{ color:T.txt1, fontSize:16, fontWeight:800 }}>Real-Time Portfolio Intelligence</div>
+            <select value={companyId} onChange={(e)=>setCompanyId(e.target.value)}
+                    style={{ background:T.card, color:T.txt1, border:`1px solid ${T.border}`, borderRadius:5,
+                             padding:"4px 7px", fontSize:11, fontFamily:"inherit", cursor:"pointer" }}>
+              {COMPANIES.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
         </div>
         <div style={{ display:"flex", gap:4 }}>
           {TABS.map(t=>(

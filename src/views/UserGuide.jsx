@@ -361,6 +361,8 @@ export default function UserGuide({ onNavigate }) {
       {/* ── 9 · Reading the screen ──────────────────────────────────────── */}
       <Section n="9" title="Reading the screen">
         <Card>
+          <Row k="Every screen, every company" v={`Client Portal and Live Data each carry a company selector, and the GP Dashboard's eleven tabs and benchmarks are populated for all ${COMPANIES.length}. Nothing is pinned to one company any more.`} />
+          <Row k="Generating a report" v="Opens it on screen first, with Print and Download inside the panel. A download is silently blocked in some embedded viewers, so the report is shown rather than only offered as a file." />
           <Row k="Text too small?" v="Ctrl and + or − (Cmd on a Mac), or the SIZE control in the top bar — 100% to 150%, Ctrl+0 to reset. It scales the whole interface together, so no column, chart or table row is dropped at any setting. The browser's own zoom still works and stacks on top. The choice is remembered." />
           <Row k="Which page opens first?" v="Set it with the home switch in the top bar. Portfolio Health or GP Dashboard; the other stays one click away in the sidebar." />
           <Row k="Status pips" v="Five per company on Portfolio Health — revenue, EBITDA, cash, people, sales. Hover any pip for the figure behind it." />
