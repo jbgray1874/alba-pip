@@ -252,7 +252,11 @@ export function useLiveFeeds(specs, tickMs = 2000) {
     return {
       ...s,
       value: readingAt(s.key, s.base, s.amplitude ?? 0.004, t),
-      tier: s.tier ?? (lapsed ? "simulated" : s.integration ? "simulated" : "simulated"),
+      // Three states, not one. This ternary used to return "simulated" down
+      // every branch, so a connected source, a lapsed source and no source at
+      // all carried the same badge — which made the badge worthless and stamped
+      // SIMULATED across the landing page six times over.
+      tier: s.tier ?? (lapsed ? "simulated" : s.integration ? "derived" : "modelled"),
       provider: source?.name ?? "Alba model",
       licence,
       detail: lapsed

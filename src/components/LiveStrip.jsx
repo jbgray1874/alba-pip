@@ -45,7 +45,8 @@ function Tile({ feed }) {
       <div style={{ color: T.txt1, fontSize: 15, fontWeight: 700, fontFamily: "monospace",
                     fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>{shown}</div>
       <div style={{ color: tier.colour, fontSize: 8, letterSpacing: "0.06em", marginTop: 3 }}>
-        {tier.label}{feed.provider && feed.tier !== "modelled" ? ` · ${feed.provider}` : ""}
+        {feed.provider && feed.tier !== "modelled" ? feed.provider : tier.label}
+        {feed.provider && feed.tier !== "modelled" && feed.tier !== "derived" ? ` · ${tier.label}` : ""}
       </div>
     </div>
   );
@@ -58,7 +59,7 @@ function Tile({ feed }) {
 export default function LiveStrip({ specs, note }) {
   const feeds = useLiveFeeds(specs);
   const health = useMemo(() => integrationHealth(), []);
-  const tone = { expired: "#f5a524", expiring: "#f5a524", connected: "#00c97a" }[health.summary.tone];
+  const tone = { expired: C.gold, expiring: C.gold, connected: C.green }[health.summary.tone];
 
   return (
     <div style={{ marginBottom: 12 }}>

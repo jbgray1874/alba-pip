@@ -1,9 +1,9 @@
 // ════════════════════════════════════════════════════════════════════════════
 //  Alba PIP — Viewer preferences
 //  ----------------------------------------------------------------------------
-//  Two settings that belong to the person looking at the screen rather than to
-//  the data: which of the two landing pages opens first, and how large the
-//  interface is drawn.
+//  Three settings that belong to the person looking at the screen rather than
+//  to the data: which of the two landing pages opens first, how large the
+//  interface is drawn, and whether the navigation panel is open or collapsed.
 //
 //  Both persist in localStorage so a rehearsal and the meeting that follows it
 //  look the same, and both fall back safely — a browser with storage blocked
@@ -41,7 +41,16 @@ export const SCALES = [
   { id: 1.5, label: "150%", blurb: "Screenshots and printing" },
 ];
 
-const DEFAULTS = { home: "command", scale: 1 };
+/**
+ * Whether the navigation panel shows its labels.
+ *
+ * It shipped for a while as a 52px icon-only rail, which is what the reference
+ * screens draw. The reference screens have four or five destinations; this
+ * build has nineteen, and nineteen unlabelled glyphs is not navigation. It is
+ * open by default and collapses to the rail for anyone who wants the width
+ * back, and the choice persists.
+ */
+const DEFAULTS = { home: "command", scale: 1, navOpen: true };
 
 function read() {
   try {
@@ -53,6 +62,7 @@ function read() {
       // longer exists would otherwise render a blank screen on load.
       home: HOMES.some((h) => h.id === saved.home) ? saved.home : DEFAULTS.home,
       scale: SCALES.some((s) => s.id === saved.scale) ? saved.scale : DEFAULTS.scale,
+      navOpen: typeof saved.navOpen === "boolean" ? saved.navOpen : DEFAULTS.navOpen,
     };
   } catch {
     return { ...DEFAULTS };

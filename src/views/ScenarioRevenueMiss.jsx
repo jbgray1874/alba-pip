@@ -53,7 +53,14 @@ function RevenueBridge({ plan, gap, bridge, money }) {
     { label: "Forecast", value: forecast, kind: "total", from: 0, to: forecast, end: null },
   ];
 
-  const max = plan * 1.02;
+  // Headroom for the value labels.
+  //
+  // At 1.02 the first two deduction bars top out at the plan level, so their
+  // labels were drawn above the plot and clipped — the two largest drivers in
+  // the bridge were the two you could not read. The scale now reserves enough
+  // room above the tallest bar for a label and its gap.
+  const LABEL_ROOM = 22;                                   // px above the tallest bar
+  const max = plan / (1 - (LABEL_ROOM / PLOT_H));
   const pct = (v) => (v / max) * 100;
 
   return (
@@ -71,13 +78,18 @@ function RevenueBridge({ plan, gap, bridge, money }) {
                   background: s.kind === "total" ? `${tone}D9` : `${tone}B3`,
                   borderTop: `2px solid ${tone}`, borderRadius: "2px 2px 0 0",
                 }} />
-                {/* the value, above the bar */}
+                {/* the value, above the bar — on its own ground so the dashed
+                    connector cannot run through the digits */}
                 <div style={{
-                  position: "absolute", left: 0, right: 0, bottom: `calc(${pct(s.to)}% + 5px)`,
-                  textAlign: "center", color: tone, fontSize: S.small, fontWeight: 600,
-                  fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+                  position: "absolute", left: 0, right: 0, bottom: `calc(${pct(s.to)}% + 6px)`,
+                  textAlign: "center", whiteSpace: "nowrap",
                 }}>
-                  {s.kind === "neg" ? "−" : ""}{money(s.value)}
+                  <span style={{
+                    background: C.surface, padding: "0 5px", color: tone,
+                    fontSize: S.small, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+                  }}>
+                    {s.kind === "neg" ? "−" : ""}{money(s.value)}
+                  </span>
                 </div>
                 {/* the dashed connector into the next column */}
                 {s.end !== null && i < steps.length - 1 && (

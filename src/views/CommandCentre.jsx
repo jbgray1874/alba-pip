@@ -32,6 +32,20 @@ import InsightCard from "../components/InsightCard.jsx";
 const RAG = { RED: C.red, AMBER: C.gold, GREEN: C.green };
 const REPORTING = "GBP";
 
+/**
+ * The "everything" option in each filter, written out.
+ *
+ * These were pluralised by appending an "s" to the filter's own key, which
+ * produced "All statuss" in the dropdown on the landing page — the first screen
+ * anybody sees. English plurals are not a string operation.
+ */
+const ALL_LABEL = {
+  fund: "All funds",
+  sector: "All sectors",
+  geo: "All geographies",
+  status: "All statuses",
+};
+
 /** Everything the table needs, computed once from the ledger. */
 function usePortfolio(fxVersion = 0) {
   return useMemo(() => COMPANIES.map((c) => {
@@ -266,7 +280,7 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
                            borderRadius: 4, padding: "5px 8px", fontSize: S.small, fontFamily: F.sans }}>
             {opts.map((o) => (
               <option key={o} value={o}>
-                {o === "all" ? `All ${key === "geo" ? "geographies" : key + "s"}` : (key === "fund" ? FUNDS.find((x) => x.id === o)?.name : o)}
+                {o === "all" ? ALL_LABEL[key] : (key === "fund" ? FUNDS.find((x) => x.id === o)?.name : o)}
               </option>
             ))}
           </select>

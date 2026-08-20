@@ -25,6 +25,7 @@ import { buildProcurement } from "../src/lib/scenarioProcurement.js";
 import { modulesFor, MODELLED_DISCIPLINES, benchmarksFor } from "../src/lib/companyModules.js";
 import { trackedActions, actionSummary } from "../src/lib/actionTracker.js";
 import { TIERS } from "../src/lib/liveData.js";
+import { loadPrefs as _lp } from "../src/lib/prefs.js";
 import { INTEGRATIONS, licenceStatus, integrationHealth, readingAt } from "../src/lib/liveFeed.js";
 import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
@@ -831,6 +832,10 @@ const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
 const guideSrc = await codeOf("../src/views/UserGuide.jsx");
 const integrationSrc = await codeOf("../src/views/IntegrationPlan.jsx");
 const stripSrc = await codeOf("../src/components/LiveStrip.jsx");
+const feedSrc = await codeOf("../src/lib/liveFeed.js");
+const missSrc = await codeOf("../src/views/ScenarioRevenueMiss.jsx");
+const prefsSrc = await codeOf("../src/lib/prefs.js");
+const DEFAULT_NAV_OPEN = /navOpen:\s*true/.test(prefsSrc);
 const viewFiles = (await readdir(new URL("../src/views/", import.meta.url))).filter((f) => f.endsWith(".jsx"));
 const viewSources = new Map(await Promise.all(viewFiles.map(async (f) => [f, await codeOf(`../src/views/${f}`)])));
 
@@ -901,9 +906,15 @@ check("the shell matches the reference: sections across the top, not a list down
   }
   if (!appSrc.includes("GROUPS")) return "the navigation is not grouped";
   if (!appSrc.includes("Wordmark")) return "the mark is missing from the top bar";
-  const ungrouped = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)',\s*group:/g)].length;
-  const total = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)'/g)].length;
-  return ungrouped === total || `${total - ungrouped} views have no section`;
+  // Scan the VIEWS array only. This used to match `{ id: '...' }` anywhere in
+  // the file, so an unrelated object literal elsewhere in App.jsx counted as an
+  // ungrouped view and failed the check.
+  const block = appSrc.match(/const VIEWS = \[([\s\S]*?)\n\]/);
+  if (!block) return "VIEWS is not an array literal any more";
+  const total = [...block[1].matchAll(/\{\s*id:\s*'([a-z]+)'/g)].length;
+  const grouped = [...block[1].matchAll(/\{\s*id:\s*'([a-z]+)',\s*group:/g)].length;
+  if (!total) return "VIEWS is empty";
+  return grouped === total || `${total - grouped} views have no section`;
 });
 
 
@@ -1062,6 +1073,44 @@ check("no view outside the report sheet contains a raw colour", async () => {
     if (hits) offenders.push(`${f} (${hits.length})`);
   }
   return offenders.length === 0 || `raw colours in ${offenders.join(", ")}`;
+});
+
+check("the navigation carries labels, not nineteen unlabelled glyphs", () => {
+  // It shipped as a 52px icon-only rail — which is what the reference screens
+  // draw, but the reference screens have four destinations and this has
+  // nineteen. At #5E5E66 on #070708 it read as an empty black strip.
+  if (!/navOpen/.test(appSrc)) return "there is no expanded navigation state";
+  if (!/v\.label/.test(appSrc)) return "the navigation does not render view labels";
+  if (!/v\.sub/.test(appSrc)) return "the navigation does not render the one-line description";
+  if (!DEFAULT_NAV_OPEN) return "the navigation defaults to collapsed";
+  return true;
+});
+
+check("the live strip distinguishes connected from not answering", () => {
+  // Every branch of the tier ternary used to return "simulated", so a connected
+  // source and a dead one carried the same badge and the landing page showed
+  // six identical SIMULATED stamps.
+  if (!TIERS.derived) return "there is no tier for a connected, non-polled reading";
+  if (TIERS.derived.label === TIERS.simulated.label) return "derived and simulated read the same";
+  if (!/lapsed \? "simulated" : s\.integration \? "derived" : "modelled"/.test(feedSrc)) {
+    return "useLiveFeeds does not separate the three states";
+  }
+  return true;
+});
+
+check("filter labels are written, not pluralised by string concatenation", () => {
+  // "All statuss" shipped on the landing page.
+  if (/key \+ "s"/.test(commandSrc)) return "still appends an s to the filter key";
+  if (/All statuss/.test(commandSrc)) return "still renders All statuss";
+  return /ALL_LABEL/.test(commandSrc) || "no written-out filter labels";
+});
+
+check("the revenue bridge leaves room for its own value labels", () => {
+  // At 1.02 headroom the first two deduction bars topped out at the plan level
+  // and their labels were clipped — the two largest drivers in the bridge were
+  // the two you could not read.
+  if (/const max = plan \* 1\.0\d;/.test(missSrc)) return "the scale has no headroom for labels";
+  return /LABEL_ROOM/.test(missSrc) || "no label headroom is reserved";
 });
 
 check("preferences reject a value that no longer exists", () => {

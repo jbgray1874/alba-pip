@@ -27,9 +27,22 @@ export const TIERS = {
     id: "live", label: "LIVE", colour: "#00c97a",
     definition: "Fetched from an external provider during this session. The timestamp is when it last arrived.",
   },
+  /**
+   * The connector is attached and this reading moves around the figure that
+   * source last reported. It is not a live poll and does not claim to be.
+   *
+   * This state used to be labelled SIMULATED, which put six blue SIMULATED
+   * stamps across the landing page. Accurate, and read by everyone who saw it
+   * as "none of this is real". SIMULATED is now reserved for what it should
+   * always have meant: a provider that has stopped answering.
+   */
+  derived: {
+    id: "derived", label: "FROM LEDGER", colour: "#9A9AA0",
+    definition: "The connector is attached and this reading moves around the figure it last reported. The mean is that figure — the same number the drill-down shows. Not a live poll.",
+  },
   simulated: {
     id: "simulated", label: "SIMULATED", colour: "#3d8bff",
-    definition: "Moves on screen, but generated from the finance model rather than fetched. Movement is illustrative.",
+    definition: "The provider is not answering. The reading continues from the last good value so the tile never blanks and never freezes.",
   },
   modelled: {
     id: "modelled", label: "MODEL", colour: "#f5a524",

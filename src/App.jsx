@@ -19,7 +19,7 @@ import NewsFeed        from './views/NewsFeed.jsx'
 import PortfolioAnalytics from './views/PortfolioAnalytics.jsx'
 import UserGuide      from './views/UserGuide.jsx'
 import { HOMES, SCALES, loadPrefs, savePrefs } from './lib/prefs.js'
-import { C, F, S } from './lib/theme.js'
+import { C, F, S, label as labelStyle } from './lib/theme.js'
 import { Wordmark } from './components/Shell.jsx'
 import { COMPANIES, FUNDS } from './lib/companies.js'
 import { attentionActions } from './lib/investigation.js'
@@ -153,14 +153,29 @@ export default function App() {
 
   const group = active?.group ?? GROUPS[0]
   const inGroup = VIEWS.filter(v => v.group === group)
-  const railBtn = (v) => ({
-    width:36, height:36, borderRadius:5, cursor:'pointer', fontFamily:'inherit',
-    display:'flex', alignItems:'center', justifyContent:'center', fontSize:15,
+  const open = (v) => { if (v.id === 'gp') setOpenCompany(null); setView(v.id) }
+
+  // ── The navigation panel ──────────────────────────────────────────────────
+  //
+  // This was a 52px icon-only rail, which is what the reference screens draw.
+  // The reference screens have four or five destinations. This build has
+  // nineteen, and nineteen unlabelled glyphs at #5E5E66 on #070708 is not a
+  // navigation panel — it reads as an empty black strip, which is exactly how
+  // it was described the first time somebody who had not built it looked at it.
+  //
+  // So it carries labels. It still collapses to the rail, the collapse persists,
+  // and the top bar's four sections are untouched.
+  const navOpen = prefs.navOpen
+  const setNavOpen = (value) => setPrefs(savePrefs({ navOpen: value }))
+  const navItem = (v) => ({
+    display:'flex', alignItems:'center', gap:10, width:'100%', textAlign:'left',
+    padding: navOpen ? '8px 10px' : '8px 0', justifyContent: navOpen ? 'flex-start' : 'center',
+    borderRadius:5, cursor:'pointer', fontFamily:'inherit',
     background: view===v.id ? C.goldSoft : 'transparent',
     border:`1px solid ${view===v.id ? C.goldLine : 'transparent'}`,
-    color: view===v.id ? C.gold : C.txt3,
+    borderLeft: navOpen ? `2px solid ${view===v.id ? C.gold : 'transparent'}` : undefined,
+    color: view===v.id ? C.gold : C.txt2,
   })
-  const open = (v) => { if (v.id === 'gp') setOpenCompany(null); setView(v.id) }
 
   return (
     <>
@@ -232,36 +247,48 @@ export default function App() {
       </div>
 
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
-        {/* ── Icon rail ── */}
-        <div style={{ width:52, background:C.bgDeep, borderRight:`1px solid ${C.border}`, flexShrink:0,
-                      display:'flex', flexDirection:'column', alignItems:'center', paddingTop:10, gap:2 }}>
+        {/* ── Navigation panel ── */}
+        <div style={{ width: navOpen ? 212 : 52, background:C.bgDeep, borderRight:`1px solid ${C.border}`,
+                      flexShrink:0, display:'flex', flexDirection:'column', padding:'10px 8px',
+                      gap:2, transition:'width 0.16s ease', overflow:'hidden' }}>
+
+          {navOpen && (
+            <div style={{ ...labelStyle(C.txt3), padding:'2px 10px 8px' }}>{group}</div>
+          )}
+
           {inGroup.map(v => (
-            <button key={v.id} onClick={() => open(v)} title={`${v.label} — ${v.sub}`} style={railBtn(v)}>{v.icon}</button>
+            <button key={v.id} onClick={() => open(v)} title={navOpen ? v.sub : `${v.label} — ${v.sub}`} style={navItem(v)}>
+              <span style={{ fontSize:15, flexShrink:0, width:18, textAlign:'center' }}>{v.icon}</span>
+              {navOpen && (
+                <span style={{ minWidth:0 }}>
+                  <span style={{ display:'block', fontSize:S.body, fontWeight: view===v.id ? 600 : 400,
+                                 color: view===v.id ? C.gold : C.txt1, lineHeight:1.3 }}>{v.label}</span>
+                  <span style={{ display:'block', fontSize:S.micro, color:C.txt3, lineHeight:1.4, marginTop:1,
+                                 overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{v.sub}</span>
+                </span>
+              )}
+            </button>
           ))}
-          <div style={{ marginTop:'auto', paddingBottom:12 }}>
+
+          <div style={{ marginTop:'auto', display:'flex', flexDirection:'column', gap:2 }}>
             <button onClick={() => setView('guide')} title="User guide"
-              style={{ width:36, height:36, borderRadius:5, cursor:'pointer', background:'transparent',
-                       border:'1px solid transparent', color: view==='guide' ? C.gold : C.txt3, fontSize:15,
-                       fontFamily:'inherit' }}>?</button>
+              style={{ ...navItem({ id:'guide' }), borderTop:`1px solid ${C.border}`, borderRadius:0, paddingTop:10 }}>
+              <span style={{ fontSize:15, flexShrink:0, width:18, textAlign:'center' }}>?</span>
+              {navOpen && <span style={{ fontSize:S.body, color: view==='guide' ? C.gold : C.txt2 }}>User guide</span>}
+            </button>
+            <button onClick={() => setNavOpen(!navOpen)}
+              title={navOpen ? 'Collapse the navigation' : 'Expand the navigation'}
+              style={{ display:'flex', alignItems:'center', gap:10, width:'100%', padding: navOpen ? '8px 10px' : '8px 0',
+                       justifyContent: navOpen ? 'flex-start' : 'center', background:'transparent',
+                       border:'1px solid transparent', borderRadius:5, cursor:'pointer', color:C.txt3,
+                       fontFamily:'inherit', fontSize:S.small }}>
+              <span style={{ fontSize:14, flexShrink:0, width:18, textAlign:'center' }}>{navOpen ? '‹' : '›'}</span>
+              {navOpen && <span>Collapse</span>}
+            </button>
           </div>
         </div>
 
         <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0 }}>
-          {/* ── Section bar ── */}
-          <div style={{ display:'flex', alignItems:'center', gap:3, padding:'0 18px', height:36,
-                        borderBottom:`1px solid ${C.border}`, flexShrink:0, overflowX:'auto' }}>
-            {inGroup.map(v => (
-              <button key={v.id} onClick={() => open(v)}
-                style={{ padding:'5px 10px', borderRadius:4, cursor:'pointer', fontFamily:'inherit',
-                         whiteSpace:'nowrap', fontSize:S.small,
-                         background: view===v.id ? C.surfaceUp : 'transparent',
-                         border:`1px solid ${view===v.id ? C.border : 'transparent'}`,
-                         color: view===v.id ? C.txt1 : C.txt3 }}>{v.label}</button>
-            ))}
-            <span style={{ marginLeft:'auto', color:C.txt3, fontSize:S.micro, whiteSpace:'nowrap', paddingLeft:12 }}>
-              {active?.sub}
-            </span>
-          </div>
 
           <div key={view} className="view-enter" style={{ flex:1, overflow:'hidden', minWidth:0 }}>
           {view==='command'      && <CommandCentre onOpenCompany={(id)=>{setOpenCompany(id);setView('gp')}} onGuide={()=>setView('guide')}/>}
