@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Button, Metric, Panel, ProvenanceBar } from "../components/Shell.jsx";
 import { fetchCompanyNews, FEED_STATUS } from "../lib/dataFeeds.js";
 import { forNews } from "../lib/companies.js";
 
@@ -69,50 +70,20 @@ export default function NewsFeed() {
   };
 
   return (
-    <div style={{ height:"100%", overflowY:"auto", background:T.bg, padding:"20px 24px",
-                  fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+    <Page>
+      <PageHeader
+        crumbs={["Intelligence", "News and Sentiment"]}
+        title="Portfolio News and Sentiment"
+        chips={<Chip tone={isLive ? "green" : "gold"}>{isLive ? "Live · NewsAPI" : "Simulated"}</Chip>}
+        purpose="External signal monitoring across every portfolio company, scored for sentiment and materiality"
+        meta={isLive ? "Live from NewsAPI" : "Simulated feed — add a NewsAPI key to go live"}
+        actions={<Button variant="outline" onClick={loadNews}>Refresh</Button>}
+      />
 
-      {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18, flexWrap:"wrap", gap:12 }}>
-        <div>
-          <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-            News Intelligence Agent
-          </div>
-          <h1 style={{ color:T.txt1, fontSize:20, fontWeight:800, margin:0 }}>Portfolio News & Sentiment</h1>
-          <div style={{ color:T.txt3, fontSize:11, marginTop:3 }}>
-            External signal monitoring across all portfolio companies · Sentiment-scored
-          </div>
-        </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          <span style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 12px",
-            background: isLive ? T.greenDim : T.amberDim,
-            border:`1px solid ${isLive ? T.green : T.amber}40`, borderRadius:6 }}>
-            <span style={{ width:7, height:7, borderRadius:"50%", background: isLive ? T.green : T.amber,
-              boxShadow: isLive ? `0 0 8px ${T.green}` : "none" }}/>
-            <span style={{ color: isLive ? T.green : T.amber, fontSize:9, fontWeight:700 }}>
-              {isLive ? "LIVE · NewsAPI" : "SIMULATED · add NewsAPI key to go live"}
-            </span>
-          </span>
-          <button onClick={loadNews} style={{ padding:"5px 12px", background:T.surface,
-            border:`1px solid ${T.border}`, borderRadius:6, color:T.txt2, cursor:"pointer", fontSize:10 }}>
-            ↻ Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Sentiment summary */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:18 }}>
-        {[
-          { l:"Positive coverage", v:counts.positive, c:T.green },
-          { l:"Neutral coverage",  v:counts.neutral,  c:T.blue },
-          { l:"Watch / negative",  v:counts.negative, c:T.red },
-        ].map((s) => (
-          <div key={s.l} style={{ background:T.card, border:`1px solid ${T.border}`, borderLeft:`3px solid ${s.c}`,
-            borderRadius:8, padding:"12px 16px" }}>
-            <div style={{ color:T.txt3, fontSize:10, marginBottom:4 }}>{s.l}</div>
-            <div style={{ color:s.c, fontSize:24, fontWeight:800, fontFamily:"monospace" }}>{loading ? "—" : s.v}</div>
-          </div>
-        ))}
+      <div style={{ display:"flex", gap:9, flexWrap:"wrap", marginBottom:14 }}>
+        <Metric label="Positive coverage" value={loading ? "—" : counts.positive} tone={C.green} sub="Constructive external signal" />
+        <Metric label="Neutral coverage"  value={loading ? "—" : counts.neutral}  tone={C.blue}  sub="Reported, no directional read" />
+        <Metric label="Watch / negative"  value={loading ? "—" : counts.negative} tone={C.red}   sub="Worth a look before the next board" />
       </div>
 
       {/* Company filter chips */}
@@ -121,9 +92,10 @@ export default function NewsFeed() {
           const on = selected.includes(c.id);
           return (
             <button key={c.id} onClick={() => toggle(c.id)} style={{ padding:"5px 12px",
-              background: on ? c.color + "22" : "transparent",
-              border:`1px solid ${on ? c.color : T.border}`, borderRadius:20,
-              color: on ? c.color : T.txt3, cursor:"pointer", fontSize:10, fontWeight: on ? 600 : 400 }}>
+              background: on ? C.goldSoft : "transparent",
+              border:`1px solid ${on ? C.goldLine : C.borderLt}`, borderRadius:4,
+              color: on ? C.gold : C.txt2, cursor:"pointer", fontFamily:F.sans, fontSize:S.label,
+              fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase" }}>
               {c.name}
             </button>
           );
@@ -187,13 +159,12 @@ export default function NewsFeed() {
         </div>
       )}
 
-      {/* Footer note */}
-      <div style={{ marginTop:18, padding:"12px 16px", background:T.card, border:`1px solid ${T.border}`,
-        borderRadius:8, color:T.txt3, fontSize:10, lineHeight:1.6 }}>
-        {isLive
-          ? "Live headlines from NewsAPI, sentiment-scored by keyword analysis (AI sentiment scoring in production). Material developments flag automatically to the relevant GP."
-          : "Showing realistic simulated headlines. Add a free NewsAPI key (newsapi.org) to Vercel as VITE_NEWSAPI_KEY to go live. Note: NewsAPI's free tier serves live results on localhost; the public site uses the serverless news proxy (built Thursday) or a paid NewsAPI plan."}
-      </div>
-    </div>
+      <ProvenanceBar items={[
+        isLive ? "Live headlines from NewsAPI" : "Simulated headlines — the shape and cadence of a live feed",
+        "Sentiment scored by keyword analysis",
+        "Material developments flag to the relevant partner",
+        `${COMPANIES.length} companies monitored`,
+      ]} />
+    </Page>
   );
 }

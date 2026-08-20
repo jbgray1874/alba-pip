@@ -8,7 +8,8 @@
 //  arithmetic that produced each closing balance.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C, F } from "../lib/theme.js";
+import { C, F, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Button, MetricRow, Panel, ProvenanceBar } from "../components/Shell.jsx";
 import { useMemo, useState } from "react";
 import { buildCash, buildCashScenario, PARAMS } from "../lib/scenarioCash.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -32,22 +33,6 @@ const T = {
   txt2: C.txt2,
   txt3: C.txt3
 };
-
-function Panel({ title, sub, right, children }) {
-  return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
-                    padding: "10px 14px", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ color: T.txt1, fontSize: 12, fontWeight: 600 }}>{title}</div>
-          {sub && <div style={{ color: T.txt3, fontSize: 9, marginTop: 2 }}>{sub}</div>}
-        </div>
-        {right}
-      </div>
-      <div style={{ padding: 14 }}>{children}</div>
-    </div>
-  );
-}
 
 export default function ScenarioCash() {
   const s = useMemo(() => buildCash(), []);
@@ -73,36 +58,29 @@ export default function ScenarioCash() {
   const runwayDelta = live.runwayMonths - s.trajectory.runwayMonths;
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "18px 22px", background: T.bg }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div>
-        <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>{s.company.name}</h1>
-        <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
-          {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
-        </div>
-        </div>
-        <button onClick={() => setShowReport(true)}
-                style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
-                         color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-          Generate cash review
-        </button>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={["Intelligence", s.company.name, "Cash and Runway"]}
+        title="Cash and Runway"
+        chips={<>
+          <Chip tone="gold">Adequately funded on the board pack</Chip>
+          <Chip tone="red">{s.bases[2].months} months on the trend</Chip>
+        </>}
+        purpose={`The reported runway divides cash by this month's burn — a figure that has gone from ${money(t.from)} to ${money(t.to)} over ${t.months} months`}
+        meta={`${s.company.sectorLong} · ${s.company.geo} · reports ${ccy} · as of ${s.fin.asOf} · Xero bank feed`}
+        actions={<Button variant="primary" onClick={() => setShowReport(true)}>Generate cash review</Button>}
+      />
 
-      {/* ── The finding, in four numbers ── */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {[
-          { l: "CASH ON HAND", v: money(s.baseline.openingCash), s: `burn ${money(s.baseline.reportedBurn)}/mo`, t: T.txt1 },
-          { l: "RUNWAY AS REPORTED", v: `${s.fin.runway}mo`, s: "cash ÷ current burn, held flat", t: T.amber },
-          { l: "BURN, 17 MONTHS AGO", v: money(t.from), s: `now ${money(t.to)} — ${t.multiple}×`, t: T.red },
-          { l: "ON THE OBSERVED TREND", v: `${s.bases[2].months}mo`, s: `burn +${(t.monthlyGrowth * 100).toFixed(1)}%/month`, t: T.red },
-        ].map((x) => (
-          <div key={x.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 150 }}>
-            <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>{x.v}</div>
-            <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
-          </div>
-        ))}
-      </div>
+      <MetricRow items={[
+        { label: "Cash on hand", value: money(s.baseline.openingCash), tone: C.txt1,
+          sub: `burn ${money(s.baseline.reportedBurn)} a month` },
+        { label: "Runway as reported", value: `${s.fin.runway} months`, tone: C.gold,
+          sub: "cash ÷ current burn, held flat" },
+        { label: `Burn, ${t.months} months ago`, value: money(t.from), tone: C.red,
+          sub: `now ${money(t.to)} — ${t.multiple}×` },
+        { label: "On the observed trend", value: `${s.bases[2].months} months`, tone: C.red,
+          sub: `burn +${(t.monthlyGrowth * 100).toFixed(1)}% a month` },
+      ]} />
 
       <InsightCard insight={s.insight} />
 
@@ -289,7 +267,14 @@ export default function ScenarioCash() {
           </table>
         </div>
       </Panel>
+      <ProvenanceBar items={[
+        "Calculation: three runway bases, each with its own question stated",
+        `Evidence: ${s.insight.evidence.length} metrics`,
+        "Levers recompute the model, not a pre-baked outcome",
+        `Thirteen weeks from ${s.fin.asOf}`,
+      ]} />
+
       {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
-    </div>
+    </Page>
   );
 }

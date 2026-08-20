@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Metric, ProvenanceBar } from "../components/Shell.jsx";
 import { integrationHealth } from "../lib/liveFeed.js";
 
 // Palette from the shared design tokens. Every view used to carry its own
@@ -402,45 +403,44 @@ export default function IntegrationPlan() {
   const toggle = id => setOpened(p => p===id?null:id);
 
   return (
-    <div style={{ background:T.bg, minHeight:"100%", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color:T.txt1 }}>
-      <div style={{ padding:"16px 22px 0" }}><ConnectedSources/></div>
-      {/* Header */}
-      <div style={{ padding:"20px 28px", borderBottom:`1px solid ${T.border}` }}>
-        <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>Caledonia Alba · Portfolio Intelligence Platform</div>
-        <h1 style={{ color:T.txt1, fontSize:20, fontWeight:700, margin:0 }}>Integration Plan</h1>
-        <div style={{ color:T.txt3, fontSize:11, marginTop:4 }}>What connects live this week vs what stays mock — Sage X3 not in scope (separate SDI project)</div>
+    <Page>
+      <PageHeader
+        crumbs={["Actions", "Connected Sources"]}
+        title="Integration Plan"
+        chips={<Chip tone="green">{LIVE.length} live this week</Chip>}
+        purpose="What connects live this week against what stays modelled, and what each system feeds"
+        meta="Sage X3 is out of scope — that is a separate SDI project"
+      />
+
+      <ConnectedSources/>
+
+      <div style={{ display:"flex", gap:9, flexWrap:"wrap", marginBottom:14 }}>
+        <Metric label="Live this week" value={LIVE.length} tone={C.green} sub="Free, no approval, works now" />
+        <Metric label="Mocked, priority"
+                value={MOCK.filter(m=>["xero","hubspot","bamboohr","truelayer"].includes(m.id)).length}
+                tone={C.gold} sub="Wire up in month one or two" />
+        <Metric label="Mocked, later" value={MOCK.length-4} tone={C.txt2} sub="Month three, or via Merge.dev" />
+        <Metric label="Sage X3" value="Out of scope" tone={C.txt3} size={16} sub="SDI / Shepshed project only" />
       </div>
 
-      {/* Summary */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, padding:"16px 28px", borderBottom:`1px solid ${T.border}` }}>
+      <div style={{ display:"flex", gap:5, marginBottom:14, flexWrap:"wrap" }}>
         {[
-          { l:"Live This Week",    v:LIVE.length,       c:T.green,  sub:"Free, no approval, works now" },
-          { l:"Mocked (priority)", v:MOCK.filter(m=>["xero","hubspot","bamboohr","truelayer"].includes(m.id)).length, c:T.amber, sub:"Wire up Month 1–2" },
-          { l:"Mocked (later)",    v:MOCK.length-4,     c:T.txt2,   sub:"Month 3+ or via Merge.dev" },
-          { l:"Sage X3",           v:"Out of scope",    c:T.txt3,   sub:"SDI / Shepshed project only" },
-        ].map(s => (
-          <div key={s.l} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:8, padding:"12px 14px" }}>
-            <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.1em", textTransform:"uppercase", marginBottom:4 }}>{s.l}</div>
-            <div style={{ color:s.c, fontSize:typeof s.v==="number"?24:14, fontWeight:700, fontFamily:"monospace" }}>{s.v}</div>
-            <div style={{ color:T.txt3, fontSize:10, marginTop:3 }}>{s.sub}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div style={{ display:"flex", gap:4, padding:"14px 28px", borderBottom:`1px solid ${T.border}` }}>
-        {[
-          { id:"live",   l:`🟢 Live Now (${LIVE.length})` },
-          { id:"mock",   l:`🟡 Mock Priority (${MOCK.length})` },
-          { id:"market", l:"📈 Live Market Data Panel" },
-        ].map(t => (
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:"7px 16px", background:tab===t.id?T.blue:"transparent", border:`1px solid ${tab===t.id?T.blue:T.border}`, borderRadius:6, color:tab===t.id?"#fff":T.txt3, cursor:"pointer", fontSize:11, fontWeight:tab===t.id?600:400 }}>
-            {t.l}
+          { id:"live",   l:`Live now (${LIVE.length})` },
+          { id:"mock",   l:`Mock priority (${MOCK.length})` },
+          { id:"market", l:"Live market data" },
+        ].map(x => (
+          <button key={x.id} onClick={()=>setTab(x.id)}
+                  style={{ padding:"6px 13px", borderRadius:4, cursor:"pointer", fontFamily:F.sans,
+                           fontSize:S.label, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase",
+                           background: tab===x.id ? C.gold : "transparent",
+                           border:`1px solid ${tab===x.id ? C.gold : C.borderLt}`,
+                           color: tab===x.id ? C.goldOn : C.txt2 }}>
+            {x.l}
           </button>
         ))}
       </div>
 
-      <div style={{ padding:"16px 28px 40px" }}>
+      <div>
         {tab === "live" && (
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             <div style={{ color:T.txt3, fontSize:11, marginBottom:8, padding:"10px 14px", background:T.greenDim, borderRadius:6, border:`1px solid ${T.green}22` }}>
@@ -466,6 +466,13 @@ export default function IntegrationPlan() {
           </div>
         )}
       </div>
-    </div>
+
+      <ProvenanceBar items={[
+        `${LIVE.length} connectors live`,
+        `${MOCK.length} modelled until connected`,
+        "Every modelled figure carries a MODEL tag on its tile",
+        "Sage X3 out of scope",
+      ]} />
+    </Page>
   );
 }

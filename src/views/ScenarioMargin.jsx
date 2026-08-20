@@ -7,7 +7,8 @@
 //  worth. Everything below that exists to let a sceptical CFO take it apart.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C, F } from "../lib/theme.js";
+import { C, F, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Button, MetricRow, Panel, TwoColumn, ProvenanceBar } from "../components/Shell.jsx";
 import { useMemo, useState } from "react";
 import { buildMargin, LINES, PARAMS } from "../lib/scenarioMargin.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -32,18 +33,6 @@ const T = {
   txt3: C.txt3
 };
 
-function Panel({ title, sub, children }) {
-  return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, marginBottom: 12 }}>
-      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ color: T.txt1, fontSize: 12, fontWeight: 600 }}>{title}</div>
-        {sub && <div style={{ color: T.txt3, fontSize: 9, marginTop: 2 }}>{sub}</div>}
-      </div>
-      <div style={{ padding: 14 }}>{children}</div>
-    </div>
-  );
-}
-
 export default function ScenarioMargin() {
   const s = useMemo(() => buildMargin(), []);
   const ccy = s.currency;
@@ -59,68 +48,50 @@ export default function ScenarioMargin() {
   const gmMax = Math.max(...history.map((h) => h.grossMarginPct));
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "18px 22px", background: T.bg }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div>
-        <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>{s.company.name}</h1>
-        <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
-          {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
-        </div>
-        </div>
-        <button onClick={() => setShowReport(true)}
-                style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
-                         color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-          Generate margin review
-        </button>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={["Intelligence", s.company.name, "Margin Erosion"]}
+        title="Margin Erosion"
+        chips={<>
+          <Chip tone="green">Reads green</Chip>
+          <Chip tone="red">{Math.abs(s.marginMove)} points lost</Chip>
+        </>}
+        purpose={`${s.company.name} beats its revenue plan, scores ${s.company.score} and shows ${s.company.rag} on every headline — and has lost ${Math.abs(s.marginMove)} points of gross margin doing it`}
+        meta={`${s.company.sectorLong} · ${s.company.geo} · reports ${ccy} · as of ${s.fin.asOf} · Xero`}
+        actions={<Button variant="primary" onClick={() => setShowReport(true)}>Generate margin review</Button>}
+      />
 
-      {/* ── The company as every other screen shows it, then the one that doesn't ── */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {[
-          { l: "HEALTH SCORE", v: `${s.company.score}`, s: s.company.rag, t: T.green },
-          { l: "REVENUE VS PLAN", v: `${s.varPct >= 0 ? "+" : ""}${s.varPct.toFixed(1)}%`, s: `${money(s.revenue)} of ${money(s.fin.revenue.budget)}`, t: T.green },
-          { l: "EBITDA MARGIN", v: `${s.fin.ebitda.pct}%`, s: money(s.fin.ebitda.value), t: T.green },
-          { l: "GROSS MARGIN", v: `${s.marginNow}%`, s: `from ${s.marginThen}% — ${s.marginMove} points`, t: T.red },
-        ].map((x) => (
-          <div key={x.l} style={{ background: T.card, border: `1px solid ${x.t === T.red ? `${T.red}44` : T.border}`,
-                                  borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 150 }}>
-            <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>{x.v}</div>
-            <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
-          </div>
-        ))}
-      </div>
+      <MetricRow items={[
+        { label: "Health score", value: s.company.score, tone: C.green, sub: `${s.company.rag} on the standard scoring` },
+        { label: "Revenue vs plan", value: `${s.varPct >= 0 ? "+" : ""}${s.varPct.toFixed(1)}%`, tone: C.green,
+          sub: `${money(s.revenue)} of ${money(s.fin.revenue.budget)}` },
+        { label: "EBITDA margin", value: `${s.fin.ebitda.pct}%`, tone: C.green, sub: money(s.fin.ebitda.value) },
+        { label: "Gross margin", value: `${s.marginNow}%`, tone: C.red, sub: `from ${s.marginThen}% — ${s.marginMove} points` },
+      ]} />
 
       {/* ── The comparison that makes the case ── */}
-      <div style={{ background: `${T.red}0d`, border: `1px solid ${T.red}33`, borderRadius: 8,
-                    padding: "13px 16px", marginBottom: 12 }}>
-        <div style={{ color: T.red, fontSize: 9, letterSpacing: "0.12em", marginBottom: 7 }}>
-          WHAT THE COMPANY IS PRAISED FOR, AGAINST WHAT IT IS LOSING
-        </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
+      <Panel title="What the company is praised for, against what it is losing"
+             tone={`${C.red}44`}>
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div>
-            <div style={{ color: T.txt3, fontSize: 9 }}>REVENUE OUTPERFORMANCE, ANNUALISED</div>
-            <div style={{ color: T.green, fontSize: 22, fontWeight: 700, fontFamily: F.serif }}>
-              {money(s.revenueOutperformance)}
-            </div>
+            <div style={{ ...labelStyle(), marginBottom: 6 }}>Revenue outperformance, annualised</div>
+            <div style={metricStyle(C.green, S.metricSm)}>{money(s.revenueOutperformance)}</div>
           </div>
-          <div style={{ color: T.txt3, fontSize: 16, paddingBottom: 6 }}>vs</div>
+          <div style={{ color: C.txt3, fontSize: 15, paddingBottom: 5 }}>vs</div>
           <div>
-            <div style={{ color: T.txt3, fontSize: 9 }}>GROSS PROFIT LOST TO MARGIN, ANNUALISED</div>
-            <div style={{ color: T.red, fontSize: 22, fontWeight: 700, fontFamily: F.serif }}>
-              {money(s.annualGrossProfitLost)}
-            </div>
+            <div style={{ ...labelStyle(), marginBottom: 6 }}>Gross profit lost to margin, annualised</div>
+            <div style={metricStyle(C.red, S.metricSm)}>{money(s.annualGrossProfitLost)}</div>
           </div>
-          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6, flex: 1, minWidth: 240 }}>
+          <div style={{ color: C.txt2, fontSize: S.body, lineHeight: 1.65, flex: 1, minWidth: 240 }}>
             The margin loss is {(s.annualGrossProfitLost / s.revenueOutperformance).toFixed(1)}× the revenue beat.
             Neither the health score, the RAG status, nor the EBITDA margin shows it.
           </div>
         </div>
-      </div>
+      </Panel>
 
       <InsightCard insight={s.insight} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(330px,1fr))", gap: 12 }}>
+      <TwoColumn ratio="1fr 1fr" left={<>
 
         {/* ── The bridge ── */}
         <Panel title={`Where the ${Math.abs(s.marginMove)} points went`}
@@ -129,7 +100,7 @@ export default function ScenarioMargin() {
             <div key={b.driver} onClick={() => setOpen(b.driver)}
                  style={{ padding: "8px 9px", marginBottom: 5, borderRadius: 5, cursor: "pointer",
                           background: open === b.driver ? T.accent : "transparent",
-                          border: `1px solid ${open === b.driver ? T.blue : T.accent}` }}>
+                          border: `1px solid ${open === b.driver ? C.goldLine : C.border}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
                 <span style={{ color: T.txt1, fontSize: 11 }}>
                   {b.driver}
@@ -168,6 +139,7 @@ export default function ScenarioMargin() {
           )}
         </Panel>
 
+      </>} right={<>
         {/* ── Mix ── */}
         <Panel title="Product mix" sub="Revenue has grown into the lowest-margin line it sells">
           {s.lines.map((l) => (
@@ -202,7 +174,7 @@ export default function ScenarioMargin() {
             {" "}{LINES[2].marginPct}% against {LINES[0].marginPct}% on precision work, and it is the line that has grown.
           </div>
         </Panel>
-      </div>
+      </>} />
 
       {/* ── Eighteen months of margin ── */}
       <Panel title="Gross margin, month by month"
@@ -225,7 +197,14 @@ export default function ScenarioMargin() {
           <span>{history[history.length - 1].month} · {s.marginNow}%</span>
         </div>
       </Panel>
+      <ProvenanceBar items={[
+        "Calculation: four drivers summing to the observed movement",
+        `Evidence: ${s.insight.evidence.length} metrics`,
+        `${history.length} months of ledger`,
+        "The residual is shown, not distributed",
+      ]} />
+
       {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
-    </div>
+    </Page>
   );
 }

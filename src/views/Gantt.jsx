@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, ProvenanceBar } from "../components/Shell.jsx";
 
 // ─── DATA ──────────────────────────────────────────────────────────────────
 
@@ -77,7 +79,7 @@ const PROTOTYPE_TASKS = [
 
 const PRODUCTION_PHASES = [
   {
-    phase: "Phase 1 — Foundation", color: "#0ea5e9", months: [1, 2], tasks: [
+    phase: "Phase 1 — Foundation", color: C.blue, months: [1, 2], tasks: [
       { task: "Migrate SQLite → AWS RDS PostgreSQL", month: 1, duration: 0.5 },
       { task: "AWS ECS Fargate infrastructure (Terraform)", month: 1, duration: 1.5 },
       { task: "Auth0 SSO + MFA + RBAC/ABAC", month: 1.5, duration: 1 },
@@ -88,7 +90,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 2 — Real Integrations", color: "#8b5cf6", months: [3, 4], tasks: [
+    phase: "Phase 2 — Real Integrations", color: C.purple, months: [3, 4], tasks: [
       { task: "Merge.dev HRIS connector (BambooHR, HiBob, Workday)", month: 3, duration: 1 },
       { task: "Fivetran CRM connector (Salesforce, HubSpot)", month: 3, duration: 0.75 },
       { task: "Fivetran ERP connector (Xero, NetSuite)", month: 3.5, duration: 1 },
@@ -99,7 +101,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 3 — Full Module Coverage", color: "#10b981", months: [5, 6], tasks: [
+    phase: "Phase 3 — Full Module Coverage", color: C.green, months: [5, 6], tasks: [
       { task: "Operations module (throughput, SLA, backlog)", month: 5, duration: 1 },
       { task: "Procurement module (spend, supplier concentration)", month: 5, duration: 0.75 },
       { task: "Technology module (uptime, incidents, cloud cost)", month: 5.5, duration: 0.75 },
@@ -110,7 +112,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 4 — Intelligence Layer", color: "#f59e0b", months: [7, 8], tasks: [
+    phase: "Phase 4 — Intelligence Layer", color: C.gold, months: [7, 8], tasks: [
       { task: "LangChain RAG query interface (pgvector)", month: 7, duration: 1.5 },
       { task: "Claude API narrative engine (full implementation)", month: 7, duration: 1 },
       { task: "Prophet forecasting (cash runway, revenue, attrition)", month: 7.5, duration: 1 },
@@ -120,7 +122,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 5 — Compliance + Risk Modules", color: "#ef4444", months: [9, 10], tasks: [
+    phase: "Phase 5 — Compliance + Risk Modules", color: C.red, months: [9, 10], tasks: [
       { task: "Compliance / KYC module", month: 9, duration: 1 },
       { task: "Audit module (issue tracker, aging)", month: 9, duration: 0.75 },
       { task: "Risk module (register, heatmap)", month: 9.5, duration: 0.75 },
@@ -129,7 +131,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 6 — Scale + Polish", color: "#64748b", months: [11, 12], tasks: [
+    phase: "Phase 6 — Scale + Polish", color: C.txt3, months: [11, 12], tasks: [
       { task: "Predictive risk scoring (cash injection probability)", month: 11, duration: 1 },
       { task: "Scenario planning module", month: 11, duration: 0.75 },
       { task: "Mobile responsive polish", month: 11.5, duration: 0.5 },
@@ -141,12 +143,12 @@ const PRODUCTION_PHASES = [
 ];
 
 const TYPE_COLORS = {
-  infra: { bg: "#1e3a5f", bar: "#0ea5e9", label: "Infrastructure" },
-  data:  { bg: "#1a3a2a", bar: "#10b981", label: "Data" },
-  logic: { bg: "#2d1f4e", bar: "#8b5cf6", label: "Logic" },
-  ui:    { bg: "#3b2000", bar: "#f59e0b", label: "Frontend" },
-  ai:    { bg: "#2a1f3d", bar: "#a855f7", label: "AI" },
-  qa:    { bg: "#1f2937", bar: "#6b7280", label: "QA / Polish" },
+  infra: { bg: C.blueSoft, bar: C.blue, label: "Infrastructure" },
+  data:  { bg: C.greenSoft, bar: C.green, label: "Data" },
+  logic: { bg: C.purpleSoft, bar: C.purple, label: "Logic" },
+  ui:    { bg: C.goldOn, bar: C.gold, label: "Frontend" },
+  ai:    { bg: C.purpleSoft, bar: C.purple, label: "AI" },
+  qa:    { bg: C.border, bar: C.txt3, label: "QA / Polish" },
 };
 
 // ─── PROTOTYPE GANTT ───────────────────────────────────────────────────────
@@ -160,26 +162,26 @@ function PrototypeGantt() {
   const rows = PROTOTYPE_TASKS;
 
   return (
-    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 13 }}>
+    <div style={{ fontFamily: F.mono, fontSize: 13 }}>
       {/* Legend */}
       <div style={{ display: "flex", gap: 16, marginBottom: 20, flexWrap: "wrap" }}>
         {Object.entries(TYPE_COLORS).map(([k, v]) => (
           <div key={k} style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ width: 12, height: 12, borderRadius: 2, background: v.bar }} />
-            <span style={{ color: "#94a3b8", fontSize: 11 }}>{v.label}</span>
+            <span style={{ color: C.txt2, fontSize: 11 }}>{v.label}</span>
           </div>
         ))}
       </div>
 
       {/* Header row */}
       <div style={{ display: "grid", gridTemplateColumns: "200px repeat(7, 1fr)", gap: 2, marginBottom: 4 }}>
-        <div style={{ color: "#475569", fontSize: 11, padding: "4px 8px" }}>TASK</div>
+        <div style={{ color: C.txt3, fontSize: 11, padding: "4px 8px" }}>TASK</div>
         {dayLabels.map((d, i) => (
           <div key={i} style={{
-            textAlign: "center", color: i === 6 ? "#f59e0b" : "#94a3b8",
+            textAlign: "center", color: i === 6 ? C.gold : C.txt2,
             fontSize: 10, padding: "4px 2px", lineHeight: 1.4,
             whiteSpace: "pre-line",
-            borderBottom: `2px solid ${i === 6 ? "#f59e0b33" : "#1e293b"}`
+            borderBottom: `2px solid ${i === 6 ? C.goldLine : C.surfaceUp}`
           }}>{d}</div>
         ))}
       </div>
@@ -198,13 +200,13 @@ function PrototypeGantt() {
               gridTemplateColumns: "200px repeat(7, 1fr)",
               gap: 2, marginBottom: 3,
               borderRadius: 4,
-              background: isHov ? "#1e293b" : "transparent",
+              background: isHov ? C.surfaceUp : "transparent",
               transition: "background 0.15s",
               cursor: "default",
             }}
           >
             <div style={{
-              color: "#cbd5e1", fontSize: 11, padding: "6px 8px",
+              color: C.txt2, fontSize: 11, padding: "6px 8px",
               display: "flex", alignItems: "center", gap: 6,
             }}>
               <div style={{ width: 3, height: 20, borderRadius: 2, background: tc.bar, flexShrink: 0 }} />
@@ -215,8 +217,8 @@ function PrototypeGantt() {
               return (
                 <div key={d} style={{
                   height: 32, borderRadius: 4,
-                  background: filled ? tc.bar : "#0f172a",
-                  border: `1px solid ${filled ? tc.bar : "#1e293b"}`,
+                  background: filled ? tc.bar : C.surface,
+                  border: `1px solid ${filled ? tc.bar : C.surfaceUp}`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   opacity: filled ? 1 : 0.3,
                   transition: "all 0.15s",
@@ -234,14 +236,14 @@ function PrototypeGantt() {
         return (
           <div style={{
             marginTop: 16, padding: "12px 16px",
-            background: "#1e293b", borderRadius: 8,
+            background: C.surfaceUp, borderRadius: 8,
             border: `1px solid ${TYPE_COLORS[t.type].bar}44`,
-            color: "#cbd5e1", fontSize: 12, lineHeight: 1.6,
+            color: C.txt2, fontSize: 12, lineHeight: 1.6,
           }}>
             <div style={{ color: TYPE_COLORS[t.type].bar, fontWeight: "bold", marginBottom: 4 }}>
               Day {t.day} · {t.task}
             </div>
-            <div style={{ color: "#94a3b8" }}>{t.detail}</div>
+            <div style={{ color: C.txt2 }}>{t.detail}</div>
           </div>
         );
       })()}
@@ -257,7 +259,7 @@ function ProductionGantt() {
   const monthLabels = ["M1\nJun", "M2\nJul", "M3\nAug", "M4\nSep", "M5\nOct", "M6\nNov", "M7\nDec", "M8\nJan", "M9\nFeb", "M10\nMar", "M11\nApr", "M12\nMay"];
 
   return (
-    <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12 }}>
+    <div style={{ fontFamily: F.mono, fontSize: 12 }}>
       {PRODUCTION_PHASES.map((ph) => (
         <div key={ph.phase} style={{ marginBottom: 24 }}>
           {/* Phase header */}
@@ -269,7 +271,7 @@ function ProductionGantt() {
               {ph.phase.toUpperCase()}
             </span>
             <div style={{ flex: 1, height: 1, background: `${ph.color}33` }} />
-            <span style={{ color: "#475569", fontSize: 10 }}>
+            <span style={{ color: C.txt3, fontSize: 10 }}>
               Month {ph.months[0]}–{ph.months[1]}
             </span>
           </div>
@@ -277,12 +279,12 @@ function ProductionGantt() {
           {/* Month header (first phase only) */}
           {ph.phase === PRODUCTION_PHASES[0].phase && (
             <div style={{ display: "grid", gridTemplateColumns: "220px repeat(12, 1fr)", gap: 2, marginBottom: 4 }}>
-              <div style={{ color: "#475569", fontSize: 10, padding: "2px 8px" }}>TASK</div>
+              <div style={{ color: C.txt3, fontSize: 10, padding: "2px 8px" }}>TASK</div>
               {monthLabels.map((m, i) => (
                 <div key={i} style={{
-                  textAlign: "center", color: "#64748b", fontSize: 9,
+                  textAlign: "center", color: C.txt3, fontSize: 9,
                   padding: "2px 1px", lineHeight: 1.3, whiteSpace: "pre-line",
-                  borderBottom: "1px solid #1e293b"
+                  borderBottom: `1px solid ${C.border}`
                 }}>{m}</div>
               ))}
             </div>
@@ -304,12 +306,12 @@ function ProductionGantt() {
                   display: "grid",
                   gridTemplateColumns: "220px repeat(12, 1fr)",
                   gap: 2, marginBottom: 3,
-                  background: isHov ? "#1e293b" : "transparent",
+                  background: isHov ? C.surfaceUp : "transparent",
                   borderRadius: 4, transition: "background 0.15s",
                 }}
               >
                 <div style={{
-                  color: "#94a3b8", fontSize: 10, padding: "5px 8px",
+                  color: C.txt2, fontSize: 10, padding: "5px 8px",
                   display: "flex", alignItems: "center", gap: 6, lineHeight: 1.3,
                 }}>
                   <div style={{ width: 2, height: 16, borderRadius: 1, background: ph.color, flexShrink: 0 }} />
@@ -325,8 +327,8 @@ function ProductionGantt() {
                   return (
                     <div key={mi} style={{
                       height: 24, borderRadius: 3,
-                      background: overlap ? ph.color : "#0f172a",
-                      border: `1px solid ${overlap ? ph.color : "#1e293b"}`,
+                      background: overlap ? ph.color : C.surface,
+                      border: `1px solid ${overlap ? ph.color : C.surfaceUp}`,
                       opacity: overlap ? (partial ? 0.55 : 1) : 0.2,
                       transition: "all 0.15s",
                     }} />
@@ -344,15 +346,15 @@ function ProductionGantt() {
 // ─── MILESTONES ────────────────────────────────────────────────────────────
 
 const MILESTONES = [
-  { when: "Day 7", label: "Prototype demo-ready", color: "#f59e0b", icon: "🎯" },
-  { when: "Month 1", label: "Cloud infrastructure live", color: "#0ea5e9", icon: "☁️" },
-  { when: "Month 2", label: "Auth + multi-tenancy production", color: "#0ea5e9", icon: "🔐" },
-  { when: "Month 3", label: "First real integrations (Xero + HubSpot)", color: "#8b5cf6", icon: "🔌" },
-  { when: "Month 4", label: "dbt KPI pipeline live", color: "#8b5cf6", icon: "⚙️" },
-  { when: "Month 6", label: "MVP — first paying fund onboarded", color: "#10b981", icon: "🚀" },
-  { when: "Month 8", label: "AI layer + board pack generation", color: "#f59e0b", icon: "🤖" },
-  { when: "Month 10", label: "Compliance + Risk modules + pen test", color: "#ef4444", icon: "🛡️" },
-  { when: "Month 12", label: "Production-grade — SOC 2 prep complete", color: "#64748b", icon: "✅" },
+  { when: "Day 7", label: "Prototype demo-ready", color: C.gold, icon: "🎯" },
+  { when: "Month 1", label: "Cloud infrastructure live", color: C.blue, icon: "☁️" },
+  { when: "Month 2", label: "Auth + multi-tenancy production", color: C.blue, icon: "🔐" },
+  { when: "Month 3", label: "First real integrations (Xero + HubSpot)", color: C.purple, icon: "🔌" },
+  { when: "Month 4", label: "dbt KPI pipeline live", color: C.purple, icon: "⚙️" },
+  { when: "Month 6", label: "MVP — first paying fund onboarded", color: C.green, icon: "🚀" },
+  { when: "Month 8", label: "AI layer + board pack generation", color: C.gold, icon: "🤖" },
+  { when: "Month 10", label: "Compliance + Risk modules + pen test", color: C.red, icon: "🛡️" },
+  { when: "Month 12", label: "Production-grade — SOC 2 prep complete", color: C.txt3, icon: "✅" },
 ];
 
 // ─── APP ───────────────────────────────────────────────────────────────────
@@ -361,31 +363,14 @@ export default function Gantt() {
   const [tab, setTab] = useState("prototype");
 
   return (
-    <div style={{
-      background: "#030712",
-      minHeight: "100vh",
-      padding: "32px 24px",
-      color: "#e2e8f0",
-      fontFamily: "'DM Mono', 'Courier New', monospace",
-    }}>
-      {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{
-          fontSize: 10, letterSpacing: "0.2em", color: "#475569",
-          textTransform: "uppercase", marginBottom: 8,
-        }}>
-          Alba Portfolio Intelligence Platform
-        </div>
-        <h1 style={{
-          fontSize: 22, fontWeight: 700, color: "#f1f5f9",
-          margin: 0, letterSpacing: "-0.02em",
-        }}>
-          Delivery Plan & Gantt Charts
-        </h1>
-        <div style={{ color: "#475569", fontSize: 11, marginTop: 6 }}>
-          1 Developer · Laptop-first prototype → Full production · May 2026
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={["Actions", "Delivery Plan"]}
+        title="Delivery Plan"
+        chips={<Chip tone="gold">One developer</Chip>}
+        purpose="Laptop-first prototype through to full production, phase by phase"
+        meta="Each phase must be complete and stable before the next begins · May 2026"
+      />
 
       {/* Milestones strip */}
       <div style={{
@@ -396,14 +381,14 @@ export default function Gantt() {
           <div key={i} style={{ display: "flex", alignItems: "stretch", flexShrink: 0 }}>
             <div style={{
               padding: "10px 14px",
-              background: "#0f172a",
+              background: C.surface,
               border: `1px solid ${m.color}33`,
               borderLeft: i === 0 ? `1px solid ${m.color}33` : "none",
               borderRadius: i === 0 ? "8px 0 0 8px" : i === MILESTONES.length - 1 ? "0 8px 8px 0" : 0,
               display: "flex", flexDirection: "column", gap: 3, minWidth: 130,
             }}>
               <div style={{ fontSize: 9, color: m.color, letterSpacing: "0.1em" }}>{m.when}</div>
-              <div style={{ fontSize: 10, color: "#cbd5e1", lineHeight: 1.3 }}>
+              <div style={{ fontSize: 10, color: C.txt2, lineHeight: 1.3 }}>
                 <span style={{ marginRight: 5 }}>{m.icon}</span>{m.label}
               </div>
             </div>
@@ -422,16 +407,16 @@ export default function Gantt() {
             onClick={() => setTab(t.id)}
             style={{
               padding: "10px 20px",
-              background: tab === t.id ? "#1e293b" : "transparent",
-              border: `1px solid ${tab === t.id ? "#334155" : "#1e293b"}`,
-              borderRadius: 6, color: tab === t.id ? "#f1f5f9" : "#475569",
+              background: tab === t.id ? C.surfaceUp : "transparent",
+              border: `1px solid ${tab === t.id ? C.borderLt : C.surfaceUp}`,
+              borderRadius: 6, color: tab === t.id ? C.txt1 : C.txt3,
               cursor: "pointer", fontSize: 12, fontFamily: "inherit",
               transition: "all 0.15s",
             }}
           >
             {t.label}
             <span style={{
-              marginLeft: 8, fontSize: 10, color: tab === t.id ? "#64748b" : "#334155"
+              marginLeft: 8, fontSize: 10, color: tab === t.id ? C.txt3 : C.borderLt
             }}>
               {t.sub}
             </span>
@@ -441,18 +426,18 @@ export default function Gantt() {
 
       {/* Chart area */}
       <div style={{
-        background: "#0a0f1a",
-        border: "1px solid #1e293b",
+        background: C.bgDeep,
+        border: `1px solid ${C.border}`,
         borderRadius: 12, padding: 24,
         overflowX: "auto",
       }}>
         {tab === "prototype" ? (
           <>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              <div style={{ color: C.txt1, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
                 Week 1 Prototype — Day by Day
               </div>
-              <div style={{ color: "#475569", fontSize: 11 }}>
+              <div style={{ color: C.txt3, fontSize: 11 }}>
                 1 developer · VS Code · SQLite · localhost:3000 · £0 cost · Hover a task for detail
               </div>
             </div>
@@ -463,24 +448,24 @@ export default function Gantt() {
               gap: 8, marginTop: 24,
             }}>
               {[
-                { day: "Day 1", theme: "Setup", tasks: "Scaffold + DB schema + seed data", color: "#0ea5e9" },
-                { day: "Day 2", theme: "Backend", tasks: "Scoring engine + API routes", color: "#8b5cf6" },
-                { day: "Day 3", theme: "UI Core", tasks: "Portfolio overview page + components", color: "#f59e0b" },
-                { day: "Day 4", theme: "Drill-down", tasks: "Company Finance + Sales + HR tabs", color: "#f59e0b" },
-                { day: "Day 5", theme: "AI", tasks: "Mock narratives + live Claude wiring", color: "#a855f7" },
-                { day: "Day 6", theme: "Alerts", tasks: "Alerts page + nav shell", color: "#f59e0b" },
-                { day: "Day 7", theme: "🎯 Demo", tasks: "End-to-end test + stakeholder prep", color: "#10b981" },
+                { day: "Day 1", theme: "Setup", tasks: "Scaffold + DB schema + seed data", color: C.blue },
+                { day: "Day 2", theme: "Backend", tasks: "Scoring engine + API routes", color: C.purple },
+                { day: "Day 3", theme: "UI Core", tasks: "Portfolio overview page + components", color: C.gold },
+                { day: "Day 4", theme: "Drill-down", tasks: "Company Finance + Sales + HR tabs", color: C.gold },
+                { day: "Day 5", theme: "AI", tasks: "Mock narratives + live Claude wiring", color: C.purple },
+                { day: "Day 6", theme: "Alerts", tasks: "Alerts page + nav shell", color: C.gold },
+                { day: "Day 7", theme: "🎯 Demo", tasks: "End-to-end test + stakeholder prep", color: C.green },
               ].map((d) => (
                 <div key={d.day} style={{
                   padding: "10px 12px",
-                  background: "#0f172a",
+                  background: C.surface,
                   border: `1px solid ${d.color}44`,
                   borderTop: `3px solid ${d.color}`,
                   borderRadius: 6,
                 }}>
                   <div style={{ color: d.color, fontSize: 10, fontWeight: 700, marginBottom: 4 }}>{d.day}</div>
-                  <div style={{ color: "#f1f5f9", fontSize: 10, fontWeight: 600, marginBottom: 3 }}>{d.theme}</div>
-                  <div style={{ color: "#64748b", fontSize: 9, lineHeight: 1.4 }}>{d.tasks}</div>
+                  <div style={{ color: C.txt1, fontSize: 10, fontWeight: 600, marginBottom: 3 }}>{d.theme}</div>
+                  <div style={{ color: C.txt3, fontSize: 9, lineHeight: 1.4 }}>{d.tasks}</div>
                 </div>
               ))}
             </div>
@@ -488,10 +473,10 @@ export default function Gantt() {
         ) : (
           <>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ color: "#f1f5f9", fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              <div style={{ color: C.txt1, fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
                 Production Roadmap — 12 Months
               </div>
-              <div style={{ color: "#475569", fontSize: 11 }}>
+              <div style={{ color: C.txt3, fontSize: 11 }}>
                 1 developer · AWS infrastructure · Real integrations · AI intelligence layer · Security hardening
               </div>
             </div>
@@ -500,29 +485,29 @@ export default function Gantt() {
             {/* Phase summary */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginTop: 24 }}>
               {[
-                { label: "Phase 1–2", months: "Months 1–4", desc: "Cloud infra, auth, multi-tenancy, Snowflake, first real integrations (Merge.dev + Fivetran), dbt pipeline", color: "#0ea5e9" },
-                { label: "Phase 3–4", months: "Months 5–8", desc: "All 9 modules live, configurable scoring, LangChain RAG, Claude narratives, Prophet forecasting, anomaly detection, board packs", color: "#10b981" },
-                { label: "Phase 5–6", months: "Months 9–12", desc: "Compliance + Risk modules, benchmarking, pen test, SOC 2 prep, predictive scoring, scenario planning, 2nd fund onboarding", color: "#64748b" },
+                { label: "Phase 1–2", months: "Months 1–4", desc: "Cloud infra, auth, multi-tenancy, Snowflake, first real integrations (Merge.dev + Fivetran), dbt pipeline", color: C.blue },
+                { label: "Phase 3–4", months: "Months 5–8", desc: "All 9 modules live, configurable scoring, LangChain RAG, Claude narratives, Prophet forecasting, anomaly detection, board packs", color: C.green },
+                { label: "Phase 5–6", months: "Months 9–12", desc: "Compliance + Risk modules, benchmarking, pen test, SOC 2 prep, predictive scoring, scenario planning, 2nd fund onboarding", color: C.txt3 },
               ].map((p) => (
                 <div key={p.label} style={{
                   padding: "14px 16px",
-                  background: "#0f172a",
+                  background: C.surface,
                   border: `1px solid ${p.color}33`,
                   borderLeft: `3px solid ${p.color}`,
                   borderRadius: 6,
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                     <span style={{ color: p.color, fontWeight: 700, fontSize: 11 }}>{p.label}</span>
-                    <span style={{ color: "#475569", fontSize: 10 }}>{p.months}</span>
+                    <span style={{ color: C.txt3, fontSize: 10 }}>{p.months}</span>
                   </div>
-                  <div style={{ color: "#94a3b8", fontSize: 10, lineHeight: 1.5 }}>{p.desc}</div>
+                  <div style={{ color: C.txt2, fontSize: 10, lineHeight: 1.5 }}>{p.desc}</div>
                 </div>
               ))}
             </div>
 
             {/* Cost trajectory */}
             <div style={{ marginTop: 24 }}>
-              <div style={{ color: "#475569", fontSize: 10, marginBottom: 10, letterSpacing: "0.1em" }}>
+              <div style={{ color: C.txt3, fontSize: 10, marginBottom: 10, letterSpacing: "0.1em" }}>
                 MONTHLY COST TRAJECTORY (1 DEVELOPER)
               </div>
               <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 60 }}>
@@ -542,14 +527,14 @@ export default function Gantt() {
                   { label: "M12", val: 60, note: "~£2.2k" },
                 ].map((b, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                    <div style={{ fontSize: 8, color: "#475569" }}>{b.note}</div>
+                    <div style={{ fontSize: 8, color: C.txt3 }}>{b.note}</div>
                     <div style={{
                       width: "100%", height: `${b.val}px`,
-                      background: i === 0 ? "#10b981" : `hsl(${220 - i * 8}, 60%, ${35 + i * 1.5}%)`,
+                      background: i === 0 ? C.green : `hsl(${220 - i * 8}, 60%, ${35 + i * 1.5}%)`,
                       borderRadius: "3px 3px 0 0", minHeight: 2,
                       transition: "all 0.3s",
                     }} />
-                    <div style={{ fontSize: 8, color: "#475569" }}>{b.label}</div>
+                    <div style={{ fontSize: 8, color: C.txt3 }}>{b.label}</div>
                   </div>
                 ))}
               </div>
@@ -561,15 +546,22 @@ export default function Gantt() {
       {/* Footer note */}
       <div style={{
         marginTop: 20, padding: "12px 16px",
-        background: "#0f172a", borderRadius: 8,
-        border: "1px solid #1e293b",
-        color: "#475569", fontSize: 10, lineHeight: 1.6,
+        background: C.surface, borderRadius: 8,
+        border: `1px solid ${C.border}`,
+        color: C.txt3, fontSize: 10, lineHeight: 1.6,
       }}>
-        ⚠️ Single developer constraint: each phase must be fully complete and stable before the next begins.
-        Buffer of 1 week per phase should be assumed for production work.
-        Merge.dev and Fivetran are critical — do not attempt to build individual integrations manually.
-        Claude API is the only non-free dependency in the prototype (optional — mock mode covers demo needs).
+        Single-developer constraint: each phase must be complete and stable before the next begins, and a week of
+        buffer per phase should be assumed for production work. Merge.dev and Fivetran are load-bearing — building
+        individual integrations by hand is not a viable path. The Claude API is the only non-free dependency in the
+        prototype, and mock mode covers everything the demo needs without it.
       </div>
-    </div>
+
+      <ProvenanceBar items={[
+        "One developer, phased",
+        "A week of buffer assumed per production phase",
+        "Integrations via Merge.dev and Fivetran, not hand-built",
+        "Mock mode covers the demo with no paid dependency",
+      ]} />
+    </Page>
   );
 }

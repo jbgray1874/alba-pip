@@ -8,7 +8,8 @@
 //  apart is a number nobody acts on.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C, F } from "../lib/theme.js";
+import { C, F, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Button, MetricRow, Panel, ProvenanceBar } from "../components/Shell.jsx";
 import { useMemo, useState } from "react";
 import { buildProcurement, CATEGORIES, PARAMS } from "../lib/scenarioProcurement.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -40,22 +41,6 @@ const QUALITY = {
   different:  { label: "Different", colour: T.red },
 };
 
-function Panel({ title, sub, right, children }) {
-  return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
-                    padding: "10px 14px", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ color: T.txt1, fontSize: 12, fontWeight: 600 }}>{title}</div>
-          {sub && <div style={{ color: T.txt3, fontSize: 9, marginTop: 2 }}>{sub}</div>}
-        </div>
-        {right}
-      </div>
-      <div style={{ padding: 14 }}>{children}</div>
-    </div>
-  );
-}
-
 export default function ScenarioProcurement() {
   const s = useMemo(() => buildProcurement(), []);
   const ccy = s.currency;
@@ -69,35 +54,27 @@ export default function ScenarioProcurement() {
   const maxSaving = Math.max(...s.byCategory.map((c) => c.saving));
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "18px 22px", background: T.bg }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div>
-        <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>Portfolio procurement</h1>
-        <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
-          {t.companies} companies · {t.suppliers} shared suppliers · restated into {ccy} at pinned rates · as of 2026-05
-        </div>
-        </div>
-        <button onClick={() => setShowReport(true)}
-                style={{ padding: "7px 14px", background: T.green, border: "none", borderRadius: 6,
-                         color: "#04140d", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-          Generate procurement brief
-        </button>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={["Intelligence", "Portfolio Procurement"]}
+        title="Portfolio Procurement"
+        chips={<>
+          <Chip tone="green">{money(t.saving)} a year</Chip>
+          <Chip tone="gold">{s.reviewQueue.length} pending confirmation</Chip>
+        </>}
+        purpose={`${t.suppliers} suppliers are used by more than one portfolio company — a number no single company's board pack can see`}
+        meta={`${t.companies} companies · restated into ${ccy} at pinned rates · as of 2026-05 · Xero across the portfolio`}
+        actions={<Button variant="primary" onClick={() => setShowReport(true)}>Generate procurement brief</Button>}
+      />
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {[
-          { l: "COMMON SUPPLIER SPEND", v: money(t.totalSpend), s: `across ${t.suppliers} suppliers`, t: T.txt1 },
-          { l: "ADDRESSABLE, CONFIRMED", v: money(t.confirmedSpend), s: `${t.addressableSuppliers} suppliers, ${PARAMS.minCompaniesForAction}+ companies each`, t: T.txt1 },
-          { l: "ANNUAL SAVING", v: money(t.saving), s: `${money(t.low)} – ${money(t.high)}`, t: T.green },
-          { l: "HELD PENDING REVIEW", v: money(t.pendingSpend), s: `worth a further ${money(t.savingIfConfirmed)}`, t: T.amber },
-        ].map((x) => (
-          <div key={x.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 155 }}>
-            <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>{x.v}</div>
-            <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
-          </div>
-        ))}
-      </div>
+      <MetricRow items={[
+        { label: "Common supplier spend", value: money(t.totalSpend), tone: C.txt1, sub: `across ${t.suppliers} suppliers` },
+        { label: "Addressable, confirmed", value: money(t.confirmedSpend), tone: C.txt1,
+          sub: `${t.addressableSuppliers} suppliers, ${PARAMS.minCompaniesForAction}+ companies each` },
+        { label: "Annual saving", value: money(t.saving), tone: C.green, sub: `${money(t.low)} – ${money(t.high)}` },
+        { label: "Held pending review", value: money(t.pendingSpend), tone: C.gold,
+          sub: `worth a further ${money(t.savingIfConfirmed)}` },
+      ]} />
 
       <InsightCard insight={s.insight} />
 
@@ -250,7 +227,14 @@ export default function ScenarioProcurement() {
           Realised over {PARAMS.implementationMonths} months as contracts reach renewal.
         </div>
       </Panel>
+      <ProvenanceBar items={[
+        "Suppliers matched across nine ledgers, names normalised",
+        `${s.reviewQueue.length} matches held pending human confirmation`,
+        "Unconfirmed spend is excluded from the saving, not estimated",
+        `Realised over ${PARAMS.implementationMonths} months as contracts reach renewal`,
+      ]} />
+
       {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
-    </div>
+    </Page>
   );
 }

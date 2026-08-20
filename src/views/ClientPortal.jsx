@@ -1,5 +1,6 @@
 import { useState, useMemo, createContext, useContext } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
+import { PageHeader, Chip, Button, ProvenanceBar } from "../components/Shell.jsx";
 import { COMPANIES, companyById } from "../lib/companies.js";
 import { buildFinance } from "../lib/financeData.js";
 import { modulesFor } from "../lib/companyModules.js";
@@ -26,9 +27,9 @@ const T = {
   purpleDim: C.purpleSoft,
   navy: C.gold,
   amberBrd: C.goldLine,
-  blueBrd: "#5B8DEF55",
-  greenBrd: "#3FCF6E55",
-  redBrd: "#F4525F55",
+  blueBrd: C.blue + "55",
+  greenBrd: C.green + "55",
+  redBrd: C.red + "55",
   txt1: C.txt1,
   txt2: C.txt2,
   txt3: C.txt3
@@ -46,7 +47,7 @@ const ROLES = [
   { id:"sales",  label:"Head of Sales",   icon:"📈", color:T.green,  desc:"Pipeline, revenue, team performance" },
   { id:"hr",     label:"HR Lead",         icon:"👥", color:T.purple, desc:"People, hiring, attrition, payroll" },
   { id:"coo",    label:"COO",             icon:"⚙️", color:T.amber,  desc:"Operations, SLA, procurement, delivery" },
-  { id:"gp",     label:"GP View",         icon:"🏦", color:"#e11d48",desc:"What the fund sees about your company" },
+  { id:"gp",     label:"GP View",         icon:"🏦", color:C.red,desc:"What the fund sees about your company" },
 ];
 
 // ── WIDGET REGISTRY ───────────────────────────────────────────────────────────
@@ -246,7 +247,7 @@ function DataSubmission({fields}) {
         ))}
       </div>
       <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>setSubmitted(true)} style={{flex:1,padding:"8px",background:submitted?T.greenDim:T.blue,border:"none",borderRadius:7,color:submitted?T.green:"#fff",cursor:"pointer",fontSize:11,fontWeight:700}}>
+        <button onClick={()=>setSubmitted(true)} style={{flex:1,padding:"8px",background:submitted?T.greenDim:T.blue,border:"none",borderRadius:7,color:submitted?C.green:C.goldOn,cursor:"pointer",fontSize:11,fontWeight:700}}>
           {submitted?"✓ Submitted to Fund":"Submit Monthly Pack to Fund"}
         </button>
         <button style={{padding:"8px 12px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:7,color:T.txt2,cursor:"pointer",fontSize:11}}>
@@ -280,7 +281,7 @@ function CommentaryBox() {
       <textarea value={text} onChange={e=>{setText(e.target.value);setSaved(false);}} placeholder="Add commentary for the GP team — explain any variances, provide context on KPI movements, or flag upcoming risks..." style={{width:"100%",minHeight:80,padding:"9px 11px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:7,color:T.txt1,fontSize:11,fontFamily:"inherit",resize:"vertical",outline:"none",boxSizing:"border-box"}}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8}}>
         <span style={{color:T.txt3,fontSize:9}}>{text.length} chars · Visible to GP team</span>
-        <button onClick={()=>{setSaved(true);setSavedText(text);}} disabled={!text.trim()} style={{padding:"6px 14px",background:text.trim()?T.navy:"#f1f5f9",border:"none",borderRadius:6,color:text.trim()?"#fff":T.txt3,cursor:text.trim()?"pointer":"default",fontSize:10,fontWeight:600}}>
+        <button onClick={()=>{setSaved(true);setSavedText(text);}} disabled={!text.trim()} style={{padding:"6px 14px",background:text.trim()?C.gold:C.borderLt,border:"none",borderRadius:6,color:text.trim()?C.goldOn:C.txt3,cursor:text.trim()?"pointer":"default",fontSize:10,fontWeight:600}}>
           {saved?"✓ Saved":"Save & Send"}
         </button>
       </div>
@@ -291,10 +292,10 @@ function CommentaryBox() {
 
 function GPViewCard({company}) {
   return (
-    <div style={{background:T.navy,border:`1px solid #1e293b`,borderRadius:10,padding:16,color:"#e8edf8",boxShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>
-      <div style={{fontSize:11,color:"#7a90b8",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{background:C.surface,border:`1px solid ${C.goldLine}`,borderRadius:6,padding:16,color:C.txt1}}>
+      <div style={{fontSize:S.small,color:C.txt2,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <span>WHAT THE GP SEES ABOUT YOU</span>
-        <span style={{fontSize:9,background:"#1e293b",padding:"2px 8px",borderRadius:4}}>Live · Updated 4h ago</span>
+        <span style={{fontSize:S.micro,background:C.goldSoft,border:`1px solid ${C.goldLine}`,color:C.gold,padding:"2px 8px",borderRadius:3,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase"}}>Live</span>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {[
@@ -305,13 +306,13 @@ function GPViewCard({company}) {
           {l:"People Risk",v:"Moderate",s:"amber"},
           {l:"Ops Risk",v:"Low",s:"green"},
         ].map(item=>(
-          <div key={item.l} style={{background:"#0f172a",borderRadius:7,padding:"9px 11px"}}>
-            <div style={{color:"#4a5a7a",fontSize:9,marginBottom:3}}>{item.l}</div>
-            <div style={{color:{green:"#00c97a",amber:"#f5a524",red:"#ff3d5a"}[item.s]||"#e8edf8",fontSize:14,fontWeight:700}}>{item.v}</div>
+          <div key={item.l} style={{background:C.bgDeep,border:`1px solid ${C.border}`,borderRadius:5,padding:"9px 11px"}}>
+            <div style={{...labelStyle(),marginBottom:4}}>{item.l}</div>
+            <div style={{color:{green:C.green,amber:C.gold,red:C.red}[item.s]||C.txt1,fontSize:15,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>{item.v}</div>
           </div>
         ))}
       </div>
-      <div style={{marginTop:12,padding:"9px 11px",background:"#1e293b",borderRadius:7,color:"#7a90b8",fontSize:10,lineHeight:1.5}}>
+      <div style={{marginTop:12,padding:"9px 11px",background:C.bgDeep,border:`1px solid ${C.border}`,borderRadius:5,color:C.txt2,fontSize:S.small,lineHeight:1.55}}>
         📋 GP Note: "Cash runway requires board resolution. Operating partner review scheduled w/c 2 June. Debtor recovery plan needed before next IC update."
       </div>
     </div>
@@ -375,7 +376,7 @@ function RevenueChart() {
           <XAxis dataKey="m" tick={{fill:T.txt3,fontSize:9}}/>
           <YAxis tick={{fill:T.txt3,fontSize:9}}/>
           <Tooltip content={<TT/>}/>
-          <Bar dataKey="budget" name="Budget" fill="#e2e8f0" radius={[2,2,0,0]}/>
+          <Bar dataKey="budget" name="Budget" fill={C.borderLt} radius={[2,2,0,0]}/>
           <Line dataKey="actual" name="Actual" stroke={T.amber} strokeWidth={2.5} dot={false}/>
         </ComposedChart>
       </ResponsiveContainer>
@@ -395,7 +396,7 @@ function CashChart() {
           <YAxis tick={{fill:T.txt3,fontSize:9}}/>
           <Tooltip content={<TT/>}/>
           <ReferenceLine y={200} stroke={T.red} strokeDasharray="4 4" label={{value:"6mo warn",fill:T.red,fontSize:8}}/>
-          <Area dataKey="v" name="Cash" stroke={T.red} fill="#fee2e2" strokeWidth={2}/>
+          <Area dataKey="v" name="Cash" stroke={T.red} fill={C.redSoft} strokeWidth={2}/>
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -497,20 +498,19 @@ function Dashboard({role}) {
   const roleObj = ROLES.find(r=>r.id===role);
 
   return (
-    <div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}>
-      {/* Dashboard header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div>
-          <div style={{color:T.txt3,fontSize:10,marginBottom:2}}>{COMPANY.fund} · Portfolio Company Portal</div>
-          <h1 style={{color:T.txt1,fontSize:20,fontWeight:800,margin:0}}>{COMPANY.name}</h1>
-          <div style={{color:T.txt3,fontSize:11,marginTop:3}}>
-            {roleObj?.icon} {roleObj?.label} View · {roleObj?.desc}
-          </div>
-        </div>
-        <button onClick={()=>setEditMode(p=>!p)} style={{padding:"8px 16px",background:editMode?T.navy:T.surface,color:editMode?"#fff":T.txt2,border:`1px solid ${editMode?T.navy:T.border}`,borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:600}}>
-          {editMode?"✓ Save Layout":"⊞ Customise Dashboard"}
-        </button>
-      </div>
+    <div style={{height:"100%",overflowY:"auto",padding:"20px 24px",background:C.bg}}>
+      <PageHeader
+        crumbs={[COMPANY.fund, "Company Portal", COMPANY.name]}
+        title={COMPANY.name}
+        chips={<Chip tone={COMPANY.status==="red"?"red":COMPANY.status==="amber"?"gold":"green"}>{COMPANY.status}</Chip>}
+        purpose={`${roleObj?.label} view — ${roleObj?.desc}`}
+        meta={`Reports ${COMPANY.currency} · as of ${COMPANY.asOf} · each role sees the widgets that role needs`}
+        actions={
+          <Button variant={editMode?"primary":"outline"} onClick={()=>setEditMode(p=>!p)}>
+            {editMode?"Save layout":"Customise dashboard"}
+          </Button>
+        }
+      />
       <LiveStrip specs={liveSpecs} note={`Live readings for ${COMPANY.name}, in ${COMPANY.currency}. Each moves around the reported figure; a lapsed credential keeps the reading moving and relabels it.`}/>
 
       {/* Widget picker (edit mode) */}
@@ -522,7 +522,7 @@ function Dashboard({role}) {
               const on = enabled.includes(w.id);
               const relevant = w.roles.includes(role);
               return(
-                <button key={w.id} onClick={()=>toggle(w.id)} style={{padding:"5px 12px",background:on?T.navy:relevant?T.blueDim:T.surface,color:on?"#fff":relevant?T.blue:T.txt3,border:`1px solid ${on?T.navy:relevant?T.blueBrd:T.border}`,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:on?600:400,opacity:relevant?1:0.5}}>
+                <button key={w.id} onClick={()=>toggle(w.id)} style={{padding:"5px 12px",background:on?T.navy:relevant?T.blueDim:T.surface,color:on?C.goldOn:relevant?C.blue:T.txt3,border:`1px solid ${on?T.navy:relevant?T.blueBrd:T.border}`,borderRadius:6,cursor:"pointer",fontSize:10,fontWeight:on?600:400,opacity:relevant?1:0.5}}>
                   {on?"✓ ":""}{w.label}
                 </button>
               );
@@ -537,7 +537,7 @@ function Dashboard({role}) {
         <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(small.length,4)},1fr)`,gap:10,marginBottom:14}}>
           {small.map(w=>(
             <div key={w.id} style={{position:"relative"}}>
-              {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:T.red,color:"#fff",border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
+              {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.red,color:C.bgDeep,border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
               {renderWidget(w.id, actions, setActions, COMPANY, DATA)}
             </div>
           ))}
@@ -549,7 +549,7 @@ function Dashboard({role}) {
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
           {medium.map(w=>(
             <div key={w.id} style={{position:"relative"}}>
-              {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:T.red,color:"#fff",border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
+              {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.red,color:C.bgDeep,border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
               {renderWidget(w.id, actions, setActions, COMPANY, DATA)}
             </div>
           ))}
@@ -559,7 +559,7 @@ function Dashboard({role}) {
       {/* Large widgets (full width) */}
       {large.map(w=>(
         <div key={w.id} style={{position:"relative",marginBottom:14}}>
-          {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:T.red,color:"#fff",border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
+          {editMode&&<button onClick={()=>toggle(w.id)} style={{position:"absolute",top:-6,right:-6,width:18,height:18,borderRadius:"50%",background:C.red,color:C.bgDeep,border:"none",cursor:"pointer",fontSize:10,zIndex:10,display:"flex",alignItems:"center",justifyContent:"center"}}>×</button>}
           {renderWidget(w.id, actions, setActions, COMPANY, DATA)}
         </div>
       ))}
@@ -577,13 +577,13 @@ export default function ClientPortal() {
 
   return (
     <PortalCtx.Provider value={ctx}>
-    <div style={{display:"flex",height:"100%",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}>
+    <div style={{display:"flex",height:"100%",background:T.bg,overflow:"hidden"}}>
       {/* Role sidebar */}
-      <div style={{width:180,background:"#fff",borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",padding:"16px 0",flexShrink:0,boxShadow:"1px 0 4px rgba(0,0,0,0.04)"}}>
+      <div style={{width:186,background:C.bgDeep,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",padding:"16px 0",flexShrink:0}}>
         <div style={{padding:"0 14px 14px",borderBottom:`1px solid ${T.border}`,marginBottom:10}}>
-          <div style={{width:32,height:32,borderRadius:8,background:T.navy,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:13,fontWeight:800,marginBottom:8}}>A</div>
+          <div style={{width:32,height:32,borderRadius:8,background:T.navy,display:"flex",alignItems:"center",justifyContent:"center",color:C.goldOn,fontSize:13,fontWeight:700,marginBottom:8}}>A</div>
           <select value={companyId} onChange={(e)=>setCompanyId(e.target.value)}
-                  style={{width:"100%",background:"#fff",color:T.txt1,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:11,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>
+                  style={{width:"100%",background:C.surface,color:C.txt1,border:`1px solid ${T.border}`,borderRadius:5,padding:"5px 6px",fontSize:11,fontWeight:700,fontFamily:"inherit",cursor:"pointer"}}>
             {COMPANIES.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <div style={{color:T.txt3,fontSize:9,marginTop:4}}>{COMPANY.fund} · reports {COMPANY.currency} · as of {COMPANY.asOf}</div>
@@ -591,10 +591,10 @@ export default function ClientPortal() {
         <div style={{padding:"0 8px"}}>
           <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",padding:"4px 6px",marginBottom:4}}>Log in as</div>
           {ROLES.map(r=>(
-            <button key={r.id} onClick={()=>setRole(r.id)} style={{width:"100%",padding:"9px 10px",background:role===r.id?T.navy:"transparent",border:"none",borderRadius:7,cursor:"pointer",textAlign:"left",marginBottom:2,display:"flex",alignItems:"center",gap:8,transition:"background 0.15s"}}>
+            <button key={r.id} onClick={()=>setRole(r.id)} style={{width:"100%",padding:"9px 10px",background:role===r.id?T.navy:"transparent",border:"none",borderRadius:4,cursor:"pointer",textAlign:"left",marginBottom:2,display:"flex",alignItems:"center",gap:8,transition:"background 0.15s"}}>
               <span style={{fontSize:13}}>{r.icon}</span>
               <div>
-                <div style={{color:role===r.id?"#fff":T.txt1,fontSize:11,fontWeight:role===r.id?700:400}}>{r.label}</div>
+                <div style={{color:role===r.id?C.goldOn:C.txt2,fontSize:S.small,fontWeight:role===r.id?700:400}}>{r.label}</div>
               </div>
             </button>
           ))}
@@ -609,9 +609,9 @@ export default function ClientPortal() {
       {/* Main content */}
       <div style={{flex:1,overflow:"hidden",background:T.bg}}>
         {/* Top bar */}
-        <div style={{background:"#fff",borderBottom:`1px solid ${T.border}`,padding:"10px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <div style={{background:C.bgDeep,borderBottom:`1px solid ${C.border}`,padding:"10px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:10}}>
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:28,height:28,borderRadius:6,background:active?.color||T.navy,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,color:"#fff"}}>{active?.icon}</div>
+            <div style={{width:28,height:28,borderRadius:6,background:`${active?.color||C.gold}22`,border:`1px solid ${active?.color||C.gold}55`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>{active?.icon}</div>
             <div>
               <span style={{color:T.txt1,fontSize:13,fontWeight:700}}>{active?.label}</span>
               <span style={{color:T.txt3,fontSize:10,marginLeft:8}}>{active?.desc}</span>

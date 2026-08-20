@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Metric, ProvenanceBar } from "../components/Shell.jsx";
 
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
@@ -222,23 +223,19 @@ export default function Improvements() {
     );
   };
 
+  const highLow = IMPROVEMENTS.filter(i=>i.impact==="high"&&i.effort==="low").length;
   return (
-    <div style={{ background:T.bg, minHeight:"100vh", padding:"24px 28px",
-                  fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color:T.txt1 }}>
-
-      {/* Header */}
-      <div style={{ marginBottom:20 }}>
-        <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>
-          Alba PIP · 7-Day Sprint
-        </div>
-        <h1 style={{ fontSize:20, fontWeight:800, margin:0 }}>UI & Feature Improvements</h1>
-        <div style={{ color:T.txt3, fontSize:11, marginTop:4 }}>
-          {IMPROVEMENTS.length} improvements identified · {IMPROVEMENTS.filter(i=>i.impact==="high"&&i.effort==="low").length} high-impact / low-effort wins · Click any card for demo impact
-        </div>
-      </div>
+    <Page>
+      <PageHeader
+        crumbs={["Actions", "Improvement Stack"]}
+        title="UI and Feature Improvements"
+        chips={<Chip tone="green">{highLow} quick wins</Chip>}
+        purpose={`${IMPROVEMENTS.length} improvements identified and ranked — click any card for the demo moment it creates`}
+        meta="Scoped as seven days for one developer"
+      />
 
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:10, marginBottom:20 }}>
+      <div style={{ display:"flex", gap:9, flexWrap:"wrap", marginBottom:14 }}>
         {[
           { l:"Total improvements",     v:IMPROVEMENTS.length,                                            c:T.txt1 },
           { l:"High impact / low effort",v:IMPROVEMENTS.filter(i=>i.impact==="high"&&i.effort==="low").length, c:T.green },
@@ -339,9 +336,21 @@ export default function Improvements() {
       )}
 
       {/* Footer */}
-      <div style={{ marginTop:28, padding:"14px 16px", background:T.card, border:`1px solid ${T.border}`, borderRadius:8, color:T.txt3, fontSize:10, lineHeight:1.7 }}>
-        <span style={{ color:T.txt1, fontWeight:600 }}>Realistic 7-day scope for 1 developer:</span> Days 1–2 focus entirely on the high-impact / low-effort wins — typography, transitions, skeleton loaders, search/filter, sparklines, toast notifications, dark/light mode. These alone transform how the prototype looks and feels. Days 3–5 tackle the bigger features — portfolio analytics, forecast overlays, comparison view, board pack export, scenario planning. Day 6–7 for polish, data depth, and demo run-throughs. Click any card to see the specific demo moment each improvement creates.
+      <div style={{ marginTop:16, padding:"13px 16px", background:C.surface, border:`1px solid ${C.border}`,
+                    borderRadius:6, color:C.txt3, fontSize:S.small, lineHeight:1.7 }}>
+        <span style={{ color:C.txt1, fontWeight:600 }}>Realistic seven-day scope for one developer:</span> days one and
+        two on the high-impact, low-effort wins — typography, transitions, skeleton loaders, search and filter,
+        sparklines, toasts. Days three to five on the larger features — portfolio analytics, forecast overlays,
+        comparison view, board pack export, scenario planning. Days six and seven for polish, data depth and demo
+        run-throughs.
       </div>
-    </div>
+
+      <ProvenanceBar items={[
+        `${IMPROVEMENTS.length} improvements ranked`,
+        `${highLow} deliverable inside two days`,
+        "Effort and impact are stated, not implied",
+        "Each card names the demo moment it creates",
+      ]} />
+    </Page>
   );
 }
