@@ -835,6 +835,9 @@ const stripSrc = await codeOf("../src/components/LiveStrip.jsx");
 const feedSrc = await codeOf("../src/lib/liveFeed.js");
 const missSrc = await codeOf("../src/views/ScenarioRevenueMiss.jsx");
 const prefsSrc = await codeOf("../src/lib/prefs.js");
+const planSrc = await codeOf("../src/views/ProtectionPlan.jsx");
+const campaignSrc = await codeOf("../src/views/ActionPlan.jsx");
+const approvalSrc = await codeOf("../src/lib/approval.js");
 const DEFAULT_NAV_OPEN = /navOpen:\s*true/.test(prefsSrc);
 const viewFiles = (await readdir(new URL("../src/views/", import.meta.url))).filter((f) => f.endsWith(".jsx"));
 const viewSources = new Map(await Promise.all(viewFiles.map(async (f) => [f, await codeOf(`../src/views/${f}`)])));
@@ -1073,6 +1076,38 @@ check("no view outside the report sheet contains a raw colour", async () => {
     if (hits) offenders.push(`${f} (${hits.length})`);
   }
   return offenders.length === 0 || `raw colours in ${offenders.join(", ")}`;
+});
+
+check("every button on every screen is wired to something", async () => {
+  // Two gold primary buttons — APPROVE PLAN and APPROVE CAMPAIGN — shipped with
+  // no onClick. A gold button that does nothing is the worst control on a demo
+  // screen: it is the one thing in the room somebody will reach for.
+  const dead = [];
+  for (const f of [...viewFiles.map((x) => `views/${x}`), "components/ReportPanel.jsx", "components/Shell.jsx"]) {
+    const src = await codeOf(`../src/${f}`);
+    for (const m of src.matchAll(/<Button\b([^>]*)>/g)) {
+      if (!/onClick/.test(m[1])) dead.push(`${f.split("/").pop()}: <Button${m[1].slice(0, 40)}>`);
+    }
+  }
+  return dead.length === 0 || `dead: ${dead.join(" | ")}`;
+});
+
+check("approving a plan is a state change, not a decoration", () => {
+  if (!/useApproval/.test(planSrc)) return "the protection plan does not track approval";
+  if (!/useApproval/.test(campaignSrc)) return "the commercial plan does not track approval";
+  if (!/APPROVER/.test(approvalSrc)) return "there is no named approver";
+  // It must be able to come back off, or it is a one-way trapdoor in a demo.
+  return /withdraw/.test(approvalSrc) || "an approval cannot be withdrawn";
+});
+
+check("the user guide says where each of the nine screens is", () => {
+  for (const id of ["command", "radar", "expansion", "actionplan", "revenuemiss", "gp", "protection"]) {
+    if (!guideSrc.includes(`to="${id}"`)) return `the guide does not link to ${id}`;
+  }
+  if (!/nine reference screens/i.test(guideSrc)) return "the guide does not name the nine screens";
+  if (/green button/.test(guideSrc)) return "the guide still calls the report button green";
+  if (/from the sidebar/.test(guideSrc)) return "the guide still describes the old sidebar";
+  return true;
 });
 
 check("the navigation carries labels, not nineteen unlabelled glyphs", () => {

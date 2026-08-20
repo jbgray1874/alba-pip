@@ -318,7 +318,7 @@ function AIPanel({co}){
  * foot. Everything is per company: the panel that used to name one company's
  * figures under nine different headings is gone.
  */
-function CompanyOverview({co,onInvestigate}){
+function CompanyOverview({co,onInvestigate,onSourceData}){
   const fin=useMemo(()=>buildFinance({id:co.id,status:co.status}),[co.id,co.status]);
   const inv=useMemo(()=>buildInvestigation(co.id),[co.id]);
   const quality=useMemo(()=>salesQualityFor(co.id),[co.id]);
@@ -420,7 +420,7 @@ function CompanyOverview({co,onInvestigate}){
 
             <div style={{display:"flex",gap:7,marginTop:13,flexWrap:"wrap"}}>
               <Button variant="primary" onClick={onInvestigate}>Investigate signal</Button>
-              <Button variant="ghost">View source data</Button>
+              <Button variant="ghost" onClick={onSourceData}>View source data</Button>
             </div>
             <div style={{color:C.txt3,fontSize:S.micro,marginTop:9,lineHeight:1.55}}>
               {inv.steps.filter((s)=>s.kind==="finding").length} findings across{" "}
@@ -485,7 +485,7 @@ function CompanyView({co,onBack}){
       <SourceStrip co={co} d={d}/>
       {d&&<CompanyLiveStrip co={co}/>}
 
-      {tab==="overview"&&<><CompanyOverview co={co} onInvestigate={()=>setTab("finance")}/><CockpitView co={co}/></>}
+      {tab==="overview"&&<><CompanyOverview co={co} onInvestigate={()=>setTab("finance")} onSourceData={()=>setDrill("revenue")}/><CockpitView co={co}/></>}
       {tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}
       {tab==="sales"&&d&&<SalesModule d={d.sales}/>}
       {tab==="hr"&&d&&<HRModule d={d.hr}/>}

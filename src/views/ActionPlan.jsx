@@ -13,10 +13,14 @@
 //  Tuesday is the plan they present on Thursday.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { C, S, label as labelStyle } from "../lib/theme.js";
 import { Page, PageHeader, Chip, Button, MetricRow, Panel, TwoColumn, ProvenanceBar } from "../components/Shell.jsx";
 import { buildActionPlan, fmtDate, fmtDayMonth, fmtMonth } from "../lib/actionPlan.js";
+import { useApproval } from "../lib/approval.js";
+import { buildGrowthBrief } from "../lib/reports.js";
+import { buildExpansion } from "../lib/scenarioExpansion.js";
+import ReportPanel from "../components/ReportPanel.jsx";
 
 /** The tones the model names, resolved against the design tokens. */
 const TONE = { gold: C.gold, green: C.green, blue: C.blue, purple: C.purple, red: C.red, muted: C.txt3 };
@@ -108,21 +112,32 @@ export default function ActionPlan({ opts }) {
   const attachPct = Math.round(assumptions.attachRate * 100);
   const sensitivityPct = Math.round(assumptions.sensitivity * 100);
 
+  // Both of these used to be buttons with no onClick. See src/lib/approval.js.
+  const approval = useApproval(`campaign:${p.company.id}`);
+  const report = useMemo(() => buildGrowthBrief(buildExpansion()), []);
+  const [showReport, setShowReport] = useState(false);
+
   return (
     <Page>
       <PageHeader
         crumbs={["Actions", p.company.name, `${product.target} cross-sell`]}
         title="Commercial Action Plan"
-        chips={<Chip tone="green">Ready for approval</Chip>}
+        chips={approval.approved
+          ? <Chip tone="green">Approved · {approval.by.initials}</Chip>
+          : <Chip tone="gold">Ready for approval</Chip>}
         purpose={
           `${cohort.qualified} qualified accounts, the top ${totals.targetAccounts} of them owned, dated and staged ` +
           `to attach the ${product.target} to customers already running ${product.base}.`
         }
-        meta={`As of ${fmtMonth(p.asOf)} · ${p.sources.map((s) => s.label).join(" + ")}`}
+        meta={approval.approved
+          ? `Approved by ${approval.by.name}, ${approval.by.role}, on ${fmtDate(approval.on)} · ${p.sources.map((s) => s.label).join(" + ")}`
+          : `As of ${fmtMonth(p.asOf)} · Awaiting investment-team approval · ${p.sources.map((s) => s.label).join(" + ")}`}
         actions={
           <>
-            <Button variant="primary">Approve campaign</Button>
-            <Button variant="outline">Generate brief</Button>
+            {approval.approved
+              ? <Button variant="outline" onClick={approval.withdraw}>Withdraw approval</Button>
+              : <Button variant="primary" onClick={approval.approve}>Approve campaign</Button>}
+            <Button variant="outline" onClick={() => setShowReport(true)}>Generate brief</Button>
           </>
         }
       />
@@ -301,6 +316,8 @@ export default function ActionPlan({ opts }) {
           : "Progress tracked in Alba",
         `Sources: ${p.sources.map((s) => s.label).join(", ")}`,
       ]} />
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)} />}
+
     </Page>
   );
 }

@@ -116,9 +116,69 @@ export default function UserGuide({ onNavigate }) {
         meta={`${red} red · ${amber} amber · ${green} green — read from the registry, not written down`}
       />
 
-      {/* ── 1 · The two landing pages ───────────────────────────────────── */}
-      <Section n="1" title="The two landing pages"
-               sub="Either can be the page the app opens on — pick one in the top bar. The other stays a click away.">
+      {/* ── 1 · Finding your way around ─────────────────────────────────── */}
+      <Section n="1" title="Finding your way around"
+               sub="Four sections across the top, the screens in that section down the left. Nineteen screens in total.">
+        <Card tone={`${T.gold}44`}>
+          <div style={{ color: T.gold, fontSize: 12.5, fontWeight: 700, marginBottom: 6 }}>
+            The chrome, in three parts
+          </div>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
+            <strong style={{ color: T.txt1 }}>Top bar</strong> — four sections: Portfolio, Intelligence,
+            Actions, Reports. Clicking one opens its first screen. To the right sit the home switch, the
+            interface scale, the fund in view and your account.
+            <br /><br />
+            <strong style={{ color: T.txt1 }}>Left panel</strong> — every screen in the section you are in,
+            with a one-line description of each. It collapses to a narrow rail from the control at the foot,
+            and the choice sticks between sessions.
+            <br /><br />
+            <strong style={{ color: T.txt1 }}>Interface scale</strong> — 100% is the density the screens were
+            laid out at; 115% and 130% are for a laptop and a room. Ctrl and + or − do the same thing, and the
+            setting persists, so a rehearsal and the meeting after it are the same size.
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ color: T.txt1, fontSize: 12.5, fontWeight: 700, marginBottom: 6 }}>
+            The nine reference screens, and where each one is
+          </div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+              <thead><tr style={{ color: T.txt3, fontSize: 9, textAlign: "left" }}>
+                {["#", "Screen", "Where"].map((h) => (
+                  <th key={h} style={{ padding: "5px 8px", fontWeight: 400, borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>{[
+                ["1", <Link to="command">Portfolio Command Centre</Link>, "Portfolio › Command Centre"],
+                ["2", <Link to="radar">Opportunity Radar</Link>, "Intelligence › Opportunity Radar"],
+                ["3", <Link to="expansion">Customer Expansion</Link>, "Intelligence › Customer Expansion"],
+                ["4", <Link to="actionplan">Commercial Action Plan</Link>, "Actions › Commercial Plan"],
+                ["5", <Link to="revenuemiss">Revenue Risk Investigation</Link>, "Intelligence › Revenue Risk"],
+                ["6", "Report Preview", "Any scenario screen › Generate report"],
+                ["7", <Link to="gp">Company Revenue Performance</Link>, "Portfolio › Company Detail › click a company"],
+                ["8", <Link to="protection">Revenue Protection Plan</Link>, "Actions › Protection Plan"],
+                ["9", "Report Preview", "As 6 — the same panel, a different report"],
+              ].map(([n, screen, where], i) => (
+                <tr key={i} style={{ borderBottom: `1px solid ${T.accent}` }}>
+                  <td style={{ padding: "6px 8px", color: T.gold, fontVariantNumeric: "tabular-nums" }}>{n}</td>
+                  <td style={{ padding: "6px 8px", color: T.txt1 }}>{screen}</td>
+                  <td style={{ padding: "6px 8px", color: T.txt3 }}>{where}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div style={{ color: T.txt3, fontSize: 10, marginTop: 9, lineHeight: 1.6 }}>
+            Screens 6 and 9 are the same panel showing different reports, which is why there are nine numbered
+            screens and eight places to click. The other ten screens in the nav — cash, margin, procurement,
+            analytics, news, the company portal, live data, the agents, the improvement stack, the delivery plan
+            and the connected-source list — are built to the same pattern.
+          </div>
+        </Card>
+
+        <div style={{ color: T.txt3, fontSize: 10, margin: "4px 0 10px", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          The two landing pages
+        </div>
         <Card tone={`${T.blue}44`}>
           <div style={{ color: T.txt1, fontSize: 12.5, fontWeight: 700, marginBottom: 4 }}>
             ◎ <Link to="command">Portfolio Health</Link> — the fund view
@@ -317,7 +377,7 @@ export default function UserGuide({ onNavigate }) {
             </div>
           </Card>
           <Route steps={["Portfolio Health", "click a company", "any of the eleven tabs"]}
-                 note="Clicking a company in Portfolio Health opens that company directly. Opening the GP Dashboard from the sidebar starts on the portfolio list instead." />
+                 note="Clicking a company in Portfolio Health opens that company directly. Opening Company Detail from the left panel starts on the portfolio list instead." />
         </Card>
       </Section>
 
@@ -399,8 +459,11 @@ export default function UserGuide({ onNavigate }) {
           </div>
           <div style={{ color: T.txt3, fontSize: 10, marginTop: 9, lineHeight: 1.6 }}>
             Every report carries a methodology paragraph and an evidence table with the source and refresh date for
-            each figure quoted above it. Generate one from the green button at the top right of its screen — it
-            downloads as a self-contained HTML file that opens and prints cleanly.
+            each figure quoted above it. Generate one from the button at the top right of its screen. It opens as a
+            preview first — the sheet you see is the whole report, set on paper against the dark interface, with a
+            checklist of its contents to the left and its settings to the right. Download saves it as a
+            self-contained HTML file and Print opens it for a printer, but a shared link runs inside a sandbox that
+            blocks both, which is exactly why the report opens on screen rather than going straight to a file.
           </div>
         </Card>
       </Section>
@@ -422,9 +485,11 @@ export default function UserGuide({ onNavigate }) {
           <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>
             <strong>Nothing is ever empty and nothing ever stops.</strong> Every screen a partner works on carries a
             strip of continuously moving readings. Each moves around the figure reported below it, so the tile and
-            the drill-down are the same number with a live reading around it. When a credential lapses the reading
-            carries on from the last good value and the badge drops from LIVE to SIMULATED with the reason on hover —
-            it never blanks, never freezes, and never keeps claiming to be live.
+            the drill-down are the same number with a live reading around it. A tile whose connector is attached
+            names its source and reads FROM LEDGER. If that provider stops answering, the reading carries on from
+            the last good value and the badge drops to SIMULATED with the reason on hover. A figure with no source
+            system behind it says MODEL. Nothing ever blanks, nothing ever freezes, and nothing keeps claiming to
+            be live once it is not.
           </div>
           
           <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>

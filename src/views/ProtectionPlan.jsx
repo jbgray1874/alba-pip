@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { C, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
 import { Page, PageHeader, Chip, Button, MetricRow, Panel, TwoColumn, ProvenanceBar } from "../components/Shell.jsx";
 import { buildProtectionPlan, fmtDate, fmtDayMonth } from "../lib/protectionPlan.js";
+import { useApproval } from "../lib/approval.js";
 import { buildExceptionReport } from "../lib/reports.js";
 import ReportPanel from "../components/ReportPanel.jsx";
 
@@ -111,6 +112,8 @@ export default function ProtectionPlan() {
   const money = (v) => `${s.currency === "USD" ? "$" : s.currency === "GBP" ? "£" : `${s.currency} `}${Math.round(v).toLocaleString()}k`;
   const report = useMemo(() => buildExceptionReport(s.scenario), [s]);
   const [showReport, setShowReport] = useState(false);
+  // APPROVE PLAN was a gold primary button with no onClick. See src/lib/approval.js.
+  const approval = useApproval(`protection:${s.company.id}`);
   const t = s.totals;
 
   return (
@@ -118,11 +121,17 @@ export default function ProtectionPlan() {
       <PageHeader
         crumbs={["Portfolio", s.company.name, "Revenue Protection Plan"]}
         title="Revenue Protection Plan"
-        chips={<Chip tone="red">Action required</Chip>}
+        chips={approval.approved
+          ? <Chip tone="green">Approved · {approval.by.initials}</Chip>
+          : <Chip tone="red">Action required</Chip>}
         purpose={`Convert the ${money(t.risk)} forecast risk into accountable interventions`}
-        meta={`Plan created by Alba · Awaiting investment-team approval · ${s.sources.map((x) => x.label).join(" + ")}`}
+        meta={approval.approved
+          ? `Approved by ${approval.by.name}, ${approval.by.role}, on ${fmtDate(approval.on)} · ${s.sources.map((x) => x.label).join(" + ")}`
+          : `Plan created by Alba · Awaiting investment-team approval · ${s.sources.map((x) => x.label).join(" + ")}`}
         actions={<>
-          <Button variant="primary">Approve plan</Button>
+          {approval.approved
+            ? <Button variant="outline" onClick={approval.withdraw}>Withdraw approval</Button>
+            : <Button variant="primary" onClick={approval.approve}>Approve plan</Button>}
           <Button variant="outline" onClick={() => setShowReport(true)}>Generate report</Button>
         </>}
       />
