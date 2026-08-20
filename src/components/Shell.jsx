@@ -20,13 +20,36 @@ import { C, F, S, label as labelStyle, metric as metricStyle, ragColour } from "
 
 // ── Marque ──────────────────────────────────────────────────────────────────
 
-export function Wordmark({ compact = false }) {
+/**
+ * The Alba PIP marque — an AP monogram in a gold-ruled tile, with the wordmark
+ * letterspaced beside it.
+ *
+ * Drawn to the mark on alba-pip.com. The first version was invented, because
+ * the site is unreachable from the build environment and no artwork had been
+ * supplied: it had hairline strokes and a detached lowercase bowl, and read as
+ * a different company's logo at every size.
+ *
+ * Two things matter at 20px, which is the size it is actually used at. The
+ * strokes have to be heavy enough to hold — a 1.4 stroke greys out against the
+ * ground — and the A and the P have to read as one monogram rather than two
+ * adjacent letters, so the P's stem sits on the A's shoulder.
+ *
+ * This is a close redraw, not the original artwork. If the source SVG turns up,
+ * swap the three paths; nothing else in the application refers to them.
+ */
+export function Wordmark({ compact = false, size = 20 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="1" y="1" width="22" height="22" rx="6" stroke={C.gold} strokeWidth="1.4" />
-        <path d="M7 16.5 11.4 7.5l2.1 4.6" stroke={C.gold} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12.6 16.5h3.1a2.4 2.4 0 0 0 0-4.8h-1.8" stroke={C.gold} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+           role="img" aria-label="Alba PIP">
+        <rect x="1" y="1" width="22" height="22" rx="6.5" stroke={C.gold} strokeWidth="1.5" />
+        {/* A — apex and two legs, then the crossbar */}
+        <path d="M5.9 17.9 10.3 6.3l2.2 5.7" stroke={C.gold} strokeWidth="1.9"
+              strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M8 13.7h3.7" stroke={C.gold} strokeWidth="1.6" strokeLinecap="round" />
+        {/* P — stem on the A's shoulder, bowl to the right */}
+        <path d="M14.3 17.9V6.3h2.1a2.9 2.9 0 0 1 0 5.9h-2.1" stroke={C.gold} strokeWidth="1.9"
+              strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {!compact && (
         <span style={{ color: C.txt1, fontSize: 11.5, fontWeight: 600, letterSpacing: "0.16em" }}>ALBA PIP</span>
