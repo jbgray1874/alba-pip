@@ -2,43 +2,32 @@
 
 Files here are served at the root of the site, unprocessed.
 
-## logo — the brand artwork
+## logo.png — the brand artwork  ✅ present
 
-Drop the supplied Alba PIP logo here and push. The top bar and the browser tab
-pick it up automatically; no code change is needed.
+The Alba PIP marque: the AP monogram, white on transparency, tight-cropped with
+a small optical margin. The top bar and the report sheet both draw from it, and
+`favicon.png` beside it is the same mark squared off for a browser tab.
 
-Three names are tried in order, and the first that loads wins:
+It was extracted from a phone screenshot of the logo — the only source
+available. The black ground was opaque, so the alpha channel was rebuilt from
+the image's own luminance, which keeps every anti-aliased edge rather than
+stair-stepping them at the 22px the top bar uses. The "38" notification, the
+home indicator and the ALBA PIP wordmark below the monogram were all cropped
+out; the application sets that wordmark itself, in its own tracking, so a file
+containing it would print it twice.
 
-| File | Verdict |
-|---|---|
-| `logo.svg` | **Best.** Sharp at 16px in a browser tab and at 132px on a title slide, and it carries transparency. |
-| `logo.png` | Good, provided it was exported with a transparent background. |
-| `logo.jpg` | Works, with a caveat — see below. |
+**Replace this with the original vector when it turns up.** `logo.svg` is tried
+before `logo.png`, so dropping one in is all it takes — no code change. A true
+vector will be sharper in a browser tab and will not soften if the mark is ever
+used large.
 
-### If it is a JPEG
+## What the code does with it
 
-JPEG cannot carry transparency, so a white-on-black logo arrives as a white mark
-inside a black rectangle, and against this interface that rectangle is visible —
-near-black on near-black still shows a seam. The mark is therefore composited
-with `mix-blend-mode: screen` when the file is a JPEG, which drops every black
-pixel to nothing and leaves the white untouched.
+`src/components/Marque.jsx` tries `logo.svg`, then `logo.png`, then `logo.jpg`,
+and falls back to a drawn approximation if none is present. A JPEG is
+composited with `mix-blend-mode: screen` to knock out the black it cannot make
+transparent; that assumes light artwork on a dark ground, and a dark logo on
+white would want `multiply` instead.
 
-That handles the box. It does not handle the other JPEG problem: the format is
-built for photographs, and hard-edged strokes pick up ringing artefacts around
-them, which is most visible at the 20px the top bar uses. It will look
-acceptable. It will not look as good as an SVG.
-
-The knockout also assumes the artwork is light on a dark ground. A dark logo on
-white needs `multiply` rather than `screen` — one word in `Marque.jsx`.
-
-### The fallback
-
-Until one of those files exists, `src/components/Marque.jsx` draws its own. The
-structure is right — an interlocking AP monogram, both counters hollow — but the
-proportions were traced by eye from a screenshot and are an approximation. It is
-there so the chrome is never empty, not because it is good enough to keep.
-
-### The report sheet
-
-That keeps the drawn version deliberately. It prints ink-on-cream, and a
-white-on-black file cannot be recoloured for paper.
+The report sheet inverts the artwork to ink, which is exact here because the
+mark is a single flat colour.

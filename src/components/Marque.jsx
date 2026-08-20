@@ -65,7 +65,7 @@ const knockout = (src) => (/\.jpe?g$/i.test(src) ? { mixBlendMode: "screen" } : 
  *                          where the mark has to be ink on cream and a supplied
  *                          white-on-black file could not be recoloured
  */
-export function Mark({ size = 20, colour = C.txt1, ground = C.bg, drawn = false }) {
+export function Mark({ size = 20, colour = C.txt1, ground = C.bg, drawn = false, ink = false }) {
   // Walk the candidate files; -1 means every one failed, so draw it instead.
   const [candidate, setCandidate] = useState(drawn ? -1 : 0);
 
@@ -74,7 +74,15 @@ export function Mark({ size = 20, colour = C.txt1, ground = C.bg, drawn = false 
     return (
       <img key={src} src={src} width={size} height={size} alt="Alba PIP"
            onError={() => setCandidate(candidate + 1)}
-           style={{ flexShrink: 0, display: "block", objectFit: "contain", ...knockout(src) }} />
+           style={{
+             flexShrink: 0, display: "block", objectFit: "contain",
+             // The supplied artwork is light-on-transparent, which is right for
+             // the interface and wrong for the report, where the sheet is cream
+             // and everything else on it is ink. Inverting is exact here because
+             // the mark is a single flat colour.
+             ...(ink ? { filter: "invert(1)" } : null),
+             ...knockout(src),
+           }} />
     );
   }
 

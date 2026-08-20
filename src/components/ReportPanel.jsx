@@ -221,7 +221,7 @@ export default function ReportPanel({ report, onClose }) {
                             textTransform: "uppercase", fontWeight: 600 }}>
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   {/* On paper the mark is ink on cream, not white on black. */}
-                  <Mark size={17} colour={C.ink1} ground={C.paper} drawn />
+                  <Mark size={17} colour={C.ink1} ground={C.paper} ink />
                   <span>Alba PIP · Portfolio Intelligence</span>
                 </span>
                 <span>{report.preparedAt}</span>
