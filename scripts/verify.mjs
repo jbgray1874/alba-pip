@@ -1,0 +1,584 @@
+#!/usr/bin/env node
+// ════════════════════════════════════════════════════════════════════════════
+//  Alba PIP — pre-deploy verification
+//  ----------------------------------------------------------------------------
+//  Checks the claims that matter before anything reaches a customer. Run it
+//  before every deploy and before every rehearsal:
+//
+//      npm run verify
+//
+//  It is deliberately about arithmetic and provenance rather than appearance.
+//  Layout, interaction and the serverless functions are not covered — see the
+//  notes it prints at the end for what still needs a human and `vercel dev`.
+//
+//  Exits non-zero on failure, so it can move into CI unchanged.
+// ════════════════════════════════════════════════════════════════════════════
+
+import { FIN_SEED, buildFinance } from "../src/lib/financeData.js";
+import { buildSeries } from "../src/lib/portfolioSeries.js";
+import { COMPANIES, FUNDS, forDashboard, forAnalytics } from "../src/lib/companies.js";
+import { buildRevenueMiss } from "../src/lib/scenarioRevenueMiss.js";
+import { buildExpansion } from "../src/lib/scenarioExpansion.js";
+import { buildCash, buildCashScenario } from "../src/lib/scenarioCash.js";
+import { buildMargin } from "../src/lib/scenarioMargin.js";
+import { buildProcurement } from "../src/lib/scenarioProcurement.js";
+import { buildExceptionReport, buildGrowthBrief, reportToHtml } from "../src/lib/reports.js";
+import { buildInvestigation } from "../src/lib/investigation.js";
+import { portfolioContext } from "../api/ai/_context.js";
+import { readFile, readdir } from "node:fs/promises";
+
+let failures = 0;
+let checks = 0;
+
+const ok = (n) => console.log(`  \x1b[32m✓\x1b[0m ${n}`);
+const bad = (n, d) => { failures++; console.log(`  \x1b[31m✗\x1b[0m ${n}\n      ${d}`); };
+const check = (name, fn) => {
+  checks++;
+  try { const r = fn(); r === true ? ok(name) : bad(name, r); }
+  catch (e) { bad(name, e.message); }
+};
+const section = (t) => console.log(`\n\x1b[1m${t}\x1b[0m`);
+const near = (a, b, tol = 0.01) => Math.abs(a - b) < tol;
+
+// ── 1. The figures already on screen must not move ──────────────────────────
+section("Seed fidelity — the companies you already show must not change");
+
+for (const [id, seed] of Object.entries(FIN_SEED)) {
+  check(`${id} reproduces its seed exactly`, () => {
+    const f = buildFinance({ id, status: "amber" });
+    const n = f.native;
+    const diffs = [];
+    if (!near(n.revenue, seed.revenue)) diffs.push(`revenue ${n.revenue} != ${seed.revenue}`);
+    if (!near(n.budget, seed.budget)) diffs.push(`budget ${n.budget} != ${seed.budget}`);
+    if (!near(n.cash, seed.cash)) diffs.push(`cash ${n.cash} != ${seed.cash}`);
+    if (!near(n.burn, seed.burn)) diffs.push(`burn ${n.burn} != ${seed.burn}`);
+    if (!near(f.ebitda.grossMargin, seed.gm, 0.5)) diffs.push(`gross margin ${f.ebitda.grossMargin} != ${seed.gm}`);
+    if (!near(f.ebitda.pct, seed.ebitdaPct, 0.5)) diffs.push(`EBITDA ${f.ebitda.pct} != ${seed.ebitdaPct}`);
+    return diffs.length === 0 || diffs.join("; ");
+  });
+}
+
+// ── 2. The ledger must tie, every month ─────────────────────────────────────
+section("Ledger — every month must reconcile");
+
+check("gross profit, EBITDA and cash tie in all 18 months for all 9 companies", () => {
+  const bad = [];
+  for (const [id, seed] of Object.entries(FIN_SEED)) {
+    const L = buildSeries(id, seed);
+    if (L.length !== 18) bad.push(`${id} has ${L.length} months`);
+    for (const m of L) {
+      if (!near(m.grossProfit, m.revenue - m.cogs)) bad.push(`${id} ${m.month} gross profit`);
+      if (!near(m.ebitda, m.grossProfit - m.opex)) bad.push(`${id} ${m.month} EBITDA`);
+    }
+    for (let i = 1; i < L.length; i++) {
+      if (!near(L[i].cashClose, L[i - 1].cashClose - L[i].netBurn)) bad.push(`${id} ${L[i].month} cash roll`);
+    }
+  }
+  return bad.length === 0 || `${bad.length} failures, first: ${bad[0]}`;
+});
+
+check("people and sales series are populated for every company", () => {
+  const bad = [];
+  for (const [id, seed] of Object.entries(FIN_SEED)) {
+    for (const m of buildSeries(id, seed)) {
+      if (!(m.headcount > 0) || !(m.pipelineCoverage > 0) || !(m.winRatePct > 0)) bad.push(`${id} ${m.month}`);
+    }
+  }
+  return bad.length === 0 || `missing at ${bad[0]}`;
+});
+
+// ── 3. Registry ─────────────────────────────────────────────────────────────
+section("Registry — one definition, filters with something to filter");
+
+check(`portfolio has 8-10 companies (has ${COMPANIES.length})`,
+  () => (COMPANIES.length >= 8 && COMPANIES.length <= 10) || `${COMPANIES.length} companies`);
+check("every company has a fund, geography and currency", () => {
+  const missing = COMPANIES.filter((c) => !c.fund || !c.geo || !c.currency).map((c) => c.id);
+  return missing.length === 0 || `missing on ${missing.join(", ")}`;
+});
+check("every company's fund exists", () => {
+  const orphan = COMPANIES.filter((c) => !FUNDS.some((f) => f.id === c.fund)).map((c) => c.id);
+  return orphan.length === 0 || `unknown fund on ${orphan.join(", ")}`;
+});
+check("filters have more than one value each", () => {
+  const thin = [];
+  if (new Set(COMPANIES.map((c) => c.fund)).size < 2) thin.push("fund");
+  if (new Set(COMPANIES.map((c) => c.geo)).size < 2) thin.push("geography");
+  if (new Set(COMPANIES.map((c) => c.sector)).size < 2) thin.push("sector");
+  if (new Set(COMPANIES.map((c) => c.rag)).size < 2) thin.push("status");
+  return thin.length === 0 || `only one value for ${thin.join(", ")}`;
+});
+check("dashboard and analytics agree on runway for every company", () => {
+  const d = forDashboard(), a = forAnalytics();
+  const bad = d.filter((x) => !near(x.runway, a.find((y) => y.id === x.id).runway, 0.05)).map((x) => x.id);
+  return bad.length === 0 || `disagree on ${bad.join(", ")}`;
+});
+
+// ── 4. Scenario 1 ───────────────────────────────────────────────────────────
+section("Scenario 1 — revenue miss");
+
+const s1 = buildRevenueMiss();
+check("driver bridge reconciles to the forecast gap", () => {
+  const sum = s1.bridge.reduce((t, b) => t + b.value, 0);
+  return (near(sum, s1.forecast.forecastGap, 1e-6) &&
+          near(s1.forecast.planRevenue - sum, s1.forecast.forecastRevenue, 1e-6))
+    || `drivers ${sum.toFixed(1)} vs gap ${s1.forecast.forecastGap.toFixed(1)}`;
+});
+check("every driver contributes to the shortfall and shows its workings", () => {
+  const bad = s1.bridge.filter((b) => !(b.value > 0) || !b.workings || b.workings.length < 20).map((b) => b.driver);
+  return bad.length === 0 || `problem with ${bad.join(", ")}`;
+});
+check(`forecast gap lands near the specification's 1,200 (is ${Math.round(s1.forecast.forecastGap)})`,
+  () => (s1.forecast.forecastGap > 1000 && s1.forecast.forecastGap < 1400) || `${Math.round(s1.forecast.forecastGap)}`);
+check("reported revenue still looks close to plan, or there is no story", () =>
+  Math.abs(s1.currentQuarter.variancePct) < 5 || `${s1.currentQuarter.variancePct.toFixed(1)}% below plan is too visible`);
+check("named opportunities sum to the stated open pipeline", () => {
+  const total = s1.deals.reduce((t, d) => t + d.acv, 0);
+  return near(total, s1.forecast.openPipelineAcv, 5) || `deals ${Math.round(total)} vs pipeline ${Math.round(s1.forecast.openPipelineAcv)}`;
+});
+check("coverage and win rate match the specification", () =>
+  (near(s1.forecast.coverage, 1.9, 0.05) && near(s1.fin.sales.coverageFrom, 3.2, 0.05))
+  || `coverage ${s1.forecast.coverage} from ${s1.fin.sales.coverageFrom}`);
+
+// ── 5. Scenario 4 ───────────────────────────────────────────────────────────
+section("Scenario 4 — expansion");
+
+const s4 = buildExpansion();
+check(`expected value lands in the specification's 1,500-2,000 (is ${Math.round(s4.totals.expected)})`,
+  () => (s4.totals.expected > 1400 && s4.totals.expected < 2100) || `${Math.round(s4.totals.expected)}`);
+check("accounts sum to the stated total", () => {
+  const sum = s4.qualified.reduce((t, c) => t + c.expectedValue, 0);
+  return near(sum, s4.totals.expected, 1) || `accounts ${sum} vs total ${s4.totals.expected}`;
+});
+check("every qualified account explains its own score", () => {
+  const bad = [];
+  for (const c of s4.qualified) {
+    if (c.breakdown.length !== 6) bad.push(`${c.account} has ${c.breakdown.length} factors`);
+    const total = c.breakdown.reduce((t, f) => t + f.points, 0);
+    if (Math.abs(total - c.score) > 0.6) bad.push(`${c.account} factors do not sum to its score`);
+    if (c.breakdown.some((f) => !f.basis || f.points > f.of + 1e-9)) bad.push(`${c.account} factor without basis or over weight`);
+    if (c.ownsTarget) bad.push(`${c.account} already owns the product`);
+  }
+  return bad.length === 0 || bad[0];
+});
+
+// ── 6. Evidence and provenance ──────────────────────────────────────────────
+section("Evidence — nothing asserted without a source");
+
+for (const [name, ins] of [["scenario 1", s1.insight], ["scenario 4", s4.insight]]) {
+  check(`${name} insight carries sourced, dated evidence and dated actions`, () => {
+    if (!ins.evidence?.length) return "no evidence";
+    for (const e of ins.evidence) {
+      if (!e.source) return `"${e.label}" has no source`;
+      if (!/^\d{4}-\d{2}$|^\d{4}-\d{2}-\d{2}$/.test(e.asOf)) return `"${e.label}" has no refresh date`;
+    }
+    if (!ins.methodology || ins.methodology.length < 40) return "no methodology";
+    if (!ins.actions?.length) return "no actions";
+    for (const a of ins.actions) if (!a.owner || !a.due) return "an action has no owner or date";
+    return true;
+  });
+}
+
+check("finance data carries source labels and methodology", () => {
+  const f = buildFinance({ id: "meridian", status: "amber" });
+  for (const block of ["cash", "revenue", "ebitda", "people", "sales"]) {
+    if (!f[block]?.source?.label) return `${block} has no source label`;
+    if (!f[block]?.asOf) return `${block} has no as-of date`;
+  }
+  return true;
+});
+
+// ── 7. Reports ──────────────────────────────────────────────────────────────
+section("Reports — circulatable without editing");
+
+for (const [name, report] of [["exception report", buildExceptionReport(s1)], ["growth brief", buildGrowthBrief(s4)]]) {
+  check(`${name} renders clean`, () => {
+    const html = reportToHtml(report);
+    if (/undefined|NaN|\[object Object\]/.test(html)) return "contains undefined, NaN or [object Object]";
+    if (html.length < 2000) return `only ${html.length} characters`;
+    if (!report.methodology) return "no methodology";
+    return true;
+  });
+}
+
+check("share-of-gap column sums to exactly 100%", () => {
+  const shares = buildExceptionReport(s1).sections
+    .find((x) => x.title === "Root causes").table.rows.map((r) => parseInt(r[2], 10));
+  const total = shares.reduce((a, b) => a + b, 0);
+  return total === 100 || `sums to ${total}%`;
+});
+
+// ── 8. Determinism ──────────────────────────────────────────────────────────
+section("Determinism — the rehearsal must match the meeting");
+
+check("two builds produce identical output", () => {
+  const a = JSON.stringify(buildRevenueMiss().bridge) + JSON.stringify(buildExpansion().qualified);
+  const b = JSON.stringify(buildRevenueMiss().bridge) + JSON.stringify(buildExpansion().qualified);
+  return a === b || "output changed between builds";
+});
+
+// ── 8b. Scenarios 2, 3 and 5 ────────────────────────────────────────────────
+section("Scenario 2 — cash");
+
+const s2 = buildCash();
+check("the weekly statement adds up on every line", () => {
+  const bad = s2.trajectory.weeks.filter(
+    (w) => w.opening + w.receipts - w.payroll - w.suppliers - w.debtService !== w.closing);
+  return bad.length === 0 || `${bad.length} weeks do not add up, first is week ${bad[0].week}`;
+});
+check("the model is anchored to reported burn, not rebuilt bottom-up", () => {
+  const b = s2.baseline;
+  // receipts − outflow = reported burn, and the composition sums to outflow.
+  if (Math.abs((b.monthlyOutflow - b.monthlyReceipts) - b.reportedBurn) > 1e-6)
+    return `identity broken: outflow ${b.monthlyOutflow} − receipts ${b.monthlyReceipts} ≠ burn ${b.reportedBurn}`;
+  const parts = b.composition.reduce((t, c) => t + c.value, 0);
+  return Math.abs(parts - b.monthlyOutflow) < 1e-6 || `composition ${parts} ≠ outflow ${b.monthlyOutflow}`;
+});
+check("the cash screen agrees with the portfolio table on runway", () =>
+  s2.bases[0].months === s2.fin.runway || `${s2.bases[0].months} vs ${s2.fin.runway}`);
+check("the burn trend is measured from the ledger, not assumed", () => {
+  const t = s2.burnTrend;
+  if (!(t.months >= 12)) return `only ${t.months} months of history`;
+  if (!(t.monthlyGrowth > 0)) return "no burn growth measured";
+  const implied = t.from * Math.pow(1 + t.monthlyGrowth, t.months);
+  return Math.abs(implied - t.to) < 1 || `compounding ${t.from} at the stated rate gives ${implied.toFixed(0)}, not ${t.to}`;
+});
+check("no cash-floor breach is asserted where the data has none", () => {
+  const claims = /falls below|breach/i.test(s2.insight.headline);
+  const has = s2.trajectory.weeks.some((w) => w.belowMinimum);
+  return claims === has || (claims ? "headline claims a breach the weeks do not show" : true);
+});
+check("each lever moves the forecast", () => {
+  const a = buildCashScenario({}, { baseline: s2.baseline }).runwayMonths;
+  const dso = buildCashScenario({ collectionsDaysImprovement: 17 }, { baseline: s2.baseline }).runwayMonths;
+  const pause = buildCashScenario({ hiringPause: true }, { baseline: s2.baseline }).runwayMonths;
+  const cut = buildCashScenario({ discretionaryCutPct: 0.2 }, { baseline: s2.baseline }).runwayMonths;
+  const stuck = [["collections", dso], ["hiring pause", pause], ["supplier cut", cut]].filter(([, v]) => v === a);
+  return stuck.length === 0 || `${stuck.map(([n]) => n).join(", ")} changed nothing`;
+});
+
+section("Scenario 3 — margin");
+
+const s3 = buildMargin();
+check("the margin bridge sums to the observed movement", () => {
+  const sum = s3.bridge.reduce((t, b) => t + b.value, 0);
+  return Math.abs(sum - s3.marginMove) < 0.11 || `drivers ${sum.toFixed(1)} vs observed ${s3.marginMove}`;
+});
+check("the margin movement is the ledger's, not a parameter", () => {
+  const fin = buildFinance({ id: "forgetech", status: "green" });
+  const move = fin.ebitda.grossMargin - fin.history.ebitda[0].grossMarginPct;
+  return Math.abs(move - s3.marginMove) < 0.05 || `screen says ${s3.marginMove}, ledger says ${move.toFixed(1)}`;
+});
+check("the residual is labelled rather than spread across the other drivers", () => {
+  const residual = s3.bridge.filter((b) => b.residual);
+  if (residual.length !== 1) return `${residual.length} lines marked residual`;
+  const share = Math.abs(residual[0].value / s3.marginMove);
+  return share < 0.35 || `the residual is ${(share * 100).toFixed(0)}% of the movement — the drivers explain too little`;
+});
+check("the scenario only fires on a company that reads green", () => {
+  if (s3.company.rag !== "GREEN") return `${s3.company.name} is ${s3.company.rag} — there is no masking to reveal`;
+  return s3.varPct > 0 || `revenue is ${s3.varPct.toFixed(1)}% against plan, so nothing is being masked`;
+});
+check("the margin loss outweighs the revenue beat it hides behind", () =>
+  s3.annualGrossProfitLost > s3.revenueOutperformance ||
+  `margin ${Math.round(s3.annualGrossProfitLost)} vs revenue ${Math.round(s3.revenueOutperformance)} — the scenario has no punchline`);
+
+section("Scenario 5 — procurement");
+
+const s5 = buildProcurement();
+check("categories sum to the confirmed addressable spend", () => {
+  const sum = s5.byCategory.reduce((t, c) => t + c.spend, 0);
+  return sum === s5.totals.confirmedSpend || `categories ${sum} vs confirmed ${s5.totals.confirmedSpend}`;
+});
+check("unconfirmed spend is excluded from the headline saving", () => {
+  const inHeadline = s5.byCategory.reduce((t, c) => t + c.saving, 0);
+  if (inHeadline !== s5.totals.saving) return "category savings do not sum to the headline";
+  // Every queued record's spend must be outside the confirmed base.
+  const queued = s5.reviewQueue.reduce((t, r) => t + r.annualSpend, 0);
+  return queued === s5.totals.pendingSpend || `queue holds ${queued}, pending reports ${s5.totals.pendingSpend}`;
+});
+check("only suppliers used by enough companies are counted", () => {
+  const wrong = s5.addressable.filter((v) => v.companies < 3).map((v) => v.canonical);
+  return wrong.length === 0 || `below threshold but counted: ${wrong.join(", ")}`;
+});
+check("name normalisation actually collapses the variants", () => {
+  const spread = s5.vendors.filter((v) => v.ledgerVariants.length > 1);
+  if (spread.length < 5) return `only ${spread.length} suppliers have differing ledger names — the problem is not demonstrated`;
+  const auto = s5.vendors.reduce((t, v) => t + v.autoMatched, 0);
+  const total = s5.vendors.reduce((t, v) => t + v.companies, 0);
+  return auto / total > 0.8 || `only ${((auto / total) * 100).toFixed(0)}% matched automatically`;
+});
+check("every vendor spend traces to a company's own figures", () => {
+  for (const v of s5.vendors) {
+    for (const c of v.contracts) {
+      if (!(c.annualSpend > 0)) return `${v.canonical} at ${c.companyName} has no spend`;
+      if (!COMPANIES.some((x) => x.id === c.company)) return `${v.canonical} references unknown company ${c.company}`;
+    }
+  }
+  return true;
+});
+
+check("all five scenarios carry sourced, dated evidence and dated actions", () => {
+  for (const [name, sc] of [["cash", s2], ["margin", s3], ["procurement", s5]]) {
+    const i = sc.insight;
+    if (!i.evidence.length) return `${name}: no evidence`;
+    const bad = i.evidence.filter((e) => !e.source || !e.asOf);
+    if (bad.length) return `${name}: "${bad[0].label}" has no source or date`;
+    if (!i.actions.length) return `${name}: no actions`;
+    const undated = i.actions.filter((a) => !a.due || !a.owner);
+    if (undated.length) return `${name}: an action has no owner or due date`;
+  }
+  return true;
+});
+
+// ── 9. Serverless imports ───────────────────────────────────────────────────
+section("Serverless — the API functions can reach the finance model");
+
+// A failed import throws here and fails the run, which is the check.
+const { groundedPack, fallbackNarrative } = await import("../api/ai/_groundedPack.js");
+check("api/ai reaches src/lib without a bundler", () => true);
+check("grounded board pack computes metrics and leaves narrative to the model", () => {
+  const pack = groundedPack({ id: "meridian", name: "Meridian SaaS", rag: "AMBER" });
+  if (pack.executiveSummary !== null || pack.outlook !== null) return "narrative fields are not null";
+  if (!pack.keyMetrics?.length) return "no metrics";
+  if (pack.keyMetrics.some((m) => !m.value || !m.rag)) return "a metric is incomplete";
+  const filled = fallbackNarrative(pack, { name: "Meridian SaaS" });
+  if (!filled.executiveSummary) return "fallback wrote no summary";
+  return true;
+});
+
+// The endpoints must actually USE the grounded modules. Commit 80363ea said in
+// its message that both had been rewritten to do so; only _groundedPack.js was
+// staged, and the two endpoints stayed on the ungrounded path for four further
+// commits without anything noticing. A claim in a commit message is not a test.
+// Comments in these files describe what was removed and name the old values, so
+// the scans below read code only — otherwise the explanation trips the check.
+const codeOf = async (rel) => (await readFile(new URL(rel, import.meta.url), "utf8"))
+  .replace(/\/\*[\s\S]*?\*\//g, "")
+  .replace(/^\s*\/\/.*$/gm, "");
+
+const boardpackSrc = await codeOf("../api/ai/boardpack.js");
+const agentSrc = await codeOf("../api/ai/agent.js");
+
+check("boardpack.js is wired to the grounded pack", () =>
+  (boardpackSrc.includes("_groundedPack.js") && boardpackSrc.includes("groundedPack(")) ||
+  "boardpack.js does not call groundedPack — it is asking the model for the figures");
+
+check("agent.js is wired to the grounded context", () =>
+  (agentSrc.includes("_context.js") && agentSrc.includes("companyContext")) ||
+  "agent.js does not build its prompt from the finance model");
+
+check("no endpoint falls back to Meridian's figures for another company", () => {
+  const stale = [/£?413k/, /£?412k/, /company\.runway \|\|/, /finance\.cash \|\|/];
+  for (const src of [boardpackSrc, agentSrc]) {
+    const hit = stale.find((p) => p.test(src));
+    if (hit) return `a hardcoded default survives: ${hit}`;
+  }
+  return true;
+});
+
+// ── 10. The AI screen ───────────────────────────────────────────────────────
+section("AI agents — the screen calls our own endpoint, over computed evidence");
+
+const agentsSrc = await codeOf("../src/views/Agents.jsx");
+
+
+// Scanned across every view rather than the one screen that was fixed: five
+// such calls existed, three in Agents.jsx and two in GPDashboard.jsx, none
+// carrying an Authorization header. They could only ever fail, and each was
+// caught silently — so what a partner saw was always the hardcoded catch block.
+const views = await readdir(new URL("../src/views/", import.meta.url));
+for (const file of views.filter((f) => f.endsWith(".jsx"))) {
+  const src = await codeOf(`../src/views/${file}`);
+  check(`${file} keeps model calls on our own endpoint`, () => {
+    const vendor = /api\.anthropic\.com|api\.openai\.com|api\.x\.ai/.exec(src);
+    return vendor ? `calls ${vendor[0]} directly from the browser, with no key` : true;
+  });
+}
+
+check("the AI screen posts to /api/ai/agent", () =>
+  agentsSrc.includes("/api/ai/agent") || "Agents.jsx does not call our endpoint");
+
+check("every company can be investigated", () => {
+  for (const c of COMPANIES) {
+    const inv = buildInvestigation(c.id);
+    if (!inv.steps.length) return `${c.name}: no reasoning steps`;
+    if (!inv.actions.length) return `${c.name}: no actions`;
+    const text = inv.steps.map((s) => s.text).join(" ") + inv.rootCause;
+    if (/undefined|NaN/.test(text)) return `${c.name}: chain contains undefined or NaN`;
+  }
+  return true;
+});
+
+check("the investigation agrees with the finance screen", () => {
+  for (const c of COMPANIES) {
+    const inv = buildInvestigation(c.id);
+    const fin = buildFinance({ id: c.id, status: c.rag.toLowerCase() });
+    if (inv.fin.runway !== fin.runway) return `${c.name}: runway ${inv.fin.runway} vs ${fin.runway}`;
+    if (!inv.steps[1].text.includes(String(fin.runway))) return `${c.name}: chain does not quote the runway on screen`;
+  }
+  return true;
+});
+
+check("no root cause is claimed where no threshold is breached", () => {
+  for (const c of COMPANIES) {
+    const inv = buildInvestigation(c.id);
+    if (!inv.underStress && /largest single contributor/.test(inv.rootCause))
+      return `${c.name}: names a root cause on ${inv.fin.runway} months of runway with no breach`;
+  }
+  return true;
+});
+
+check("contribution shares sum to 100% where causes are ranked", () => {
+  for (const c of COMPANIES) {
+    const { contributions } = buildInvestigation(c.id);
+    if (!contributions.length) continue;
+    const total = contributions.reduce((t, x) => t + x.share, 0);
+    if (Math.abs(total - 100) > 1) return `${c.name}: shares sum to ${total}%`;
+  }
+  return true;
+});
+
+check("the investigation is deterministic", () => {
+  const a = JSON.stringify(buildInvestigation("careos").steps);
+  const b = JSON.stringify(buildInvestigation("careos").steps);
+  return a === b || "two runs disagree";
+});
+
+check("portfolio context covers every company and both funds", () => {
+  const { text, rows } = portfolioContext();
+  if (rows.length !== COMPANIES.length) return `${rows.length} rows for ${COMPANIES.length} companies`;
+  const missing = COMPANIES.filter((c) => !text.includes(c.name)).map((c) => c.name);
+  if (missing.length) return `absent from the model's context: ${missing.join(", ")}`;
+  for (const f of FUNDS) if (!text.includes(f.name)) return `fund missing: ${f.name}`;
+  if (/undefined|NaN/.test(text)) return "context contains undefined or NaN";
+  return true;
+});
+
+// The handlers are async, so they are run here and the outcome checked below.
+const call = async (handler, body) => {
+  let out = null, code = 200;
+  await handler({ method: "POST", body }, {
+    status(c) { code = c; return this; },
+    json(o) { out = o; return this; },
+    end() { return this; },
+  });
+  return { code, out };
+};
+
+const agentHandler = (await import("../api/ai/agent.js")).default;
+const boardpackHandler = (await import("../api/ai/boardpack.js")).default;
+
+const noKeyRuns = {
+  investigate: await call(agentHandler, { type: "investigate", companyId: "careos" }),
+  qa: await call(agentHandler, { type: "qa", question: "Which companies need capital?" }),
+  attention: await call(agentHandler, { type: "attention" }),
+  pack: await call(boardpackHandler, { company: { id: "nusantara" } }),
+  unknown: await call(boardpackHandler, { company: { id: "not-a-company" } }),
+};
+
+check("every endpoint answers with no API key set", () => {
+  for (const [name, r] of Object.entries(noKeyRuns)) {
+    if (name === "unknown") continue;
+    if (r.code !== 200) return `${name} returned ${r.code}`;
+    const body = r.out.text ?? JSON.stringify(r.out.pack ?? "");
+    if (!body || body.length < 80) return `${name} returned nothing usable`;
+    if (/undefined|NaN|\[object Object\]/.test(body)) return `${name} contains undefined, NaN or [object Object]`;
+    if (r.out.live) return `${name} claims to be live without a key`;
+  }
+  return true;
+});
+
+check("a company we do not hold is refused rather than answered as Meridian", () => {
+  const { code, out } = noKeyRuns.unknown;
+  if (code !== 400) return `returned ${code} instead of refusing`;
+  if (out.pack) return "produced a board pack for an unknown company";
+  return true;
+});
+
+check("the no-key board pack quotes the company it was asked for", () => {
+  const fin = buildFinance({ id: "nusantara", status: "amber" });
+  const mrr = noKeyRuns.pack.out.pack.keyMetrics.find((x) => x.label === "MRR").value;
+  const expected = `£${Math.round(fin.revenue.total).toLocaleString()}k`;
+  return mrr === expected || `board pack says ${mrr}, finance model says ${expected}`;
+});
+
+// ── 11. Shell ───────────────────────────────────────────────────────────────
+section("Shell — navigation, landing pages and interface scale");
+
+const appSrc = await codeOf("../src/App.jsx");
+const { HOMES, SCALES, loadPrefs, savePrefs } = await import("../src/lib/prefs.js");
+
+check("every nav entry renders something", () => {
+  // A view added to the VIEWS list without a matching render branch shows an
+  // empty pane rather than an error, which is the kind of thing that is only
+  // noticed in front of an audience.
+  const ids = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)'/g)].map((m) => m[1]);
+  if (ids.length < 10) return `only found ${ids.length} nav entries — the parse is wrong`;
+  const orphans = ids.filter((id) => !appSrc.includes(`view==='${id}'`));
+  return orphans.length === 0 || `no render branch for: ${orphans.join(", ")}`;
+});
+
+check("both landing pages are real views", () => {
+  const missing = HOMES.filter((h) => !appSrc.includes(`view==='${h.id}'`)).map((h) => h.id);
+  return missing.length === 0 || `home points at a view that does not render: ${missing.join(", ")}`;
+});
+
+const commandSrc = await codeOf("../src/views/CommandCentre.jsx");
+const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
+
+check("the user guide is reachable from both landing pages", () => {
+  if (!appSrc.includes("onGuide")) return "App does not pass onGuide to either landing page";
+  if (!commandSrc.includes("onGuide")) return "Portfolio Health has no guide link";
+  if (!gpSrc.includes("onGuide")) return "GP Dashboard has no guide link";
+  return true;
+});
+
+check("no view sets its own viewport height inside the scaled shell", () => {
+  // `100vh` inside a `zoom` context resolves in scaled units and overflows the
+  // shell. Views live inside App's pane and should size to it, not the window.
+  const offenders = [];
+  for (const [name, src] of [["CommandCentre.jsx", commandSrc], ["GPDashboard.jsx", gpSrc]]) {
+    if (/height:\s*["']100vh["']/.test(src)) offenders.push(name);
+  }
+  return offenders.length === 0 || `${offenders.join(", ")} still sets height:100vh`;
+});
+
+check("preferences reject a value that no longer exists", () => {
+  // A stored id from an older build must not render a blank screen on load.
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, v),
+  };
+  store.set("alba.prefs.v1", JSON.stringify({ home: "a-view-that-was-deleted", scale: 99 }));
+  const p = loadPrefs();
+  if (!HOMES.some((h) => h.id === p.home)) return `fell back to an invalid home: ${p.home}`;
+  if (!SCALES.some((s) => s.id === p.scale)) return `fell back to an invalid scale: ${p.scale}`;
+  savePrefs({ home: "gp", scale: 1.3 });
+  const back = loadPrefs();
+  return (back.home === "gp" && back.scale === 1.3) || "a saved preference did not survive a round trip";
+});
+
+check("interface scale covers a useful range and starts at the design density", () => {
+  if (SCALES[0].id !== 1) return "the first scale is not 100%";
+  if (Math.max(...SCALES.map((s) => s.id)) < 1.4) return "no setting large enough for a projector or a screenshot";
+  return true;
+});
+
+// ── Result ──────────────────────────────────────────────────────────────────
+console.log(`\n${"─".repeat(72)}`);
+if (failures === 0) {
+  console.log(`\x1b[32m${checks} checks passed.\x1b[0m`);
+} else {
+  console.log(`\x1b[31m${failures} of ${checks} checks FAILED.\x1b[0m`);
+}
+console.log(`
+Not covered here — these still need a person:
+  · Layout and interaction         npm run dev, then walk the 8-minute demo
+  · The serverless functions        npx vercel dev, then generate a board pack
+  · The live xAI path               only the no-key fallback is exercised above
+  · Company names                   check none is a real business in Singapore or the UAE
+`);
+
+process.exit(failures === 0 ? 0 : 1);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchCompanyNews, FEED_STATUS } from "../lib/dataFeeds.js";
+import { forNews } from "../lib/companies.js";
 
 const T = {
   bg:"#020817", surface:"#070d1a", card:"#0b1120",
@@ -11,13 +12,7 @@ const T = {
   blue:"#3d8bff",  blueDim:"#3d8bff14",
 };
 
-const COMPANIES = [
-  { id:"meridian",  name:"Meridian SaaS",  sector:"B2B SaaS",       color:T.amber },
-  { id:"payflo",    name:"PayFlo",          sector:"Fintech",        color:T.green },
-  { id:"swiftlogix",name:"SwiftLogix",      sector:"Logistics",      color:T.amber },
-  { id:"careos",    name:"CareOS",          sector:"HealthTech",     color:T.red },
-  { id:"forgetech", name:"ForgeTech",       sector:"Manufacturing",  color:T.green },
-];
+const COMPANIES = forNews(T);
 
 const sentColor = (s) => ({ positive:T.green, neutral:T.blue, negative:T.red }[s] || T.txt3);
 const sentBg    = (s) => ({ positive:T.greenDim, neutral:T.blueDim, negative:T.redDim }[s] || "transparent");

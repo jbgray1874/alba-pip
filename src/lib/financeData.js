@@ -5,16 +5,36 @@
 //  back to the level above. Shaped to mirror a Xero / accounting API response so
 //  that when the live integration connects, Level 3 (transactions) swaps from
 //  these seeded records to real invoices with no structural change.
+//
+//  Sparklines now come from portfolioSeries.js — one eighteen-month ledger per
+//  company — instead of trend() drawing an independent straight line back from
+//  each metric. FIN_SEED is unchanged and still defines the present; the ledger
+//  is calibrated onto it. Every figure this file returned before returns the
+//  same value now. What is added is history, and the ability to say what a
+//  number is being compared with.
 // ════════════════════════════════════════════════════════════════════════════
 
 // Core reconciling seeds per company (£k unless noted)
-const FIN_SEED = {
-  meridian:   { cash:663,  burn:138, revenue:261, budget:300, gm:71, ebitdaPct:-8  },
-  payflo:     { cash:1646, burn:147, revenue:412, budget:368, gm:78, ebitdaPct:14  },
-  swiftlogix: { cash:972,  burn:120, revenue:384, budget:400, gm:42, ebitdaPct:6   },
-  careos:     { cash:426,  burn:185, revenue:162, budget:253, gm:55, ebitdaPct:-31 },
-  forgetech:  { cash:1974, burn:210, revenue:618, budget:600, gm:38, ebitdaPct:18  },
+// Values are in THOUSANDS OF THE COMPANY'S OWN CURRENCY. buildFinance converts
+// to the fund's reporting currency, so every screen compares like with like.
+export const FIN_SEED = {
+  meridian:   { ccy:"GBP", cash:663,   burn:138, revenue:261,  budget:300,  gm:71, ebitdaPct:-8  },
+  payflo:     { ccy:"GBP", cash:1646,  burn:147, revenue:412,  budget:368,  gm:78, ebitdaPct:14  },
+  swiftlogix: { ccy:"GBP", cash:972,   burn:120, revenue:384,  budget:400,  gm:42, ebitdaPct:6   },
+  careos:     { ccy:"GBP", cash:426,   burn:185, revenue:162,  budget:253,  gm:55, ebitdaPct:-31 },
+  forgetech:  { ccy:"GBP", cash:1974,  burn:210, revenue:618,  budget:600,  gm:38, ebitdaPct:18  },
+  // Scenario 1 — still reporting growth, forward indicators deteriorating.
+  straits:    { ccy:"USD", cash:12400, burn:420, revenue:4000, budget:4120, gm:78, ebitdaPct:4   },
+  // Scenario 4 — performing broadly in line with plan.
+  zafira:     { ccy:"USD", cash:9800,  burn:210, revenue:3100, budget:3080, gm:74, ebitdaPct:11  },
+  // Scenario 2 — appears adequately funded in the latest board pack.
+  nusantara:  { ccy:"SGD", cash:5000,  burn:615, revenue:2900, budget:3180, gm:31, ebitdaPct:-6  },
+  khaleej:    { ccy:"AED", cash:21500, burn:380, revenue:9200, budget:9050, gm:29, ebitdaPct:15  },
 };
+
+import { buildSeries, seriesOf, MONTH_KEYS } from "./portfolioSeries.js";
+import { convert, conversionNote } from "./fx.js";
+import { SOURCES, KPIS, provenanceOf } from "./kpiDefinitions.js";
 
 const MONTHS = ["Dec","Jan","Feb","Mar","Apr","May"];
 const k = (n) => `£${Math.round(n).toLocaleString()}k`;
@@ -41,21 +61,28 @@ const REV_REGIONS = [
 
 const CUSTOMERS = ["Acme Corporation","Beta Holdings","TechVentures Ltd","Delta Systems","Gamma Industries","Orion Retail","Vertex Group","Halo Logistics"];
 
-function trend(end, mo = 6, growthToEnd = 0.12) {
-  // returns array rising to `end` over `mo` months
-  const start = end * (1 - growthToEnd);
-  return Array.from({ length: mo }, (_, i) => +(start + (end - start) * (i / (mo - 1))).toFixed(1));
-}
+export function buildFinance(co, opts = {}) {
+  const id = FIN_SEED[co.id] ? co.id : "meridian";
+  const native = FIN_SEED[id];
+  const reportingCurrency = opts.reportingCurrency || co.reportingCurrency || "GBP";
+  const nativeCcy = native.ccy || "GBP";
 
-export function buildFinance(co) {
-  const s = FIN_SEED[co.id] || FIN_SEED.meridian;
+  // Restate into the reporting currency. Margins are ratios and do not convert.
+  const fx = (v) => convert(v, nativeCcy, reportingCurrency);
+  const s = nativeCcy === reportingCurrency
+    ? native
+    : { ...native, cash: fx(native.cash), burn: fx(native.burn), revenue: fx(native.revenue), budget: fx(native.budget) };
+
   const runway = +(s.cash / s.burn).toFixed(1);
   const cs = co.status; // company RAG
+
+  // The ledger behind every sparkline below. Calibrated so month 18 is `s`.
+  const ledger = buildSeries(id, s);
 
   // ── Burn categories ──
   const burnCats = BURN_SPLIT.map((b) => {
     const val = s.burn * b.prop;
-    return { ...b, value: val, series: trend(val, 6, 0.14) };
+    return { ...b, value: val, series: seriesOf(ledger, "netBurn", b.prop) };
   });
 
   // ── AR / overdue debtors (the cash story) ──
@@ -78,7 +105,7 @@ export function buildFinance(co) {
   ];
 
   // ── Revenue breakdowns ──
-  const revByProduct = REV_PRODUCTS.map((p) => ({ ...p, value: s.revenue * p.prop, series: trend(s.revenue * p.prop, 6, 0.06) }));
+  const revByProduct = REV_PRODUCTS.map((p) => ({ ...p, value: s.revenue * p.prop, series: seriesOf(ledger, "revenue", p.prop) }));
   const revByRegion  = REV_REGIONS.map((r) => ({ ...r, value: s.revenue * r.prop }));
   const revDeals = CUSTOMERS.slice(0, 6).map((c, i) => ({
     party: c,
@@ -106,19 +133,74 @@ export function buildFinance(co) {
     { label:"EBITDA",         value: ebitda,         kind:"end" },
   ];
   const opexLines = [
-    { label:"Sales & Marketing", value: opexTotal*0.34, series: trend(opexTotal*0.34,6,0.1) },
-    { label:"Research & Development", value: opexTotal*0.35, series: trend(opexTotal*0.35,6,0.08) },
-    { label:"General & Admin", value: opexTotal*0.31, series: trend(opexTotal*0.31,6,0.05) },
+    { label:"Sales & Marketing",      value: opexTotal*0.34, series: seriesOf(ledger, "opex", 0.34) },
+    { label:"Research & Development", value: opexTotal*0.35, series: seriesOf(ledger, "opex", 0.35) },
+    { label:"General & Admin",        value: opexTotal*0.31, series: seriesOf(ledger, "opex", 0.31) },
   ];
 
   // Cash projection (declining)
   const cashProj = Array.from({ length: 9 }, (_, i) => ({ m: ["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan"][i], v: Math.round(s.cash - s.burn * i) })).filter(p => p.v > -s.burn);
 
+  // Additive: the ledger the sparklines are drawn from, so any figure can be
+  // opened and asked "compared with when?". Existing consumers ignore these.
+  const asOf = MONTH_KEYS[MONTH_KEYS.length - 1];
+  const last = ledger[ledger.length - 1];
+  const history = {
+    months: MONTH_KEYS,
+    cash: ledger.map((m) => ({ month: m.month, balance: Math.round(m.cashClose), burn: Math.round(m.netBurn) })),
+    revenue: ledger.map((m) => ({ month: m.month, actual: Math.round(m.revenue), budget: Math.round(m.planRevenue) })),
+    ebitda: ledger.map((m) => ({ month: m.month, value: +m.ebitda.toFixed(1), marginPct: +m.ebitdaMarginPct.toFixed(1), grossMarginPct: +m.grossMarginPct.toFixed(1) })),
+  };
+
   return {
-    seed: s, runway, status: cs,
-    cash: { balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj },
-    revenue: { total: s.revenue, budget: s.budget, byProduct: revByProduct, byRegion: revByRegion, deals: revDeals },
-    ebitda: { pct: s.ebitdaPct, value: ebitda, bridge, opexLines, grossMargin: s.gm },
+    seed: s, runway, status: cs, asOf, history,
+    currency: reportingCurrency,
+    native: {
+      currency: nativeCcy,
+      cash: native.cash, burn: native.burn, revenue: native.revenue, budget: native.budget,
+      converted: nativeCcy !== reportingCurrency,
+      note: conversionNote(native.revenue, nativeCcy, reportingCurrency),
+    },
+    cash: {
+      balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj,
+      source: SOURCES.banking, asOf,
+      methodology: {
+        balance: provenanceOf("cash", asOf),
+        burn: provenanceOf("burn", asOf),
+        runway: provenanceOf("runway", asOf),
+        overdueTotal: provenanceOf("overdueAR", asOf),
+      },
+    },
+    revenue: {
+      total: s.revenue, budget: s.budget, byProduct: revByProduct, byRegion: revByRegion, deals: revDeals,
+      source: SOURCES.accounting, asOf,
+      methodology: {
+        total: provenanceOf("revenue", asOf),
+        budget: provenanceOf("budget", asOf),
+        variance: provenanceOf("revenueVariance", asOf),
+      },
+    },
+    ebitda: {
+      pct: s.ebitdaPct, value: ebitda, bridge, opexLines, grossMargin: s.gm,
+      source: SOURCES.accounting, asOf,
+      methodology: {
+        grossMargin: provenanceOf("grossMargin", asOf),
+        pct: provenanceOf("ebitdaMargin", asOf),
+      },
+    },
+    people: {
+      headcount: last.headcount, planHeadcount: last.planHeadcount, attritionPct: last.attritionPct,
+      source: SOURCES.hris, asOf,
+      history: ledger.map((m) => ({ month: m.month, headcount: m.headcount, planHeadcount: m.planHeadcount, attritionPct: m.attritionPct })),
+      methodology: { headcount: provenanceOf("headcount", asOf), attritionPct: provenanceOf("attrition", asOf) },
+    },
+    sales: {
+      pipelineCoverage: last.pipelineCoverage, winRatePct: last.winRatePct,
+      coverageFrom: ledger[0].pipelineCoverage, winRateFrom: ledger[0].winRatePct,
+      source: SOURCES.crm, asOf,
+      history: ledger.map((m) => ({ month: m.month, pipelineCoverage: m.pipelineCoverage, winRatePct: m.winRatePct })),
+      methodology: { pipelineCoverage: provenanceOf("pipelineCoverage", asOf), winRatePct: provenanceOf("winRate", asOf) },
+    },
   };
 }
 

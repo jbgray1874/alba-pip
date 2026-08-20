@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
+import { forDashboard, financeOf } from "../lib/companies.js";
+import { buildInvestigation } from "../lib/investigation.js";
 
 const T = {
   bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
@@ -18,53 +20,27 @@ const ragCol = s => ({green:T.green,amber:T.amber,red:T.red}[s]||T.txt3);
 const ragBg  = s => ({green:T.greenDim,amber:T.amberDim,red:T.redDim}[s]||"transparent");
 
 // ── COMPANIES ─────────────────────────────────────────────────────────────────
-const COMPANIES = [
-  { id:"meridian",   name:"Meridian SaaS",  sector:"B2B SaaS",        stage:"Series A",  geo:"UK",  own:22, score:62,
-    subScores:{ finance:48, sales:58, hr:62, ops:78, procurement:81, technology:84, compliance:88 },
-    status:"amber", runway:4.8, rvb:87, att:14, ebitda:-8, upd:"4h ago", freshness:98,
-    issue:"Cash runway 4.8 mo — DSO +15 days, burn accelerating",
-    spark:[68,66,67,64,63,62,60,58,55,54,53,52],
-    trend:"down", actions:4, alerts:3 },
-  { id:"payflo",     name:"PayFlo",          sector:"Fintech/Payments", stage:"Growth PE", geo:"UK",  own:41, score:88,
-    subScores:{ finance:91, sales:94, hr:88, ops:85, procurement:83, technology:90, compliance:86 },
-    status:"green", runway:11.2, rvb:112, att:7,  ebitda:14, upd:"1h ago",  freshness:100,
-    issue:"Take rate compressing slightly vs sector peers",
-    spark:[78,80,79,82,83,85,84,86,87,88,88,88],
-    trend:"up",   actions:1, alerts:0 },
-  { id:"swiftlogix", name:"SwiftLogix",      sector:"Logistics",        stage:"Series B",  geo:"UK",  own:18, score:71,
-    subScores:{ finance:74, sales:72, hr:58, ops:62, procurement:79, technology:76, compliance:84 },
-    status:"amber", runway:8.1, rvb:96,  att:19, ebitda:6,  upd:"Yesterday",freshness:84,
-    issue:"On-time delivery 87% vs 95% SLA — 2 enterprise client warnings",
-    spark:[70,71,69,72,71,70,72,71,70,71,71,71],
-    trend:"stable",actions:2, alerts:2 },
-  { id:"careos",     name:"CareOS",          sector:"HealthTech",       stage:"Series A",  geo:"UK",  own:29, score:34,
-    subScores:{ finance:18, sales:24, hr:32, ops:51, procurement:62, technology:68, compliance:74 },
-    status:"red",   runway:2.3, rvb:64,  att:23, ebitda:-31,upd:"3d ago",  freshness:61,
-    issue:"CRITICAL: 2.3 mo runway + revenue 36% below budget",
-    spark:[58,55,52,48,46,44,42,40,38,36,35,34],
-    trend:"down", actions:6, alerts:4 },
-  { id:"forgetech",  name:"ForgeTech",       sector:"Manufacturing",    stage:"PE Growth", geo:"UK",  own:55, score:84,
-    subScores:{ finance:86, sales:82, hr:88, ops:80, procurement:78, technology:84, compliance:91 },
-    status:"green", runway:9.4, rvb:103, att:9,  ebitda:18, upd:"12h ago", freshness:96,
-    issue:"Inventory aging 11% above target — review slow-moving SKUs",
-    spark:[76,77,78,79,80,81,82,83,83,84,84,84],
-    trend:"up",   actions:1, alerts:1 },
-];
+const COMPANIES = forDashboard();
 
 // ── KPI DATA ──────────────────────────────────────────────────────────────────
 const mk = vals => MO.map((m,i) => ({ m, v: vals[i] }));
+
+const MF = financeOf("meridian");
 
 const MODULES = {
   meridian: {
     finance:{
       src:"Xero · TrueLayer · 4h ago", qual:98,
       kpis:[
-        { label:"Cash Balance",       value:"£412k",   status:"amber", delta:"-£28k MoM",  src:"TrueLayer",  threshold:"Warn <£300k",  confidence:98 },
-        { label:"Cash Runway",        value:"4.8 mo",  status:"red",   delta:"-1.2 mo",    src:"Xero",       threshold:"Red <6 mo",    confidence:98 },
-        { label:"Monthly Burn",       value:"£138k",   status:"amber", delta:"+£12k MoM",  src:"Xero",       threshold:"Warn +10% MoM",confidence:96 },
-        { label:"Revenue vs Budget",  value:"87%",     status:"amber", delta:"-4% MoM",    src:"Xero",       threshold:"Red <85%",     confidence:99 },
-        { label:"Gross Margin",       value:"71%",     status:"green", delta:"+1%",         src:"Xero",       threshold:"Green >60%",   confidence:97 },
-        { label:"EBITDA Margin",      value:"-8%",     status:"red",   delta:"-2%",         src:"Xero",       threshold:"Red <-15%",   confidence:97 },
+        // The six tiles FIN_SEED covers are derived, not restated. Cash read
+        // "£412k" here against a seed of £663k — a £251k disagreement on a tile
+        // labelled as coming from TrueLayer, on the fund's main dashboard.
+        { label:"Cash Balance",       value:`£${MF.cashK}k`,        status:"amber", delta:"-£28k MoM",  src:"TrueLayer",  threshold:"Warn <£300k",  confidence:98 },
+        { label:"Cash Runway",        value:`${MF.runway} mo`,      status:"red",   delta:"-1.2 mo",    src:"Xero",       threshold:"Red <6 mo",    confidence:98 },
+        { label:"Monthly Burn",       value:`£${MF.burnK}k`,        status:"amber", delta:"+£12k MoM",  src:"Xero",       threshold:"Warn +10% MoM",confidence:96 },
+        { label:"Revenue vs Budget",  value:`${MF.rvb}%`,           status:"amber", delta:"-4% MoM",    src:"Xero",       threshold:"Red <85%",     confidence:99 },
+        { label:"Gross Margin",       value:`${MF.grossMargin}%`,   status:"green", delta:"+1%",         src:"Xero",       threshold:"Green >60%",   confidence:97 },
+        { label:"EBITDA Margin",      value:`${MF.ebitdaPct}%`,     status:"red",   delta:"-2%",         src:"Xero",       threshold:"Red <-15%",   confidence:97 },
         { label:"ARR",                value:"£3.1M",   status:"amber", delta:"+£80k QoQ",  src:"Stripe",     threshold:"Watch",        confidence:100 },
         { label:"NRR",                value:"94%",     status:"amber", delta:"-3%",         src:"Stripe",     threshold:"Red <90%",    confidence:100 },
         { label:"DSO",                value:"47 days", status:"red",   delta:"+15 days",   src:"Xero",       threshold:"Red >45 days", confidence:94 },
@@ -358,12 +334,39 @@ function CockpitView({co}){
 
 // ── AI PANEL ──────────────────────────────────────────────────────────────────
 function AIPanel({co}){
-  const [loading,setLoading]=useState(false);const [narrative,setNarrative]=useState(null);
-  const [q,setQ]=useState("");const [answer,setAnswer]=useState(null);const [qLoad,setQLoad]=useState(false);
-  const ctx=`Company: ${co.name} (${co.sector}, ${co.stage})\nScore: ${co.score}/100 (${co.status})\nCash Runway: ${co.runway}mo · Revenue vs Budget: ${co.rvb}% · Attrition: ${co.att}%\nEBITDA Margin: ${co.ebitda}% · Sub-scores: ${JSON.stringify(co.subScores)}`;
-  async function gen(){setLoading(true);setNarrative(null);try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,system:"PE/VC analyst. Direct. Cite numbers. No hedging.\nFormat:\n**Overall Assessment** (2 sentences)\n\n**Top 3 Risks**\n• risk + metric\n• risk + metric\n• risk + metric\n\n**Recommended GP Actions**\n• action + time-bound\n• action + time-bound\n• action + time-bound\n\nUnder 280 words.",messages:[{role:"user",content:`Analyse:\n${ctx}`}]})});const d=await r.json();setNarrative(d.content?.[0]?.text||"Error.");}catch(e){setNarrative(`**Overall Assessment**\n${co.name} scores ${co.score}/100 with cash runway at ${co.runway} months as the critical constraint. Revenue at ${co.rvb}% of budget with ${co.att}% attrition indicates compound execution risk.\n\n**Top 3 Risks**\n• Cash depletion: ${co.runway} months runway — 30-day intervention window\n• Revenue shortfall: ${co.rvb}% of budget, gap widening MoM\n• Team instability: ${co.att}% attrition impairing delivery capacity\n\n**Recommended GP Actions**\n• Emergency operating review with CEO + CFO this week — cash plan required\n• Activate hiring freeze immediately on all non-critical roles\n• Escalate top-5 debtor accounts — recover AR within 30 days`);}setLoading(false);}
-  async function ask(){if(!q.trim())return;setQLoad(true);setAnswer(null);try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,system:"PE/VC analyst. 2–3 sentences. Cite numbers. No hedging.",messages:[{role:"user",content:`Context:\n${ctx}\n\nQuestion: ${q}`}]})});const d=await r.json();setAnswer(d.content?.[0]?.text||"Error.");}catch(e){setAnswer(`${co.name} has ${co.runway} months of cash runway at current burn rate of £138k/month. Revenue is at ${co.rvb}% of budget with pipeline coverage insufficient to recover the shortfall this quarter.`);}setQLoad(false);}
-  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><div style={{color:T.txt1,fontSize:13,fontWeight:600}}>Board-Ready Executive Summary</div><div style={{color:T.txt3,fontSize:10,marginTop:2}}>All KPIs · All data sources · Source-cited · GP action recommendations</div></div><button onClick={gen} disabled={loading} style={{padding:"8px 16px",background:loading?T.borderLt:T.blue,color:loading?T.txt3:"#fff",border:"none",borderRadius:6,cursor:loading?"wait":"pointer",fontSize:11,fontWeight:600}}>{loading?"Analysing…":"Generate Analysis"}</button></div>{narrative&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:14,color:T.txt2,fontSize:12,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{narrative}</div>}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{color:T.txt1,fontSize:13,fontWeight:600,marginBottom:10}}>Ask a Question</div><div style={{display:"flex",gap:8,marginBottom:8}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder='e.g. "How many months before a cash injection is needed?"' style={{flex:1,padding:"8px 11px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/><button onClick={ask} disabled={qLoad} style={{padding:"8px 16px",background:T.purple,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>{qLoad?"…":"Ask"}</button></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{["How urgent is the cash situation?","What's driving the revenue miss?","Which risks need GP attention this week?","What does Rule of 40 tell us?"].map(qq=><button key={qq} onClick={()=>setQ(qq)} style={{padding:"3px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>{qq}</button>)}</div>{answer&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:12,color:T.txt2,fontSize:12,lineHeight:1.7}}>{answer}</div>}</div></div>);
+  const [loading,setLoading]=useState(false);const [narrative,setNarrative]=useState(null);const [live,setLive]=useState(false);
+  const [q,setQ]=useState("");const [answer,setAnswer]=useState(null);const [qLoad,setQLoad]=useState(false);const [qLive,setQLive]=useState(false);
+
+  // Both panels used to POST to api.anthropic.com from the browser with no
+  // Authorization header — requests that could only ever 401, silently caught,
+  // so what a partner saw was always the hardcoded catch block. They now go to
+  // /api/ai/agent, which builds the prompt from the finance model server-side.
+  // The context is no longer assembled here either: the six lines it sent were
+  // a fraction of what is known, and the model was asked to be specific over
+  // them.
+  async function post(body,setText,setFlag,setBusy){
+    setBusy(true);setText(null);setFlag(false);
+    try{
+      const r=await fetch("/api/ai/agent",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!r.ok) throw new Error(`agent ${r.status}`);
+      const d=await r.json();
+      setText(d.text);setFlag(!!d.live);
+    }catch(e){
+      // The endpoint is unreachable. Fall back to the calculated investigation
+      // rather than to prose written months ago about a different company.
+      const inv=buildInvestigation(co.id);
+      setText(`${inv.rootCause}\n\nPriority action: ${inv.actions[0].action} (${inv.actions[0].owner}). ${inv.actions[0].rationale}.`);
+    }
+    setBusy(false);
+  }
+  const gen=()=>post({type:"boardpack",companyId:co.id},setNarrative,setLive,setLoading);
+  const ask=()=>{if(!q.trim())return;post({type:"qa",companyId:co.id,question:q},setAnswer,setQLive,setQLoad);};
+
+  const badge=(on)=>(<div style={{color:on?T.green:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:8}}>
+    {on?"● GROK · OVER CALCULATED COMPANY DATA":"● CALCULATED · SET XAI_API_KEY FOR THE ANALYTICAL LAYER"}
+  </div>);
+
+  return(<div style={{display:"flex",flexDirection:"column",gap:14}}><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><div><div style={{color:T.txt1,fontSize:13,fontWeight:600}}>Board-Ready Executive Summary</div><div style={{color:T.txt3,fontSize:10,marginTop:2}}>All KPIs · All data sources · Source-cited · GP action recommendations</div></div><button onClick={gen} disabled={loading} style={{padding:"8px 16px",background:loading?T.borderLt:T.blue,color:loading?T.txt3:"#fff",border:"none",borderRadius:6,cursor:loading?"wait":"pointer",fontSize:11,fontWeight:600}}>{loading?"Analysing…":"Generate Analysis"}</button></div>{narrative&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:14,color:T.txt2,fontSize:12,lineHeight:1.8,whiteSpace:"pre-wrap"}}>{badge(live)}{narrative}</div>}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:18}}><div style={{color:T.txt1,fontSize:13,fontWeight:600,marginBottom:10}}>Ask a Question</div><div style={{display:"flex",gap:8,marginBottom:8}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask()} placeholder='e.g. "How many months before a cash injection is needed?"' style={{flex:1,padding:"8px 11px",background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/><button onClick={ask} disabled={qLoad} style={{padding:"8px 16px",background:T.purple,color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>{qLoad?"…":"Ask"}</button></div><div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:8}}>{["How urgent is the cash situation?","What's driving the revenue miss?","Which risks need GP attention this week?","What does Rule of 40 tell us?"].map(qq=><button key={qq} onClick={()=>setQ(qq)} style={{padding:"3px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>{qq}</button>)}</div>{answer&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:6,padding:12,color:T.txt2,fontSize:12,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{badge(qLive)}{answer}</div>}</div></div>);
 }
 
 // ── COMPANY VIEW ──────────────────────────────────────────────────────────────
@@ -377,7 +380,7 @@ function CompanyView({co,onBack}){
 }
 
 // ── PORTFOLIO VIEW ────────────────────────────────────────────────────────────
-function PortfolioView({onSelect}){
+function PortfolioView({onSelect,onGuide}){
   const [sort,setSort]=useState("score");
   const [asc,setAsc]=useState(true);
   const sortFns={score:(a,b)=>a.score-b.score,runway:(a,b)=>a.runway-b.runway,rvb:(a,b)=>a.rvb-b.rvb,att:(a,b)=>a.att-b.att,freshness:(a,b)=>a.freshness-b.freshness,alerts:(a,b)=>a.alerts-b.alerts};
@@ -387,7 +390,7 @@ function PortfolioView({onSelect}){
   const reds=COMPANIES.filter(c=>c.status==="red").length;
   const openActions=ACTIONS_DATA.filter(a=>a.st!=="done").length;
   const SortBtn=({k,l})=><button onClick={()=>toggleSort(k)} style={{color:sort===k?T.blue:T.txt3,background:"transparent",border:"none",cursor:"pointer",fontSize:9,padding:0,letterSpacing:"0.1em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:2}}>{l}{sort===k&&<span style={{fontSize:8}}>{asc?"↑":"↓"}</span>}</button>;
-  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><div style={{marginBottom:18}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.2em",textTransform:"uppercase"}}>Caledonia Alba · Portfolio Intelligence Platform</div><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,margin:"3px 0 0"}}>Portfolio Overview</h1></div><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:9,marginBottom:18}}>{[{l:"Companies",v:COMPANIES.length,c:T.txt1},{l:"Avg Health",v:`${avg}/100`,c:avg>=75?T.green:avg>=50?T.amber:T.red},{l:"Red Alerts",v:reds,c:reds>0?T.red:T.green},{l:"Open Actions",v:openActions,c:openActions>0?T.amber:T.green},{l:"Runway <6mo",v:COMPANIES.filter(c=>c.runway<6).length,c:T.red},{l:"Data Freshness",v:`${Math.round(COMPANIES.reduce((s,c)=>s+c.freshness,0)/COMPANIES.length)}%`,c:T.green}].map(s=><div key={s.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"10px 12px"}}><div style={{color:T.txt3,fontSize:8,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{s.l}</div><div style={{color:s.c,fontSize:19,fontWeight:700,fontFamily:"monospace"}}>{s.v}</div></div>)}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 0",marginBottom:6}}><div style={{display:"grid",gridTemplateColumns:"2.4fr 64px 1fr 1fr 1fr 1fr 70px 72px 1.4fr 64px",padding:"5px 14px",gap:4}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>Company</div><SortBtn k="score" l="Score"/><SortBtn k="runway" l="Runway"/><SortBtn k="rvb" l="Rev vs Bdgt"/><SortBtn k="att" l="Attrition"/><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>EBITDA</div><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>Trend</div><SortBtn k="alerts" l="Alerts"/><SortBtn k="freshness" l="Data Fresh"/><div/></div></div><div style={{display:"flex",flexDirection:"column",gap:5}}>{sorted.map(c=>{const lc=ragCol(c.status);return(<div key={c.id} onClick={()=>onSelect(c)} style={{display:"grid",gridTemplateColumns:"2.4fr 64px 1fr 1fr 1fr 1fr 70px 72px 1.4fr 64px",alignItems:"center",padding:"12px 14px",background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${lc}`,borderRadius:8,cursor:"pointer",gap:4}} onMouseEnter={e=>e.currentTarget.style.background=T.cardHov} onMouseLeave={e=>e.currentTarget.style.background=T.card}><div style={{display:"flex",alignItems:"center",gap:9}}><Dot status={c.status}/><div><div style={{color:T.txt1,fontSize:12,fontWeight:600}}>{c.name}</div><div style={{color:T.txt3,fontSize:9}}>{c.sector} · {c.stage}</div></div></div><HealthRing score={c.score} size={35}/><div style={{color:c.runway<6?T.red:c.runway<9?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.runway}mo</div><div style={{color:c.rvb<85?T.red:c.rvb<95?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.rvb}%</div><div style={{color:c.att>20?T.red:c.att>12?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.att}%</div><div style={{color:c.ebitda<0?T.red:c.ebitda<5?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.ebitda}%</div><div title="12-month health score trend"><Sparkline data={c.spark} color={c.trend==="up"?T.green:c.trend==="down"?T.red:T.amber}/></div><div style={{display:"flex",gap:5}}>{c.alerts>0&&<span style={{background:T.redDim,color:T.red,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:700}}>{c.alerts}🔴</span>}{c.actions>0&&<span style={{background:T.amberDim,color:T.amber,fontSize:9,padding:"2px 6px",borderRadius:3}}>{c.actions}⚡</span>}</div><div style={{display:"flex",alignItems:"center",gap:5}}><div style={{flex:1,height:3,background:T.border,borderRadius:2}}><div style={{height:"100%",borderRadius:2,background:c.freshness>90?T.green:c.freshness>70?T.amber:T.red,width:`${c.freshness}%`}}/></div><span style={{color:T.txt3,fontSize:9,fontFamily:"monospace",width:28,textAlign:"right"}}>{c.freshness}%</span></div><button style={{padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>View →</button></div>);})}</div></div>);
+  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><div style={{marginBottom:18}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.2em",textTransform:"uppercase"}}>Caledonia Alba · Portfolio Intelligence Platform</div><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,margin:"3px 0 0"}}>Portfolio Overview</h1>{onGuide&&<button onClick={onGuide} style={{background:"transparent",border:"none",padding:0,marginTop:4,color:T.blue,fontSize:10,cursor:"pointer",textDecoration:"underline",fontFamily:"inherit"}}>📖 how to read this screen</button>}</div><div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:9,marginBottom:18}}>{[{l:"Companies",v:COMPANIES.length,c:T.txt1},{l:"Avg Health",v:`${avg}/100`,c:avg>=75?T.green:avg>=50?T.amber:T.red},{l:"Red Alerts",v:reds,c:reds>0?T.red:T.green},{l:"Open Actions",v:openActions,c:openActions>0?T.amber:T.green},{l:"Runway <6mo",v:COMPANIES.filter(c=>c.runway<6).length,c:T.red},{l:"Data Freshness",v:`${Math.round(COMPANIES.reduce((s,c)=>s+c.freshness,0)/COMPANIES.length)}%`,c:T.green}].map(s=><div key={s.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:7,padding:"10px 12px"}}><div style={{color:T.txt3,fontSize:8,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{s.l}</div><div style={{color:s.c,fontSize:19,fontWeight:700,fontFamily:"monospace"}}>{s.v}</div></div>)}</div><div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 0",marginBottom:6}}><div style={{display:"grid",gridTemplateColumns:"2.4fr 64px 1fr 1fr 1fr 1fr 70px 72px 1.4fr 64px",padding:"5px 14px",gap:4}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>Company</div><SortBtn k="score" l="Score"/><SortBtn k="runway" l="Runway"/><SortBtn k="rvb" l="Rev vs Bdgt"/><SortBtn k="att" l="Attrition"/><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>EBITDA</div><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase"}}>Trend</div><SortBtn k="alerts" l="Alerts"/><SortBtn k="freshness" l="Data Fresh"/><div/></div></div><div style={{display:"flex",flexDirection:"column",gap:5}}>{sorted.map(c=>{const lc=ragCol(c.status);return(<div key={c.id} onClick={()=>onSelect(c)} style={{display:"grid",gridTemplateColumns:"2.4fr 64px 1fr 1fr 1fr 1fr 70px 72px 1.4fr 64px",alignItems:"center",padding:"12px 14px",background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${lc}`,borderRadius:8,cursor:"pointer",gap:4}} onMouseEnter={e=>e.currentTarget.style.background=T.cardHov} onMouseLeave={e=>e.currentTarget.style.background=T.card}><div style={{display:"flex",alignItems:"center",gap:9}}><Dot status={c.status}/><div><div style={{color:T.txt1,fontSize:12,fontWeight:600}}>{c.name}</div><div style={{color:T.txt3,fontSize:9}}>{c.sector} · {c.stage}</div></div></div><HealthRing score={c.score} size={35}/><div style={{color:c.runway<6?T.red:c.runway<9?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.runway}mo</div><div style={{color:c.rvb<85?T.red:c.rvb<95?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.rvb}%</div><div style={{color:c.att>20?T.red:c.att>12?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.att}%</div><div style={{color:c.ebitda<0?T.red:c.ebitda<5?T.amber:T.green,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>{c.ebitda}%</div><div title="12-month health score trend"><Sparkline data={c.spark} color={c.trend==="up"?T.green:c.trend==="down"?T.red:T.amber}/></div><div style={{display:"flex",gap:5}}>{c.alerts>0&&<span style={{background:T.redDim,color:T.red,fontSize:9,padding:"2px 6px",borderRadius:3,fontWeight:700}}>{c.alerts}🔴</span>}{c.actions>0&&<span style={{background:T.amberDim,color:T.amber,fontSize:9,padding:"2px 6px",borderRadius:3}}>{c.actions}⚡</span>}</div><div style={{display:"flex",alignItems:"center",gap:5}}><div style={{flex:1,height:3,background:T.border,borderRadius:2}}><div style={{height:"100%",borderRadius:2,background:c.freshness>90?T.green:c.freshness>70?T.amber:T.red,width:`${c.freshness}%`}}/></div><span style={{color:T.txt3,fontSize:9,fontFamily:"monospace",width:28,textAlign:"right"}}>{c.freshness}%</span></div><button style={{padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer"}}>View →</button></div>);})}</div></div>);
 }
 
 // ── ALERTS, ACTIONS ───────────────────────────────────────────────────────────
@@ -404,9 +407,9 @@ function Sidebar({view,setView}){
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-export default function GPDashboard(){
+export default function GPDashboard({ onGuide }){
   const [view,setView]=useState("portfolio");const [co,setCo]=useState(null);
   function sel(c){setCo(c);setView("company");}
   function nav(v){if(v!=="company")setCo(null);setView(v);}
-  return(<div style={{display:"flex",height:"100vh",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}><Sidebar view={view} setView={nav}/><div style={{flex:1,overflow:"hidden"}}>{view==="portfolio"&&<PortfolioView onSelect={sel}/>}{view==="company"&&co&&<CompanyView co={co} onBack={()=>nav("portfolio")}/>}{view==="alerts"&&<AlertsView/>}{view==="actions"&&<ActionsView/>}</div></div>);
+  return(<div style={{display:"flex",height:"100%",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}><Sidebar view={view} setView={nav}/><div style={{flex:1,overflow:"hidden"}}>{view==="portfolio"&&<PortfolioView onSelect={sel} onGuide={onGuide}/>}{view==="company"&&co&&<CompanyView co={co} onBack={()=>nav("portfolio")}/>}{view==="alerts"&&<AlertsView/>}{view==="actions"&&<ActionsView/>}</div></div>);
 }

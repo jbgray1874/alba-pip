@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
          LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { forAnalytics } from "../lib/companies.js";
+import { attentionActions } from "../lib/investigation.js";
 
 // ── Design tokens ────────────────────────────────────────────────
 const T = {
@@ -11,43 +13,7 @@ const T = {
 };
 
 // ── Seed data ─────────────────────────────────────────────────────
-const COMPANIES = [
-  {
-    id: "meridian", name: "Meridian SaaS", sector: "B2B SaaS", stage: "Series A",
-    score: 62, rag: "AMBER", runway: 4.8, burnK: 138, cashK: 663, revenueK: 261, budgetK: 300,
-    irr: 31, moic: 1.8, headcount: 29,
-    revVsBudget: "87%", ebitda: "-8%",
-    depts: { Finance: 45, Sales: 72, Product: 81, HR: 78, Ops: 55, Tech: 83, Marketing: 61, Risk: 48, Compliance: 70 },
-  },
-  {
-    id: "payflo", name: "PayFlo", sector: "FinTech · Payments", stage: "Growth PE",
-    score: 88, rag: "GREEN", runway: 11.2, burnK: 147, cashK: 1646, revenueK: 412, budgetK: 368,
-    irr: 47, moic: 3.1, headcount: 54,
-    revVsBudget: "112%", ebitda: "14%",
-    depts: { Finance: 88, Sales: 91, Product: 85, HR: 82, Ops: 90, Tech: 89, Marketing: 84, Risk: 86, Compliance: 88 },
-  },
-  {
-    id: "swiftlogix", name: "SwiftLogix", sector: "Logistics · Series B", stage: "Series B",
-    score: 71, rag: "AMBER", runway: 8.1, burnK: 120, cashK: 972, revenueK: 384, budgetK: 400,
-    irr: 28, moic: 2.1, headcount: 41,
-    revVsBudget: "96%", ebitda: "6%",
-    depts: { Finance: 68, Sales: 74, Product: 71, HR: 80, Ops: 65, Tech: 75, Marketing: 62, Risk: 70, Compliance: 78 },
-  },
-  {
-    id: "careos", name: "CareOS", sector: "HealthTech · Series A", stage: "Series A",
-    score: 34, rag: "RED", runway: 2.3, burnK: 185, cashK: 426, revenueK: 162, budgetK: 253,
-    irr: 8, moic: 0.7, headcount: 38,
-    revVsBudget: "64%", ebitda: "-31%",
-    depts: { Finance: 22, Sales: 35, Product: 55, HR: 42, Ops: 28, Tech: 62, Marketing: 30, Risk: 18, Compliance: 40 },
-  },
-  {
-    id: "forgetech", name: "ForgeTech", sector: "Manufacturing · PE Growth", stage: "PE Growth",
-    score: 84, rag: "GREEN", runway: 9.4, burnK: 210, cashK: 1974, revenueK: 618, budgetK: 600,
-    irr: 44, moic: 2.8, headcount: 67,
-    revVsBudget: "103%", ebitda: "18%",
-    depts: { Finance: 82, Sales: 86, Product: 78, HR: 84, Ops: 88, Tech: 80, Marketing: 75, Risk: 82, Compliance: 85 },
-  },
-];
+const COMPANIES = forAnalytics();
 
 const RAG_COLOR = { GREEN: T.green, AMBER: T.amber, RED: T.red };
 const DEPTS = ["Finance", "Sales", "Product", "HR", "Ops", "Tech", "Marketing", "Risk", "Compliance"];
@@ -325,34 +291,34 @@ function IRRTable() {
 // ─────────────────────────────────────────────────────────────────
 // Attention Required panel (AI-powered)
 // ─────────────────────────────────────────────────────────────────
-const STATIC_ACTIONS = [
-  { company: "CareOS", severity: "critical", icon: "🔴", action: "Cash runway breaches 60-day threshold in 8 days", owner: "CFO", due: "30 Jun" },
-  { company: "Meridian SaaS", severity: "high", icon: "🟠", action: "£7.2k overdue AR — DIISR and Rex Media Group require escalation", owner: "CFO", due: "07 Jul" },
-  { company: "CareOS", severity: "high", icon: "🟠", action: "Revenue tracking at 64% of budget — Q3 plan needs revision", owner: "CEO", due: "15 Jul" },
-  { company: "Meridian SaaS", severity: "medium", icon: "🟡", action: "Board pack due — prepare Q2 investor update", owner: "CEO", due: "30 Jun" },
-  { company: "SwiftLogix", severity: "medium", icon: "🟡", action: "Ops health score declined 8pts MoM — investigate logistics cost base", owner: "COO", due: "10 Jul" },
-];
+// The five actions the portfolio most needs, computed from the finance model.
+// These were five hardcoded rows, one of which read "£7.2k overdue AR — DIISR
+// and Rex Media Group require escalation": Meridian's overdue balance is £73k
+// and neither debtor exists in the ledger. Refresh calls the same calculation
+// server-side; the initial render does not wait for the network.
+const STATIC_ACTIONS = attentionActions();
 
 function AttentionPanel() {
   const [loading, setLoading] = useState(false);
   const [actions, setActions] = useState(STATIC_ACTIONS);
   const [live, setLive] = useState(false);
 
+  // Previously the reply was fetched and discarded — only `live` was read, so
+  // the button lit a badge and left the stale rows exactly where they were.
   async function refresh() {
     setLoading(true);
     try {
       const r = await fetch("/api/ai/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "attention",
-          company: { name: "Portfolio", score: 68, rag: "AMBER" },
-          data: { question: "What are the top 5 actions required across the portfolio this week? Format as JSON array with fields: company, severity (critical/high/medium), action, owner, due." },
-        }),
+        body: JSON.stringify({ type: "attention" }),
       });
       const d = await r.json();
-      if (d.live) setLive(true);
-    } catch (e) {}
+      if (Array.isArray(d.actions) && d.actions.length) setActions(d.actions);
+      setLive(!!d.live);
+    } catch (e) {
+      // Leave what is on screen rather than replace it with nothing.
+    }
     setLoading(false);
   }
 
@@ -377,7 +343,9 @@ function AttentionPanel() {
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: sevColor[a.severity], marginTop: 5, flexShrink: 0, boxShadow: `0 0 6px ${sevColor[a.severity]}` }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, color: T.txt1 }}>{a.action}</div>
-            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>{a.company} · {a.owner} · Due {a.due}</div>
+            <div style={{ fontSize: 10, color: T.txt3, marginTop: 2 }}>
+              {a.company} · {a.owner} · Due {a.due}{a.rationale ? ` · ${a.rationale}` : ""}
+            </div>
           </div>
           <div style={{ fontSize: 9, color: sevColor[a.severity], textTransform: "uppercase", letterSpacing: 1, flexShrink: 0 }}>{a.severity}</div>
         </div>
