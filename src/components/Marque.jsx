@@ -26,16 +26,29 @@ import { C } from "../lib/theme.js";
 /**
  * Where the real artwork goes.
  *
- * Drop the supplied file at `public/logo.svg` (or `.png`) and push. Every mark
- * in the application picks it up — top bar, tab, report sheet — with no code
- * change. Until it is there, the drawn fallback below is used.
+ * Drop the supplied file at `public/logo.svg`, `.png` or `.jpg` and push. Every
+ * mark in the application picks it up — top bar, browser tab — with no code
+ * change. They are tried in that order and the first that loads wins, so any of
+ * the three works without anybody editing this file.
  *
- * This exists because the mark has now been redrawn three times from a raster
+ * This exists because the mark was redrawn three times from a raster
  * screenshot, each pass closer and none of them right. Tracing a logo by eye is
  * the wrong tool; the file is the right one, and the code should not need
- * editing when it arrives.
+ * editing when it turns up.
  */
-const ARTWORK = `${import.meta.env.BASE_URL}logo.svg`;
+const ARTWORK = ["logo.svg", "logo.png", "logo.jpg"].map((f) => `${import.meta.env.BASE_URL}${f}`);
+
+/**
+ * A JPEG cannot carry transparency, so a white-on-black logo arrives as a white
+ * mark inside a black rectangle. Against this interface that rectangle is
+ * visible — near-black on near-black still shows a seam.
+ *
+ * `screen` blending drops every black pixel to nothing and leaves the white
+ * untouched, which knocks the box out cleanly. It is applied to JPEGs only:
+ * a PNG or SVG carries its own alpha and blending one would erase any dark
+ * part of the artwork.
+ */
+const knockout = (src) => (/\.jpe?g$/i.test(src) ? { mixBlendMode: "screen" } : null);
 
 /**
  * The mark alone, no wordmark.
@@ -53,13 +66,15 @@ const ARTWORK = `${import.meta.env.BASE_URL}logo.svg`;
  *                          white-on-black file could not be recoloured
  */
 export function Mark({ size = 20, colour = C.txt1, ground = C.bg, drawn = false }) {
-  const [haveArtwork, setHaveArtwork] = useState(!drawn);
+  // Walk the candidate files; -1 means every one failed, so draw it instead.
+  const [candidate, setCandidate] = useState(drawn ? -1 : 0);
 
-  if (haveArtwork) {
+  if (candidate >= 0 && candidate < ARTWORK.length) {
+    const src = ARTWORK[candidate];
     return (
-      <img src={ARTWORK} width={size} height={size} alt="Alba PIP"
-           onError={() => setHaveArtwork(false)}
-           style={{ flexShrink: 0, display: "block", objectFit: "contain" }} />
+      <img key={src} src={src} width={size} height={size} alt="Alba PIP"
+           onError={() => setCandidate(candidate + 1)}
+           style={{ flexShrink: 0, display: "block", objectFit: "contain", ...knockout(src) }} />
     );
   }
 
