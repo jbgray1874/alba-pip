@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Chip, Button, ProvenanceBar } from "../components/Shell.jsx";
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import { buildFinance, fmtGBP, MONTHS } from "../lib/financeData.js";
-import { CONNECTED_COMPANY_ID } from "../lib/kpiDefinitions.js";
+import { CONNECTED_COMPANY_ID, SOURCES, provenanceOf } from "../lib/kpiDefinitions.js";
 
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
@@ -44,7 +45,7 @@ const TT = ({ active, payload, label, src }) => {
       ))}
       <div style={{ marginTop:6, paddingTop:6, borderTop:`1px solid ${T.border}`, display:"flex", alignItems:"center", gap:5 }}>
         <span style={{ width:5, height:5, borderRadius:"50%", background:T.green }}/>
-        <span style={{ color:T.txt3, fontSize:8 }}>{src || "Xero · synced 4h ago"}</span>
+        <span style={{ color:T.txt3, fontSize:8 }}>{src || "Alba calculation"}</span>
       </div>
     </div>
   );
@@ -101,7 +102,26 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
     }));
     fin.cash.overdueTotal = Math.round(xero.data.overdueTotal / 1000);
   }
-  const liveTag = xero?.source || "Xero · synced 4h ago";
+  // Sources and refresh dates come from the model. This file used to name
+  // TrueLayer — which is not one of the connected systems — and quote a
+  // four-hour-old sync on every panel regardless of the ledger's as-of date.
+  const bankSrc = `${fin.cash.source.label} · as of ${fin.asOf}`;
+  const bookSrc = `${fin.revenue.source.label} · as of ${fin.asOf}`;
+  const billSrc = `${SOURCES.billing.label} · as of ${fin.asOf}`;
+  const liveTag = xero?.source || bookSrc;
+
+  // The month-on-month movement, read rather than asserted: this row said
+  // "+£12k MoM" under every company, including the ones where burn had fallen.
+  const burnPrev = fin.history.cash[fin.history.cash.length - 2]?.burn ?? fin.cash.burn;
+  const burnMove = fin.cash.burn - burnPrev;
+  const burnMoveLabel = `${burnMove >= 0 ? "+" : "−"}${fmtGBP(Math.abs(burnMove) * 1000)} on last month`;
+
+  // The calculation behind whichever metric is open, for the footer strip.
+  const METHOD = {
+    cash: provenanceOf("runway", fin.asOf) ?? "Cash balance ÷ monthly net burn",
+    revenue: provenanceOf("revenue", fin.asOf) ?? "Recognised revenue against budget",
+    ebitda: provenanceOf("ebitdaMargin", fin.asOf) ?? "EBITDA ÷ revenue",
+  };
 
   const depth = path.length - 1;
 
@@ -117,12 +137,12 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
         <>
           <SectionTitle>Runway components</SectionTitle>
           <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
-            <DrillRow label="Opening Cash Balance" value={fmtGBP(fin.cash.balance*1000)} sub="Bank position · TrueLayer · 4h ago" color={T.green} />
-            <DrillRow label="Monthly Burn" value={fmtGBP(fin.cash.burn*1000)} sub="+£12k MoM · click to break down" status="amber" onClick={()=>push({ level:1, key:"burn", label:"Burn breakdown" })} />
+            <DrillRow label="Opening Cash Balance" value={fmtGBP(fin.cash.balance*1000)} sub={`Bank position · ${bankSrc}`} color={T.green} />
+            <DrillRow label="Monthly Burn" value={fmtGBP(fin.cash.burn*1000)} sub={`${burnMoveLabel} · click to break down`} status="amber" onClick={()=>push({ level:1, key:"burn", label:"Burn breakdown" })} />
             <DrillRow label="Runway" value={`${fin.cash.runway} months`} sub={`${fmtGBP(fin.cash.balance*1000)} ÷ ${fmtGBP(fin.cash.burn*1000)}/mo`} status="red" />
           </div>
           <Card>
-            <ChartHead title="CASH PROJECTION (£)" src="TrueLayer + Xero · 4h ago" />
+            <ChartHead title="CASH PROJECTION (£)" src={bankSrc} />
             <ResponsiveContainer width="100%" height={150}>
               <AreaChart data={fin.cash.cashProj}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
@@ -150,13 +170,13 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
             ))}
           </div>
           <Card>
-            <ChartHead title="BURN BY CATEGORY OVER TIME (£k)" src="Xero · 4h ago" />
+            <ChartHead title="BURN BY CATEGORY OVER TIME (£k)" src={bookSrc} />
             <ResponsiveContainer width="100%" height={170}>
               <LineChart data={MONTHS.map((m,i)=>({ m, ...Object.fromEntries(fin.cash.burnCats.map(c=>[c.label,c.series[i]])) }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="m" tick={{ fill:T.txt3, fontSize:9 }} />
                 <YAxis tick={{ fill:T.txt3, fontSize:9 }} />
-                <Tooltip content={<TT src="Xero · 4h ago" />} />
+                <Tooltip content={<TT src={bookSrc} />} />
                 {fin.cash.burnCats.map((c)=><Line key={c.key} dataKey={c.label} stroke={c.color} strokeWidth={2} dot={false} />)}
               </LineChart>
             </ResponsiveContainer>
@@ -169,13 +189,13 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
       <>
         <SectionTitle>Outstanding receivables — {fmtGBP(fin.cash.overdueTotal*1000)} overdue</SectionTitle>
         <Card style={{ marginBottom:14 }} pad={14}>
-          <ChartHead title="AR AGING (£)" src="Xero · 4h ago" />
+          <ChartHead title="AR AGING (£)" src={bookSrc} />
           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={fin.cash.arAging}>
               <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
               <XAxis dataKey="bucket" tick={{ fill:T.txt3, fontSize:8 }} />
               <YAxis tick={{ fill:T.txt3, fontSize:9 }} tickFormatter={(v)=>`£${(v/1000).toFixed(0)}k`} />
-              <Tooltip content={<TT src="Xero · 4h ago" />} />
+              <Tooltip content={<TT src={bookSrc} />} />
               <Bar dataKey="val" name="AR" radius={[3,3,0,0]}>
                 {fin.cash.arAging.map((e,i)=><Cell key={i} fill={e.color} />)}
               </Bar>
@@ -205,13 +225,13 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
             ))}
           </div>
           <Card>
-            <ChartHead title="REVENUE BY PRODUCT OVER TIME (£k)" src="Xero + Stripe · 4h ago" />
+            <ChartHead title="REVENUE BY PRODUCT OVER TIME (£k)" src={`${bookSrc} + ${billSrc}`} />
             <ResponsiveContainer width="100%" height={160}>
               <LineChart data={MONTHS.map((m,i)=>({ m, ...Object.fromEntries(fin.revenue.byProduct.map(p=>[p.label,p.series[i]])) }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="m" tick={{ fill:T.txt3, fontSize:9 }} />
                 <YAxis tick={{ fill:T.txt3, fontSize:9 }} />
-                <Tooltip content={<TT src="Xero · 4h ago" />} />
+                <Tooltip content={<TT src={bookSrc} />} />
                 {fin.revenue.byProduct.map((p,i)=><Line key={p.key} dataKey={p.label} stroke={[T.blue,T.purple,T.green][i]} strokeWidth={2} dot={false} />)}
               </LineChart>
             </ResponsiveContainer>
@@ -252,13 +272,13 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
         <>
           <SectionTitle>EBITDA margin {fin.ebitda.pct}% — bridge from revenue</SectionTitle>
           <Card style={{ marginBottom:14 }}>
-            <ChartHead title="EBITDA BRIDGE (£k)" src="Xero · 4h ago" />
+            <ChartHead title="EBITDA BRIDGE (£k)" src={bookSrc} />
             <ResponsiveContainer width="100%" height={170}>
               <BarChart data={fin.ebitda.bridge.map(b=>({ label:b.label, value:Math.round(b.value), kind:b.kind }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="label" tick={{ fill:T.txt3, fontSize:8 }} interval={0} angle={-15} textAnchor="end" height={50} />
                 <YAxis tick={{ fill:T.txt3, fontSize:9 }} />
-                <Tooltip content={<TT src="Xero · 4h ago" />} />
+                <Tooltip content={<TT src={bookSrc} />} />
                 <Bar dataKey="value" radius={[3,3,0,0]}>
                   {fin.ebitda.bridge.map((b,i)=><Cell key={i} fill={b.kind==="neg"?T.red:b.kind==="end"?(fin.ebitda.pct<0?T.red:T.green):b.kind==="subtotal"?T.blue:T.green} />)}
                 </Bar>
@@ -281,13 +301,13 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
         <>
           <SectionTitle>{line.label} — {fmtGBP(line.value*1000)}/mo trend</SectionTitle>
           <Card style={{ marginBottom:14 }}>
-            <ChartHead title="COST TREND (£k)" src="Xero · 4h ago" />
+            <ChartHead title="COST TREND (£k)" src={bookSrc} />
             <ResponsiveContainer width="100%" height={150}>
               <AreaChart data={MONTHS.map((m,i)=>({ m, v:line.series[i] }))}>
                 <CartesianGrid strokeDasharray="3 3" stroke={T.border} />
                 <XAxis dataKey="m" tick={{ fill:T.txt3, fontSize:9 }} />
                 <YAxis tick={{ fill:T.txt3, fontSize:9 }} />
-                <Tooltip content={<TT src="Xero · 4h ago" />} />
+                <Tooltip content={<TT src={bookSrc} />} />
                 <Area dataKey="v" name={line.label} stroke={T.amber} fill={T.amberDim} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
@@ -331,7 +351,7 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
                 <span key={i} style={{ display:"flex", alignItems:"center", gap:7 }}>
                   <button onClick={()=>goTo(i)} style={{
                     background:"transparent", border:"none", cursor:"pointer", padding:0,
-                    color: i===path.length-1 ? T.txt1 : T.blue,
+                    color: i===path.length-1 ? C.txt1 : C.gold,
                     fontSize:13, fontWeight: i===path.length-1 ? 700 : 500 }}>
                     {p.label}
                   </button>
@@ -349,13 +369,16 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
           {body}
         </div>
 
-        {/* Footer */}
-        <div style={{ padding:"10px 20px", borderTop:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <span style={{ display:"flex", alignItems:"center", gap:6, color:T.txt3, fontSize:9 }}>
-            <span style={{ width:6, height:6, borderRadius:"50%", background:T.green, boxShadow:`0 0 6px ${T.green}` }}/>
-            {xero?.connected ? `Live · Xero (${xero.tenantName || "connected"}) · synced just now` : "Live · Xero + TrueLayer · last synced 4h ago"}
+        {/* Footer — the calculation, not just the connection */}
+        <div style={{ padding:"10px 20px", borderTop:`1px solid ${C.border}`, display:"flex",
+                      justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+          <span style={{ color:C.txt3, fontSize:S.micro, lineHeight:1.55, flex:1, minWidth:0 }}>
+            <span style={{ color:C.txt2 }}>Calculation: </span>{METHOD[metric]}
+            <span style={{ color:C.gold, margin:"0 8px" }}>·</span>
+            <span style={{ color:C.txt2 }}>Source: </span>
+            {xero?.connected ? `${fin.revenue.source.label} (${xero.tenantName || "connected"}), live` : liveTag}
           </span>
-          {depth > 0 && <button onClick={()=>goTo(depth-1)} style={{ background:T.surface, border:`1px solid ${T.border}`, borderRadius:6, color:T.txt2, cursor:"pointer", fontSize:10, padding:"5px 12px" }}>← Back</button>}
+          {depth > 0 && <Button variant="outline" onClick={()=>goTo(depth-1)}>Back</Button>}
         </div>
       </div>
     </div>

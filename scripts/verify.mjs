@@ -43,10 +43,19 @@ let checks = 0;
 
 const ok = (n) => console.log(`  \x1b[32m✓\x1b[0m ${n}`);
 const bad = (n, d) => { failures++; console.log(`  \x1b[31m✗\x1b[0m ${n}\n      ${d}`); };
+// Some checks read files, so a check may return a promise. Awaiting the result
+// here rather than in each caller — five checks were silently passing
+// "[object Promise]" to the failure reporter before this.
+const pending = [];
 const check = (name, fn) => {
   checks++;
-  try { const r = fn(); r === true ? ok(name) : bad(name, r); }
-  catch (e) { bad(name, e.message); }
+  const run = async () => {
+    try { const r = await fn(); r === true ? ok(name) : bad(name, r); }
+    catch (e) { bad(name, e.message); }
+  };
+  const p = run();
+  pending.push(p);
+  return p;
 };
 const section = (t) => console.log(`\n\x1b[1m${t}\x1b[0m`);
 const near = (a, b, tol = 0.01) => Math.abs(a - b) < tol;
@@ -841,6 +850,7 @@ section("Brand — one design system, not seventeen");
 
 const themeSrc = await codeOfEarly("../src/lib/theme.js");
 const indexSrc = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const cssSrc = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
 
 check("no view declares a colour outside the token file", () => {
   // Seventeen palettes, each a shade adrift of the next, was how the app came
@@ -979,14 +989,79 @@ check("the user guide is reachable from both landing pages", () => {
   return true;
 });
 
-check("no view sets its own viewport height inside the scaled shell", () => {
+check("no view sets its own viewport height inside the scaled shell", async () => {
   // `100vh` inside a `zoom` context resolves in scaled units and overflows the
   // shell. Views live inside App's pane and should size to it, not the window.
+  // This used to check two files; Agents and PortfolioAnalytics were both
+  // overflowing at any scale above 100% and neither was covered.
   const offenders = [];
-  for (const [name, src] of [["CommandCentre.jsx", commandSrc], ["GPDashboard.jsx", gpSrc]]) {
-    if (/height:\s*["']100vh["']/.test(src)) offenders.push(name);
+  for (const f of viewFiles) {
+    const src = await codeOf(`../src/views/${f}`);
+    if (/100vh/.test(src)) offenders.push(f);
   }
-  return offenders.length === 0 || `${offenders.join(", ")} still sets height:100vh`;
+  return offenders.length === 0 || `${offenders.join(", ")} still measures the viewport`;
+});
+
+check("every screen is built from the shared page primitives", async () => {
+  // Consistency is the whole point of Shell.jsx. A view that draws its own
+  // header is a view that drifts. The exceptions are the two that are not
+  // pages: FinanceDrilldown is a modal over a page, and RealTime carries a
+  // fixed ticker above a scrolling body.
+  const exempt = new Set(["FinanceDrilldown.jsx"]);
+  const missing = [];
+  for (const f of viewFiles) {
+    if (exempt.has(f)) continue;
+    const src = await codeOf(`../src/views/${f}`);
+    if (!/from "\.\.\/components\/Shell\.jsx"/.test(src)) missing.push(f);
+  }
+  return missing.length === 0 || `${missing.join(", ")} does not use the shared primitives`;
+});
+
+check("no view carries its own root font-family", async () => {
+  // Three views set the system stack on their root element, which overrode the
+  // design system for everything beneath them.
+  const offenders = [];
+  for (const f of viewFiles) {
+    const src = await codeOf(`../src/views/${f}`);
+    // Only style declarations — Improvements.jsx names typefaces in the copy
+    // describing a proposed improvement, which is not a declaration.
+    const declarations = [...src.matchAll(/fontFamily:\s*("[^"]*"|'[^']*'|`[^`]*`)/g)].map((m) => m[1]);
+    if (declarations.some((d) => /-apple-system|BlinkMacSystemFont|Segoe UI|DM Mono|Hanken|Fraunces|JetBrains|Georgia/.test(d))) {
+      offenders.push(f);
+    }
+  }
+  return offenders.length === 0 || `${offenders.join(", ")} declares a typeface the design system does not`;
+});
+
+check("the stylesheet loads the typefaces the design system names", () => {
+  // index.css declared Hanken Grotesk, Fraunces and JetBrains Mono for four
+  // commits after index.html stopped loading any of them, so every screen fell
+  // back to a system face while the tokens said something else.
+  for (const face of ["Inter", "Source Serif 4", "IBM Plex Mono"]) {
+    if (!indexSrc.includes(face.replace(/ /g, "+"))) return `index.html does not load ${face}`;
+    if (!cssSrc.includes(face)) return `index.css does not declare ${face}`;
+  }
+  const declared = [...cssSrc.matchAll(/--font-(?:ui|mono|display):\s*([^;]+);/g)].map((m) => m[1]);
+  for (const value of declared) {
+    for (const stale of ["Hanken", "Fraunces", "JetBrains", "DM Mono"]) {
+      if (value.includes(stale)) return `index.css still declares ${stale}, which index.html does not load`;
+    }
+  }
+  return declared.length === 3 || `expected three declared faces, found ${declared.length}`;
+});
+
+check("no view outside the report sheet contains a raw colour", async () => {
+  // theme.js is the only place a hex belongs. Seventeen views used to carry
+  // their own palette; the Delivery Plan alone had eighty-eight.
+  const offenders = [];
+  for (const f of viewFiles) {
+    const src = await codeOf(`../src/views/${f}`);
+    // Ignore hex inside the standalone HTML the board pack export writes.
+    const stripped = src.replace(/`[^`]*<html[\s\S]*?`/g, "");
+    const hits = stripped.match(/["'`]#[0-9a-fA-F]{3,8}["'`]/g);
+    if (hits) offenders.push(`${f} (${hits.length})`);
+  }
+  return offenders.length === 0 || `raw colours in ${offenders.join(", ")}`;
 });
 
 check("preferences reject a value that no longer exists", () => {
@@ -1196,6 +1271,39 @@ check("a modelled figure says so on the tile", () => {
     "every sales-quality figure is modelled — none is read from the ledger";
 });
 
+check("no screen names a system that is not in the connected estate", async () => {
+  // The live-data screen badged TrueLayer, Salesforce and Yahoo Finance as LIVE
+  // while the Integration Plan one click away listed them as mocked and
+  // INTEGRATIONS did not carry them at all — three screens disagreeing about
+  // the same estate.
+  const known = new Set(INTEGRATIONS.map((i) => i.name));
+  const invented = ["TrueLayer", "Salesforce", "Yahoo Finance", "Jira", "Zendesk", "Greenhouse"];
+  const offenders = [];
+  for (const f of viewFiles) {
+    // The Integration Plan's job is to list what is NOT connected yet.
+    if (f === "IntegrationPlan.jsx") continue;
+    const src = await codeOf(`../src/views/${f}`);
+    // Only look at rendered strings, not at comments recording what was removed.
+    const body = src.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const name of invented) {
+      if (body.includes(name) && !known.has(name)) offenders.push(`${f} names ${name}`);
+    }
+  }
+  return offenders.length === 0 || offenders.join("; ");
+});
+
+check("the finance drill-down states the calculation and the source", async () => {
+  // The specification requires both on every figure. This file used to name
+  // TrueLayer — not a connected system — and quote "synced 4h ago" on every
+  // panel regardless of the ledger's as-of date.
+  const src = await codeOf("../src/views/FinanceDrilldown.jsx");
+  if (!/Calculation:/.test(src)) return "no calculation is stated";
+  if (!/Source:/.test(src)) return "no source is stated";
+  if (/4h ago|synced 4h/.test(src)) return "still quotes a typed refresh age";
+  if (/\+£12k MoM/.test(src)) return "still asserts a month-on-month move it has not read";
+  return true;
+});
+
 check("the debtor split always sums to one", () => {
   for (const c of COMPANIES) {
     const { split, days } = debtorProfile(c.id, 5);
@@ -1205,6 +1313,8 @@ check("the debtor split always sums to one", () => {
   }
   return true;
 });
+
+await Promise.all(pending);
 
 // ── Result ──────────────────────────────────────────────────────────────────
 console.log(`\n${"─".repeat(72)}`);

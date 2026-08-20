@@ -92,7 +92,7 @@ const PRODUCTION_PHASES = [
   {
     phase: "Phase 2 — Real Integrations", color: C.purple, months: [3, 4], tasks: [
       { task: "Merge.dev HRIS connector (BambooHR, HiBob, Workday)", month: 3, duration: 1 },
-      { task: "Fivetran CRM connector (Salesforce, HubSpot)", month: 3, duration: 0.75 },
+      { task: "Fivetran CRM connector", month: 3, duration: 0.75 },
       { task: "Fivetran ERP connector (Xero, NetSuite)", month: 3.5, duration: 1 },
       { task: "dbt transformation pipeline (canonical KPI models)", month: 3, duration: 2 },
       { task: "Great Expectations data validation", month: 4, duration: 0.5 },

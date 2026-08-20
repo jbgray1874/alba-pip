@@ -254,7 +254,7 @@ export default function Improvements() {
       <div style={{ display:"flex", gap:8, marginBottom:18, flexWrap:"wrap", alignItems:"center" }}>
         <div style={{ display:"flex", gap:4 }}>
           {["priority","day"].map(v=>(
-            <button key={v} onClick={()=>setView(v)} style={{ padding:"6px 14px", background:view===v?T.blue:"transparent", border:`1px solid ${view===v?T.blue:T.border}`, borderRadius:6, color:view===v?"#fff":T.txt3, cursor:"pointer", fontSize:10, fontWeight:view===v?700:400 }}>
+            <button key={v} onClick={()=>setView(v)} style={{ padding:"6px 14px", background:view===v?C.gold:"transparent", border:`1px solid ${view===v?C.gold:C.borderLt}`, borderRadius:6, color:view===v?C.goldOn:C.txt2, cursor:"pointer", fontSize:10, fontWeight:view===v?700:400 }}>
               {v==="priority"?"By Priority":"By Day"}
             </button>
           ))}

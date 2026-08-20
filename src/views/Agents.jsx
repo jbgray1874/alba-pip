@@ -266,7 +266,7 @@ function InvestigationDemo() {
           <button key={t.id} onClick={()=>{setTarget(t.id);setShown(0);setSummary(null);}}
             style={{padding:"6px 12px",background:target===t.id?T.red:T.surface,
               border:`1px solid ${target===t.id?T.red:T.border}`,borderRadius:6,
-              color:target===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10}}>
+              color:target===t.id?C.goldOn:C.txt2,cursor:"pointer",fontSize:S.small}}>
             {t.label}
           </button>
         ))}
@@ -376,7 +376,7 @@ function PortfolioQADemo() {
           style={{flex:1,padding:"9px 12px",background:T.surface,border:`1px solid ${T.border}`,
             borderRadius:6,color:T.txt1,fontSize:11,fontFamily:"inherit",outline:"none"}}/>
         <button onClick={()=>ask()} disabled={loading} style={{padding:"9px 18px",background:T.purple,
-          color:"#fff",border:"none",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:700}}>
+          color:C.goldOn,border:"none",borderRadius:4,cursor:"pointer",fontSize:S.small,fontWeight:700}}>
           {loading?"…":"Ask"}
         </button>
       </div>
@@ -541,8 +541,8 @@ export default function Agents() {
           {/* Filter */}
           <div style={{display:"flex",gap:5,marginBottom:14,flexWrap:"wrap"}}>
             {["All",...Array.from(new Set(AGENTS.map(a=>a.cat)))].map(c=>(
-              <button key={c} onClick={()=>setCat(c)} style={{padding:"5px 12px",background:cat===c?T.blue:"transparent",
-                border:`1px solid ${cat===c?T.blue:T.border}`,borderRadius:5,color:cat===c?"#fff":T.txt3,cursor:"pointer",fontSize:9}}>
+              <button key={c} onClick={()=>setCat(c)} style={{padding:"5px 12px",background:cat===c?C.gold:"transparent",
+                border:`1px solid ${cat===c?C.gold:C.borderLt}`,borderRadius:4,color:cat===c?C.goldOn:C.txt2,cursor:"pointer",fontSize:S.label,fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase"}}>
                 {c}
               </button>
             ))}

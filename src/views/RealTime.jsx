@@ -3,6 +3,8 @@ import { C, F, S, label as labelStyle } from "../lib/theme.js";
 import { Chip, Button } from "../components/Shell.jsx";
 import { COMPANIES, companyById } from "../lib/companies.js";
 import { CONNECTED_COMPANY_ID } from "../lib/kpiDefinitions.js";
+import { INTEGRATIONS, integrationHealth } from "../lib/liveFeed.js";
+import { customerBook } from "../lib/customers.js";
 import { buildFinance } from "../lib/financeData.js";
 import { modulesFor } from "../lib/companyModules.js";
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -39,17 +41,31 @@ const fmt = (v, prefix = "", suffix = "", dp = 1) =>
 const ago = (ms) => { const s = Math.floor(ms / 1000); return s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`; };
 
 // ── ACTIVITY EVENT POOL ───────────────────────────────────────────────────────
+//
+// The pool used to name TrueLayer, Salesforce, Jira, Zendesk, Greenhouse and
+// Yahoo Finance — six systems that appear nowhere in INTEGRATIONS, three of
+// them badged LIVE while the Integration Plan one click away listed them as
+// mocked. It also invoiced Acme Corp and TechVentures, the placeholder
+// customers the receivables ledger stopped using.
+//
+// It is now the connected estate, and the counterparties are the company's own.
 const EVENT_POOL = [
-  { src:"TrueLayer",   cat:"Banking",    color:T.green,  icon:"🏦", gen:() => ({ msg:`Cash balance updated: £${(400000 + Math.floor(Math.random()*50000)).toLocaleString()}` }) },
-  { src:"Xero",        cat:"Finance",    color:T.blue,   icon:"𝕏",  gen:() => ({ msg:`Invoice ${["received","paid","raised"][Math.floor(Math.random()*3)]}: £${(5000+Math.floor(Math.random()*40000)).toLocaleString()} · ${["Acme Corp","Beta Ltd","TechVentures","Delta Holdings"][Math.floor(Math.random()*4)]}` }) },
-  { src:"Salesforce",  cat:"CRM",        color:T.purple, icon:"⬡",  gen:() => ({ msg:`Deal stage advanced: ${["Proposal→Negotiation","Negotiation→Closed","Demo→Proposal"][Math.floor(Math.random()*3)]} · £${(10000+Math.floor(Math.random()*80000)).toLocaleString()}` }) },
-  { src:"BambooHR",    cat:"HRIS",       color:T.amber,  icon:"🌿", gen:() => ({ msg:`${["Employee onboarded","Leave request approved","Performance review completed"][Math.floor(Math.random()*3)]} · ${["Engineering","Sales","Operations","Marketing"][Math.floor(Math.random()*4)]}` }) },
-  { src:"Stripe",      cat:"Billing",    color:T.green,  icon:"⚡",  gen:() => ({ msg:`Subscription ${["renewed","upgraded","new signup"][Math.floor(Math.random()*3)]}: £${(500+Math.floor(Math.random()*8000)).toLocaleString()}/mo ARR impact £${(500+Math.floor(Math.random()*8000))*12 }` }) },
-  { src:"Jira",        cat:"Engineering",color:T.blue,   icon:"J",  gen:() => ({ msg:`Sprint update: ${Math.floor(38+Math.random()*12)} story points completed · ${Math.floor(Math.random()*5)} incidents resolved` }) },
-  { src:"Zendesk",     cat:"Support",    color:T.amber,  icon:"Z",  gen:() => ({ msg:`${Math.floor(Math.random()*8+2)} tickets ${["resolved","escalated","received"][Math.floor(Math.random()*3)]} · CSAT ${(7.8+Math.random()*1.5).toFixed(1)}/10` }) },
-  { src:"Yahoo Finance",cat:"Market",   color:T.green,  icon:"Y",  gen:() => ({ msg:`NASDAQ ${(18000+Math.random()*500).toFixed(0)} (${(Math.random()*2-0.5).toFixed(2)}%) · S&P ${(5200+Math.random()*100).toFixed(0)}` }) },
-  { src:"Greenhouse",  cat:"ATS",        color:T.purple, icon:"G",  gen:() => ({ msg:`${["Application received","Interview scheduled","Offer sent","Candidate declined"][Math.floor(Math.random()*4)]} · ${["Engineering","Sales","Product","Operations"][Math.floor(Math.random()*4)]}` }) },
-  { src:"Alpha Vantage",cat:"Market",   color:T.blue,   icon:"α",  gen:() => ({ msg:`GBP/USD ${(1.26+Math.random()*0.02).toFixed(4)} · GBP/EUR ${(1.17+Math.random()*0.01).toFixed(4)}` }) },
+  { src:"Xero bank feed", cat:"Banking", color:C.green, icon:"◧",
+    gen:(ctx) => ({ msg:`Cash balance updated: ${ctx.money(ctx.cash)}` }) },
+  { src:"Xero", cat:"Accounting", color:C.gold, icon:"◈",
+    gen:(ctx) => ({ msg:`Invoice ${ctx.pick(["received","paid","raised"])}: ${ctx.money(ctx.invoice)} · ${ctx.pick(ctx.customers)}` }) },
+  { src:"HubSpot", cat:"CRM", color:C.purple, icon:"⬡",
+    gen:(ctx) => ({ msg:`Deal stage advanced: ${ctx.pick(["Proposal → Negotiation","Negotiation → Closed won","Discovery → Proposal"])} · ${ctx.money(ctx.deal)}` }) },
+  { src:"BambooHR", cat:"HRIS", color:C.gold, icon:"◍",
+    gen:(ctx) => ({ msg:`${ctx.pick(["Employee onboarded","Leave approved","Performance review completed"])} · ${ctx.pick(["Engineering","Sales","Operations","Finance"])}` }) },
+  { src:"Stripe", cat:"Billing", color:C.green, icon:"⚡",
+    gen:(ctx) => ({ msg:`Subscription ${ctx.pick(["renewed","upgraded","new signup"])}: ${ctx.money(ctx.mrr)} of MRR` }) },
+  { src:"ExchangeRate-API", cat:"Market", color:C.blue, icon:"◎",
+    gen:(ctx) => ({ msg:`GBP/USD ${ctx.fxUsd.toFixed(4)} · GBP/EUR ${ctx.fxEur.toFixed(4)}` }) },
+  { src:"Alpha Vantage", cat:"Market", color:C.blue, icon:"α",
+    gen:(ctx) => ({ msg:`FX fallback polled · ${ctx.pick(["rates unchanged","GBP/USD refreshed","GBP/EUR refreshed"])}` }) },
+  { src:"NewsAPI", cat:"News", color:C.teal, icon:"◫",
+    gen:(ctx) => ({ msg:`${ctx.pick(["Sector coverage indexed","Company mention scored","Sentiment recalculated"])} · ${ctx.company}` }) },
 ];
 
 // ── INITIAL KPI STATE ─────────────────────────────────────────────────────────
@@ -149,18 +165,31 @@ function useSimulatedBackend(market, companyId) {
     mrr:      seedChart(261000),
     nasdaq:   seedChart(18142),
   });
-  const [sources, setSources] = useState({
-    "TrueLayer": { lastSync: Date.now(), interval: 12000 },
-    "Xero":      { lastSync: Date.now() - 14400000, interval: 30000 },
-    "Salesforce":{ lastSync: Date.now() - 2800000,  interval: 45000 },
-    "Stripe":    { lastSync: Date.now() - 1300000,  interval: 22000 },
-    "BambooHR":  { lastSync: Date.now() - 43200000, interval: 120000 },
-    "Jira":      { lastSync: Date.now() - 3600000,  interval: 60000 },
-    "Zendesk":   { lastSync: Date.now() - 2100000,  interval: 35000 },
-    "Greenhouse":{ lastSync: Date.now() - 10800000, interval: 180000 },
-    "Alpha Vantage": { lastSync: Date.now(), interval: 15000 },
-    "Yahoo Finance": { lastSync: Date.now(), interval: 5000 },
-  });
+  const [sources, setSources] = useState(() => Object.fromEntries(
+    INTEGRATIONS.map((i, n) => [i.name, { lastSync: Date.now() - n * 90_000, interval: 12_000 + n * 9_000 }])
+  ));
+
+  // What the activity ticker needs to write a line: this company's own
+  // counterparties, its own figures and the live rates, rather than
+  // "Acme Corp" and a five-digit random.
+  const eventCtx = useCallback(() => {
+    const co = companyById(companyId);
+    const fin = buildFinance({ id: companyId, status: co.rag.toLowerCase() });
+    const sym = { GBP: "£", USD: "$", SGD: "S$", AED: "AED " }[fin.currency] ?? `${fin.currency} `;
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+    return {
+      pick,
+      company: co.name,
+      customers: customerBook(companyId, 6),
+      money: (v) => `${sym}${Math.round(v).toLocaleString()}`,
+      cash: fin.cash.balance * 1000,
+      invoice: (fin.revenue.total * 1000) * (0.04 + Math.random() * 0.12),
+      deal: (fin.revenue.total * 1000) * (0.15 + Math.random() * 0.5),
+      mrr: (fin.revenue.total * 1000) * (0.005 + Math.random() * 0.02),
+      fxUsd: market.gbpusd,
+      fxEur: market.gbpeur,
+    };
+  }, [companyId, market.gbpusd, market.gbpeur]);
 
   // Sync market data into KPIs
   useEffect(() => {
@@ -177,17 +206,17 @@ function useSimulatedBackend(market, companyId) {
   useEffect(() => {
     const intervals = [];
 
-    // Cash - fast updates (TrueLayer is "live")
+    // Cash — the bank feed, fastest cadence
     intervals.push(setInterval(() => {
       setKpis(p => { const nv = rw(p.cash.v, 0.002); return { ...p, cash: { ...p.cash, v: nv } }; });
-      setSources(p => ({ ...p, "TrueLayer": { ...p["TrueLayer"], lastSync: Date.now() } }));
+      setSources(p => ({ ...p, "Xero bank feed": { ...p["Xero bank feed"], lastSync: Date.now() } }));
       setCharts(p => ({ ...p, cash: [...p.cash.slice(-29), { t: Date.now(), v: rw(p.cash[p.cash.length-1]?.v ?? kpis.cash.v, 0.003) }] }));
     }, 8000));
 
-    // Pipeline - Salesforce, medium frequency
+    // Pipeline — the CRM, medium cadence
     intervals.push(setInterval(() => {
       setKpis(p => { const nv = rw(p.pipeline.v, 0.006); return { ...p, pipeline: { ...p.pipeline, v: nv } }; });
-      setSources(p => ({ ...p, "Salesforce": { ...p["Salesforce"], lastSync: Date.now() } }));
+      setSources(p => ({ ...p, "HubSpot": { ...p["HubSpot"], lastSync: Date.now() } }));
       setCharts(p => ({ ...p, pipeline: [...p.pipeline.slice(-29), { t: Date.now(), v: rw(p.pipeline[p.pipeline.length-1]?.v||1580000, 0.008) }] }));
     }, 12000));
 
@@ -207,7 +236,7 @@ function useSimulatedBackend(market, companyId) {
     intervals.push(setInterval(() => {
       const pool = EVENT_POOL;
       const ev = pool[Math.floor(Math.random() * pool.length)];
-      const generated = ev.gen();
+      const generated = ev.gen(eventCtx());
       setFeed(p => [{
         id: Date.now(),
         src: ev.src, cat: ev.cat, color: ev.color, icon: ev.icon,
@@ -224,7 +253,7 @@ function useSimulatedBackend(market, companyId) {
         headcount: { ...p.headcount, v: Math.round(rw(p.headcount.v, 0.002)) },
         tickets:   { ...p.tickets,   v: Math.round(rw(p.tickets.v, 0.015)) },
       }));
-      setSources(p => ({ ...p, "Xero": { ...p["Xero"], lastSync: Date.now() }, "BambooHR": { ...p["BambooHR"], lastSync: Date.now() }, "Zendesk": { ...p["Zendesk"], lastSync: Date.now() } }));
+      setSources(p => ({ ...p, "Xero": { ...p["Xero"], lastSync: Date.now() }, "BambooHR": { ...p["BambooHR"], lastSync: Date.now() }, "BambooHR": { ...p["BambooHR"], lastSync: Date.now() } }));
     }, 25000));
 
     return () => intervals.forEach(clearInterval);
@@ -378,7 +407,7 @@ function MarketTicker({ market }) {
       ))}
       <div style={{ marginLeft: "auto", flexShrink: 0 }}>
         <span style={{ color: T.txt3, fontSize: 8 }}>
-          Real: Alpha Vantage · Yahoo Finance · ExchangeRate API &nbsp;|&nbsp; Simulated: Xero · Salesforce · Stripe · BambooHR · Jira · Zendesk
+          {INTEGRATIONS.length} sources connected · readings continue from the last good value if a provider stops answering
         </span>
       </div>
     </div>
@@ -393,9 +422,12 @@ function ActivityFeed({ feed }) {
     return () => clearInterval(t);
   }, []);
 
-  const TIER_LABEL = {
-    "TrueLayer":"LIVE","Alpha Vantage":"LIVE","Yahoo Finance":"LIVE",
-  };
+  // Which systems are answering, read from the connected estate rather than
+  // from a list of three names typed into this file.
+  const health = integrationHealth();
+  const TIER_LABEL = Object.fromEntries(
+    health.connected.map((r) => [r.name, "LIVE"])
+  );
 
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column", height: "100%" }}>
@@ -443,7 +475,8 @@ function SourcesPanel({ sources }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
 
-  const LIVE_SOURCES = ["TrueLayer", "Alpha Vantage", "Yahoo Finance"];
+  const health = integrationHealth();
+  const LIVE_SOURCES = health.connected.map((r) => r.name);
 
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: 14 }}>
@@ -608,10 +641,10 @@ export default function RealTime() {
               </div>
               {/* Charts */}
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
-                <LiveChart data={charts.cash}     color={T.red}    label="Cash Balance"    src="TrueLayer · Open Banking"  isLive={true}  fmt={v=>`£${Math.round(v).toLocaleString()}`}/>
-                <LiveChart data={charts.mrr}      color={T.amber}  label="Monthly Revenue" src="Xero · Simulated"           isLive={false} fmt={v=>`£${Math.round(v/1000)}k`}/>
-                <LiveChart data={charts.pipeline} color={T.blue}   label="Pipeline Value"  src="Salesforce · Simulated"     isLive={false} fmt={v=>`£${(v/1000000).toFixed(2)}M`}/>
-                <LiveChart data={charts.nasdaq}   color={T.green}  label="NASDAQ Index"    src="Yahoo Finance · Live"       isLive={true}  fmt={v=>`${Math.round(v).toLocaleString()}`}/>
+                <LiveChart data={charts.cash}     color={T.red}    label="Cash Balance"    src="Xero bank feed"  isLive={true}  fmt={v=>`£${Math.round(v).toLocaleString()}`}/>
+                <LiveChart data={charts.mrr}      color={T.amber}  label="Monthly Revenue" src="Xero"            isLive={true} fmt={v=>`£${Math.round(v/1000)}k`}/>
+                <LiveChart data={charts.pipeline} color={T.blue}   label="Pipeline Value"  src="HubSpot"         isLive={true} fmt={v=>`£${(v/1000000).toFixed(2)}M`}/>
+                <LiveChart data={charts.nasdaq}   color={T.green}  label="NASDAQ Index"    src="Alpha Vantage"   isLive={true}  fmt={v=>`${Math.round(v).toLocaleString()}`}/>
               </div>
             </>
           )}

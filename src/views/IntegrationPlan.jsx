@@ -361,7 +361,7 @@ function IntCard({ itg, expanded, toggle }) {
 function ConnectedSources() {
   const health = integrationHealth();
   return (
-    <div style={{ background:"#0f1525", border:`1px solid ${T.border}`, borderRadius:8, marginBottom:14 }}>
+    <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, marginBottom:14 }}>
       <div style={{ padding:"11px 14px", borderBottom:`1px solid ${T.border}`, display:"flex",
                     justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap" }}>
         <div>
@@ -371,7 +371,7 @@ function ConnectedSources() {
             last reading and are relabelled — nothing blanks.
           </div>
         </div>
-        <span style={{ color:"#00c97a", fontSize:10, fontWeight:600 }}>● {health.summary.text}</span>
+        <span style={{ color:C.green, fontSize:S.small, fontWeight:600 }}>● {health.summary.text}</span>
       </div>
       <div style={{ padding:12, overflowX:"auto" }}>
         <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, minWidth:520 }}>
