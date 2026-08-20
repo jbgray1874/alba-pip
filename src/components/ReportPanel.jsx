@@ -19,6 +19,7 @@
 import { useEffect, useMemo } from "react";
 import { C, F, S, label as labelStyle } from "../lib/theme.js";
 import { Chip, Button } from "./Shell.jsx";
+import { Mark } from "./Marque.jsx";
 import { reportToHtml, downloadReport } from "../lib/reports.js";
 
 /** Roughly how many characters of this report fit on a printed page. */
@@ -215,10 +216,14 @@ export default function ReportPanel({ report, onClose }) {
                           padding: "30px 34px 26px", fontFamily: F.serif, color: C.ink1,
                           boxShadow: `0 14px 44px ${C.paperShadow}` }}>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline",
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center",
                             color: C.ink3, fontFamily: F.sans, fontSize: 8.5, letterSpacing: "0.2em",
                             textTransform: "uppercase", fontWeight: 600 }}>
-                <span>Alba PIP · Portfolio Intelligence</span>
+                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  {/* On paper the mark is ink on cream, not white on black. */}
+                  <Mark size={17} colour={C.ink1} ground={C.paper} drawn />
+                  <span>Alba PIP · Portfolio Intelligence</span>
+                </span>
                 <span>{report.preparedAt}</span>
               </div>
               <Rule heavy />
