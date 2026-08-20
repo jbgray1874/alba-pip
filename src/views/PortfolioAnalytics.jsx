@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { C, F } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, ProvenanceBar } from "../components/Shell.jsx";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
          LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { forAnalytics } from "../lib/companies.js";
@@ -69,7 +70,7 @@ function RAGHeatmap() {
   function score2color(s) {
     if (s >= 80) return T.green;
     if (s >= 60) return T.amber;
-    if (s >= 40) return "#E89B30";
+    if (s >= 40) return C.gold;
     return T.red;
   }
 
@@ -106,7 +107,7 @@ function RAGHeatmap() {
                         background: score2color(s),
                         opacity: isHover ? 1 : 0.75,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 10, color: "#000", fontWeight: 700,
+                        fontSize: 10, color: C.goldOn, fontWeight: 700,
                         cursor: "default", transition: "opacity 0.15s",
                         boxShadow: isHover ? `0 0 8px ${score2color(s)}` : "none",
                       }}>
@@ -124,7 +125,7 @@ function RAGHeatmap() {
         </table>
       </div>
       <div style={{ display: "flex", gap: 16, marginTop: 12, justifyContent: "flex-end" }}>
-        {[["≥80 Green", T.green], ["60–79 Amber", T.amber], ["40–59 Warning", "#E89B30"], ["<40 Red", T.red]].map(([l, c]) => (
+        {[["≥80 Green", T.green], ["60–79 Amber", T.amber], ["40–59 Warning", C.gold], ["<40 Red", T.red]].map(([l, c]) => (
           <div key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: c }} />
             <span style={{ fontSize: 9, color: T.txt3 }}>{l}</span>
@@ -332,7 +333,7 @@ function AttentionPanel() {
     setLoading(false);
   }
 
-  const sevColor = { critical: T.red, high: T.amber, medium: "#E0C088" };
+  const sevColor = { critical: C.red, high: C.gold, medium: C.txt2 };
 
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: 20, marginBottom: 24 }}>
@@ -451,7 +452,7 @@ ${pack.actions.map(a => `<div class="action"><span>${a.action}</span><div style=
             {COMPANIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           <button onClick={generate} disabled={generating}
-            style={{ padding: "6px 16px", background: T.gold, border: "none", color: "#0B0F1C", borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+            style={{ padding: "6px 16px", background: C.gold, border: "none", color: C.goldOn, borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
             {generating ? "Generating…" : "Generate Pack"}
           </button>
           {pack && (
@@ -623,32 +624,34 @@ export default function PortfolioAnalytics() {
     { id: "boardpack", l: "Board Pack" },
   ];
 
+  const liveSources = [stripe?.connected && "Stripe", hubspot?.connected && "HubSpot"].filter(Boolean);
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", padding: "28px 32px", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color: T.txt1 }}>
+    <Page>
       <style>{`@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}`}</style>
 
-      {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 10, color: T.gold, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>Caledonia Alba · Portfolio Intelligence</div>
-        <h1 style={{ margin: 0, fontFamily: F.serif, fontSize: 28, color: T.txt1 }}>Portfolio Analytics</h1>
-        <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>
-          Fund overview · Scenario modelling · Returns · Board packs
-          {stripe?.connected && <span style={{ marginLeft: 12, color: T.green }}>● Stripe live</span>}
-          {hubspot?.connected && <span style={{ marginLeft: 12, color: T.green }}>● HubSpot live</span>}
-        </div>
-      </div>
+      <PageHeader
+        crumbs={["Intelligence", "Analytics"]}
+        title="Portfolio Analytics"
+        chips={liveSources.length
+          ? <Chip tone="green">{liveSources.join(" + ")} live</Chip>
+          : <Chip tone="muted">Pinned data</Chip>}
+        purpose="Fund overview, scenario modelling, returns and board packs across the whole portfolio"
+        meta={`${COMPANIES.length} companies · restated into the reporting currency · ${liveSources.length ? `${liveSources.join(" and ")} connected` : "no live connector attached"}`}
+      />
 
       {/* Fund KPI Banner — always visible */}
       <KPIBanner stripe={stripe} />
 
       {/* Tab nav */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 24, background: T.card, borderRadius: 8, padding: 4, width: "fit-content" }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: "7px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 500,
-              background: tab === t.id ? T.gold : "transparent",
-              color: tab === t.id ? "#0B0F1C" : T.txt2, transition: "all 0.15s" }}>
-            {t.l}
+      <div style={{ display: "flex", gap: 5, marginBottom: 16, flexWrap: "wrap" }}>
+        {TABS.map(x => (
+          <button key={x.id} onClick={() => setTab(x.id)}
+            style={{ padding: "6px 13px", borderRadius: 4, cursor: "pointer", fontFamily: F.sans,
+              fontSize: S.label, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase",
+              background: tab === x.id ? C.gold : "transparent",
+              border: `1px solid ${tab === x.id ? C.gold : C.borderLt}`,
+              color: tab === x.id ? C.goldOn : C.txt2 }}>
+            {x.l}
           </button>
         ))}
       </div>
@@ -668,6 +671,13 @@ export default function PortfolioAnalytics() {
       {tab === "scenario" && <ScenarioPlanner />}
       {tab === "returns" && <IRRTable />}
       {tab === "boardpack" && <BoardPackExport />}
-    </div>
+
+      <ProvenanceBar items={[
+        `${COMPANIES.length} companies from the registry`,
+        "Scenario levers recompute the model",
+        "Returns from the holding data, not assumed",
+        liveSources.length ? `${liveSources.join(" and ")} connected` : "Rates pinned for the demo",
+      ]} />
+    </Page>
   );
 }

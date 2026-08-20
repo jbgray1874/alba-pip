@@ -11,6 +11,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { C, F } from "../lib/theme.js";
+import { Page, PageHeader, Chip, ProvenanceBar } from "../components/Shell.jsx";
 import { useMemo } from "react";
 import { COMPANIES, FUNDS, financeOf } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
@@ -106,19 +107,14 @@ export default function UserGuide({ onNavigate }) {
   );
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "22px 26px", background: T.bg, maxWidth: 980 }}>
-
-      <div style={{ marginBottom: 22, paddingBottom: 16, borderBottom: `1px solid ${T.border}` }}>
-        <div style={{ color: T.blue, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>
-          Alba · Portfolio Intelligence
-        </div>
-        <h1 style={{ color: T.txt1, fontSize: 22, fontWeight: 700, margin: 0, fontFamily: F.serif }}>User guide</h1>
-        <div style={{ color: T.txt2, fontSize: 12, marginTop: 8, lineHeight: 1.6, maxWidth: 700 }}>
-          {COMPANIES.length} companies across {FUNDS.length} funds — {red} red, {amber} amber, {green} green.
-          Every figure on every screen is calculated from one finance model, so a number
-          shown in two places is the same number. Nothing here is typed in by hand.
-        </div>
-      </div>
+    <Page maxWidth={1000}>
+      <PageHeader
+        crumbs={["Reports", "User Guide"]}
+        title="User Guide"
+        chips={<Chip tone="gold">{COMPANIES.length} companies · {FUNDS.length} funds</Chip>}
+        purpose="Every figure on every screen is calculated from one finance model, so a number shown in two places is the same number. Nothing here is typed in by hand."
+        meta={`${red} red · ${amber} amber · ${green} green — read from the registry, not written down`}
+      />
 
       {/* ── 1 · The two landing pages ───────────────────────────────────── */}
       <Section n="1" title="The two landing pages"
@@ -455,10 +451,12 @@ export default function UserGuide({ onNavigate }) {
         </Card>
       </Section>
 
-      <div style={{ color: T.txt3, fontSize: 10, marginTop: 24, paddingTop: 14, borderTop: `1px solid ${T.border}`, lineHeight: 1.6 }}>
-        This guide reads the live portfolio registry — the company list, fund names, status counts and
-        walkthrough figures above update when the data does.
-      </div>
-    </div>
+      <ProvenanceBar items={[
+        "This guide reads the live portfolio registry",
+        "Company names, fund names and status counts update with the data",
+        "Walkthrough figures are computed, not transcribed",
+        "Every link opens the screen it describes",
+      ]} />
+    </Page>
   );
 }

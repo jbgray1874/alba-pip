@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { PageHeader, Chip, Metric } from "../components/Shell.jsx";
 import { buildInvestigation, investigationTargets } from "../lib/investigation.js";
 import { COMPANIES } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
@@ -513,31 +514,27 @@ export default function Agents() {
   const DEMO_TABS=[{id:"investigate",l:"🔍 Investigation Agent"},{id:"qa",l:"💬 Portfolio Q&A"},{id:"boardpack",l:"📋 Board Pack Agent"}];
 
   return (
-    <div style={{background:T.bg,minHeight:"100vh",fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:T.txt1}}>
+    <div style={{background:C.bg,height:"100%",display:"flex",flexDirection:"column",color:C.txt1,overflow:"hidden"}}>
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}`}</style>
 
-      {/* Header */}
-      <div style={{padding:"20px 28px",borderBottom:`1px solid ${T.border}`}}>
-        <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.2em",textTransform:"uppercase",marginBottom:4}}>Alba PIP · AI Layer</div>
-        <h1 style={{fontSize:20,fontWeight:800,margin:0}}>AI Agents</h1>
-        <div style={{color:T.txt3,fontSize:11,marginTop:4}}>Autonomous systems that act, not just answer · {protoCount} buildable this week · {AGENTS.length-protoCount} for production</div>
+      <div style={{padding:"20px 24px 0",flexShrink:0}}>
+        <PageHeader
+          crumbs={["Actions", "AI Agents"]}
+          title="AI Agents"
+          chips={<Chip tone="green">{protoCount} buildable this week</Chip>}
+          purpose="Autonomous systems that act on the data rather than answer questions about it"
+          meta={`${AGENTS.length} agents · ${AGENTS.length-protoCount} for production · every prompt is grounded in the finance model server-side`}
+        />
+
+        <div style={{display:"flex",gap:9,flexWrap:"wrap",marginBottom:14}}>
+          <Metric label="Total agents" value={AGENTS.length} sub="Across investigation, reporting and monitoring" />
+          <Metric label="Prototype this week" value={protoCount} tone={C.green} sub="Buildable on the current data model" />
+          <Metric label="Production" value={AGENTS.length-protoCount} tone={C.gold} sub="Need connectors or approval flows" />
+          <Metric label="Live demos below" value={3} tone={C.blue} sub="Investigation · Q&A · Board pack" />
+        </div>
       </div>
 
-      {/* Stats */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,padding:"14px 28px",borderBottom:`1px solid ${T.border}`}}>
-        {[
-          {l:"Total agents",      v:AGENTS.length,       c:T.txt1},
-          {l:"Prototype this week",v:protoCount,          c:T.green},
-          {l:"Production",        v:AGENTS.length-protoCount,c:T.amber},
-          {l:"Live demos below",  v:3,                    c:T.blue},
-          {l:"Powered by Claude", v:AGENTS.length,        c:T.purple},
-        ].map(s=><div key={s.l} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px"}}>
-          <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:4}}>{s.l}</div>
-          <div style={{color:s.c,fontSize:20,fontWeight:800,fontFamily:"monospace"}}>{s.v}</div>
-        </div>)}
-      </div>
-
-      <div style={{display:"grid",gridTemplateColumns:"1fr 380px",gap:0,height:"calc(100vh - 200px)",overflow:"hidden"}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 380px",gap:0,flex:1,minHeight:0,overflow:"hidden",borderTop:`1px solid ${C.border}`}}>
 
         {/* Left: agent list */}
         <div style={{overflowY:"auto",padding:"16px 28px",borderRight:`1px solid ${T.border}`}}>

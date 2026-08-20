@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { C } from "../lib/theme.js";
+import { C, F, S, label as labelStyle } from "../lib/theme.js";
+import { Chip, Button } from "../components/Shell.jsx";
 import { COMPANIES, companyById } from "../lib/companies.js";
 import { CONNECTED_COMPANY_ID } from "../lib/kpiDefinitions.js";
 import { buildFinance } from "../lib/financeData.js";
@@ -538,7 +539,7 @@ export default function RealTime() {
   ];
 
   return (
-    <div style={{ background:T.bg, height:"100%", display:"flex", flexDirection:"column", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif", color:T.txt1, overflow:"hidden" }}>
+    <div style={{ background:T.bg, height:"100%", display:"flex", flexDirection:"column", color:C.txt1, overflow:"hidden" }}>
       <style>{STYLES}</style>
 
       {/* Market ticker */}
@@ -553,27 +554,40 @@ export default function RealTime() {
           </span>
         </div>
         {!xeroConnected && (
-          <a href="/api/xero/connect" style={{ padding:"6px 16px", background:"#13B5EA", borderRadius:6, color:"#fff", textDecoration:"none", fontSize:11, fontWeight:700 }}>Connect Xero →</a>
+          <a href="/api/xero/connect" style={{ padding:"6px 13px", background:C.gold, borderRadius:4, color:C.goldOn, textDecoration:"none", fontFamily:F.sans, fontSize:S.label, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase" }}>Connect Xero →</a>
         )}
       </div>
 
       {/* Header */}
-      <div style={{ padding:"10px 24px", borderBottom:`1px solid ${T.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div>
-          <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase" }}>Caledonia Alba</div>
-          <div style={{ display:"flex", alignItems:"center", gap:9, flexWrap:"wrap" }}>
-            <div style={{ color:T.txt1, fontSize:16, fontWeight:800 }}>Real-Time Portfolio Intelligence</div>
+      <div style={{ padding:"12px 24px", borderBottom:`1px solid ${C.border}`, display:"flex",
+                    alignItems:"center", justifyContent:"space-between", gap:14, flexWrap:"wrap", flexShrink:0 }}>
+        <div style={{ minWidth:0 }}>
+          <div style={{ color:C.txt3, fontSize:S.small, marginBottom:4 }}>
+            Portfolio<span style={{ margin:"0 6px", color:C.border }}>/</span>Live Data
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
+            <h1 style={{ color:C.txt1, fontSize:S.h1, fontWeight:400, margin:0, letterSpacing:"-0.02em" }}>
+              Live Data
+            </h1>
             <select value={companyId} onChange={(e)=>setCompanyId(e.target.value)}
-                    style={{ background:T.card, color:T.txt1, border:`1px solid ${T.border}`, borderRadius:5,
-                             padding:"4px 7px", fontSize:11, fontFamily:"inherit", cursor:"pointer" }}>
+                    style={{ background:C.surface, color:C.txt1, border:`1px solid ${C.borderLt}`, borderRadius:4,
+                             padding:"5px 8px", fontSize:S.small, fontFamily:F.sans, cursor:"pointer" }}>
               {COMPANIES.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
+          <div style={{ color:C.txt2, fontSize:S.body, marginTop:5 }}>
+            Continuous readings that keep moving whether or not a provider is answering
+          </div>
         </div>
-        <div style={{ display:"flex", gap:4 }}>
-          {TABS.map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{ padding:"6px 14px", background:tab===t.id?T.blue:"transparent", border:`1px solid ${tab===t.id?T.blue:T.border}`, borderRadius:6, color:tab===t.id?"#fff":T.txt3, cursor:"pointer", fontSize:10, fontWeight:tab===t.id?700:400 }}>
-              {t.l}
+        <div style={{ display:"flex", gap:5, flexWrap:"wrap" }}>
+          {TABS.map(x=>(
+            <button key={x.id} onClick={()=>setTab(x.id)}
+                    style={{ padding:"6px 13px", borderRadius:4, cursor:"pointer", fontFamily:F.sans,
+                             fontSize:S.label, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase",
+                             background: tab===x.id ? C.gold : "transparent",
+                             border:`1px solid ${tab===x.id ? C.gold : C.borderLt}`,
+                             color: tab===x.id ? C.goldOn : C.txt2 }}>
+              {x.l}
             </button>
           ))}
         </div>
