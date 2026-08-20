@@ -52,7 +52,7 @@ function Tile({ feed }) {
 export default function LiveStrip({ specs, note }) {
   const feeds = useLiveFeeds(specs);
   const health = useMemo(() => integrationHealth(), []);
-  const tone = { expired: "#ff3d5a", expiring: "#f5a524", connected: "#00c97a" }[health.summary.tone];
+  const tone = { expired: "#f5a524", expiring: "#f5a524", connected: "#00c97a" }[health.summary.tone];
 
   return (
     <div style={{ marginBottom: 12 }}>

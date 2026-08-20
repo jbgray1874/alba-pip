@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { integrationHealth, AS_OF_DATE } from "../lib/liveFeed.js";
+import { integrationHealth } from "../lib/liveFeed.js";
 
 const T = {
   bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
@@ -339,45 +339,41 @@ function IntCard({ itg, expanded, toggle }) {
 }
 
 // ── MAIN ──────────────────────────────────────────────────────────────────────
-// The credential estate, as at the platform's as-of date. This is the screen
-// that answers "what happens when a licence lapses" — an expired integration
-// does not blank its figures, it stops being a live source and its readings
-// continue from the last good value under a SIMULATED label.
-function CredentialEstate() {
+// Connected sources and what each one feeds. Credential lifecycle is not shown:
+// until the platform reads real token state from the providers, an expiry date
+// here would be a number someone typed, and a red chip on a demo screen is a
+// claim about an account nobody in the room can check.
+function ConnectedSources() {
   const health = integrationHealth();
-  const tone = { expired:"#ff3d5a", expiring:"#f5a524", connected:"#00c97a" }[health.summary.tone];
   return (
-    <div style={{ background:T.card ?? "#0f1525", border:`1px solid ${T.border}`, borderRadius:8, marginBottom:14 }}>
+    <div style={{ background:"#0f1525", border:`1px solid ${T.border}`, borderRadius:8, marginBottom:14 }}>
       <div style={{ padding:"11px 14px", borderBottom:`1px solid ${T.border}`, display:"flex",
                     justifyContent:"space-between", alignItems:"center", gap:10, flexWrap:"wrap" }}>
         <div>
-          <div style={{ color:T.txt1, fontSize:12, fontWeight:600 }}>Credential estate</div>
+          <div style={{ color:T.txt1, fontSize:12, fontWeight:600 }}>Connected sources</div>
           <div style={{ color:T.txt3, fontSize:9, marginTop:2 }}>
-            Tokens, keys and licences as at {AS_OF_DATE}. An expired credential degrades its feed — it never blanks it.
+            What each system feeds into the platform. If a source stops answering, its figures continue from the
+            last reading and are relabelled — nothing blanks.
           </div>
         </div>
-        <span style={{ color:tone, fontSize:10, fontWeight:600 }}>● {health.summary.text}</span>
+        <span style={{ color:"#00c97a", fontSize:10, fontWeight:600 }}>● {health.summary.text}</span>
       </div>
       <div style={{ padding:12, overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, minWidth:640 }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11, minWidth:520 }}>
           <thead><tr style={{ color:T.txt3, fontSize:9, textAlign:"left" }}>
-            {["System","Type","Credential","Expires","Status","What it feeds","On expiry"].map(h=>
+            {["System","Type","Status","What it feeds"].map(h=>
               <th key={h} style={{ padding:"6px 9px", fontWeight:400, borderBottom:`1px solid ${T.border}` }}>{h}</th>)}
           </tr></thead>
           <tbody>{health.rows.map(r=>(
             <tr key={r.id} style={{ borderBottom:`1px solid ${T.border}55` }}>
               <td style={{ padding:"7px 9px", color:T.txt1 }}>{r.name}</td>
               <td style={{ padding:"7px 9px", color:T.txt3 }}>{r.kind}</td>
-              <td style={{ padding:"7px 9px", color:T.txt3, fontSize:10 }}>{r.credential}</td>
-              <td style={{ padding:"7px 9px", color:T.txt2, fontVariantNumeric:"tabular-nums" }}>{r.expires ?? "—"}</td>
               <td style={{ padding:"7px 9px" }}>
                 <span style={{ color:r.licence.colour, fontSize:9, fontWeight:700, padding:"2px 7px",
-                               border:`1px solid ${r.licence.colour}44`, background:`${r.licence.colour}14`, borderRadius:3, whiteSpace:"nowrap" }}>
-                  {r.licence.label}{r.licence.days != null ? ` · ${r.licence.days < 0 ? `${Math.abs(r.licence.days)}d ago` : `${r.licence.days}d`}` : ""}
-                </span>
+                               border:`1px solid ${r.licence.colour}44`, background:`${r.licence.colour}14`,
+                               borderRadius:3, whiteSpace:"nowrap" }}>{r.licence.label}</span>
               </td>
               <td style={{ padding:"7px 9px", color:T.txt3, fontSize:10 }}>{r.feeds.join(" · ")}</td>
-              <td style={{ padding:"7px 9px", color:T.txt3, fontSize:9.5, lineHeight:1.5 }}>{r.licence.note}</td>
             </tr>))}
           </tbody>
         </table>
@@ -393,7 +389,7 @@ export default function IntegrationPlan() {
 
   return (
     <div style={{ background:T.bg, minHeight:"100%", fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color:T.txt1 }}>
-      <div style={{ padding:"16px 22px 0" }}><CredentialEstate/></div>
+      <div style={{ padding:"16px 22px 0" }}><ConnectedSources/></div>
       {/* Header */}
       <div style={{ padding:"20px 28px", borderBottom:`1px solid ${T.border}` }}>
         <div style={{ color:T.txt3, fontSize:9, letterSpacing:"0.2em", textTransform:"uppercase", marginBottom:4 }}>Caledonia Alba · Portfolio Intelligence Platform</div>

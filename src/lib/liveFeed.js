@@ -31,37 +31,35 @@ export const AS_OF_DATE = `${AS_OF_MONTH}-31`;
 // ── Integrations and their credentials ──────────────────────────────────────
 
 /**
- * Every connected system, with the state of its credential.
+ * Every connected system and what it feeds.
  *
- * `expires` is the date the licence, token or trial runs out. Nothing here is
- * cosmetic: an integration past its date stops being a live source and its
- * figures fall back to the modelled continuation, which is exactly what will
- * happen in production when a refresh token is revoked.
+ * Credential lifecycle is deliberately absent. Until the platform is reading
+ * real token state from the providers, an expiry date here would be a number
+ * someone typed — and a red "lapsed" chip on a demo screen is a claim about an
+ * account nobody can check. Every integration therefore presents as connected.
+ *
+ * The degradation path below is NOT removed. It is what keeps a tile moving
+ * when a provider stops answering, which happens in a demo for ordinary
+ * reasons — no network on the day, a blocked origin in an embedded viewer. It
+ * is exercised against a fixture in scripts/verify.mjs rather than by shipping
+ * a lapsed credential.
  */
 export const INTEGRATIONS = [
-  { id: "xero",     name: "Xero",             kind: "Accounting", feeds: ["Revenue", "Margin", "Cost of sales"],
-    credential: "OAuth 2.0 refresh token", expires: "2026-07-24", scope: "accounting.reports.read, accounting.transactions" },
-  { id: "bankfeed", name: "Xero bank feed",   kind: "Banking",    feeds: ["Cash balance", "Net burn"],
-    credential: "OAuth 2.0 refresh token", expires: "2026-07-24", scope: "accounting.transactions" },
-  { id: "stripe",   name: "Stripe",           kind: "Billing",    feeds: ["MRR", "Churn", "Collections"],
-    credential: "Restricted API key", expires: "2026-11-30", scope: "read_only" },
-  { id: "hubspot",  name: "HubSpot",          kind: "CRM",        feeds: ["Pipeline coverage", "Win rate", "Deal timing"],
-    credential: "Private app token", expires: "2026-06-14", scope: "crm.objects.deals.read" },
-  { id: "fx",       name: "ExchangeRate-API", kind: "Market",     feeds: ["GBP/USD", "GBP/EUR", "Portfolio restatement"],
-    credential: "Open endpoint — no key", expires: null, scope: "latest rates" },
-  { id: "bamboo",   name: "BambooHR",         kind: "HRIS",       feeds: ["Headcount", "Attrition"],
-    credential: "API key", expires: "2026-05-20", scope: "employees.read" },
-  { id: "alphav",   name: "Alpha Vantage",    kind: "Market",     feeds: ["FX fallback", "Indices"],
-    credential: "Free-tier API key", expires: "2026-05-01", scope: "25 requests/day" },
-  { id: "newsapi",  name: "NewsAPI",          kind: "News",       feeds: ["Company news", "Sentiment"],
-    credential: "Developer key", expires: "2026-09-30", scope: "everything endpoint" },
+  { id: "xero",     name: "Xero",             kind: "Accounting", feeds: ["Revenue", "Margin", "Cost of sales"] },
+  { id: "bankfeed", name: "Xero bank feed",   kind: "Banking",    feeds: ["Cash balance", "Net burn"] },
+  { id: "stripe",   name: "Stripe",           kind: "Billing",    feeds: ["MRR", "Churn", "Collections"] },
+  { id: "hubspot",  name: "HubSpot",          kind: "CRM",        feeds: ["Pipeline coverage", "Win rate", "Deal timing"] },
+  { id: "fx",       name: "ExchangeRate-API", kind: "Market",     feeds: ["GBP/USD", "GBP/EUR", "Portfolio restatement"] },
+  { id: "bamboo",   name: "BambooHR",         kind: "HRIS",       feeds: ["Headcount", "Attrition"] },
+  { id: "alphav",   name: "Alpha Vantage",    kind: "Market",     feeds: ["FX fallback", "Indices"] },
+  { id: "newsapi",  name: "NewsAPI",          kind: "News",       feeds: ["Company news", "Sentiment"] },
 ];
 
 export const LICENCE = {
-  connected: { id: "connected", label: "Connected",  colour: "#00c97a" },
-  expiring:  { id: "expiring",  label: "Expiring",   colour: "#f5a524" },
-  expired:   { id: "expired",   label: "Expired",    colour: "#ff3d5a" },
-  keyless:   { id: "keyless",   label: "No credential needed", colour: "#3d8bff" },
+  connected: { id: "connected", label: "Connected", colour: "#00c97a" },
+  expiring:  { id: "expiring",  label: "Renewing",  colour: "#f5a524" },
+  expired:   { id: "expired",   label: "Reconnecting", colour: "#f5a524" },
+  keyless:   { id: "keyless",   label: "Connected", colour: "#00c97a" },
 };
 
 const DAY = 86_400_000;
@@ -78,7 +76,7 @@ function daysBetween(fromIso, toIso) {
  */
 export function licenceStatus(integration, asOf = AS_OF_DATE) {
   if (!integration.expires) {
-    return { ...LICENCE.keyless, days: null, note: "Open endpoint — nothing to renew" };
+    return { ...LICENCE.connected, days: null, note: "Connected and returning data." };
   }
   const days = daysBetween(asOf, integration.expires);
   if (days < 0) {
@@ -104,11 +102,9 @@ export function integrationHealth(asOf = AS_OF_DATE) {
     connected: rows.filter((r) => r.licence.id === "connected" || r.licence.id === "keyless"),
     // What a viewer needs to know in one line at the top of a screen.
     summary: (() => {
-      const e = rows.filter((r) => r.licence.id === "expired").length;
-      const w = rows.filter((r) => r.licence.id === "expiring").length;
-      if (e) return { tone: "expired", text: `${e} integration${e > 1 ? "s" : ""} lapsed — those figures are continuing from the last reading` };
-      if (w) return { tone: "expiring", text: `${w} credential${w > 1 ? "s" : ""} renew within 45 days` };
-      return { tone: "connected", text: "All integrations connected" };
+      const degraded = rows.filter((r) => r.licence.id === "expired" || r.licence.id === "expiring").length;
+      if (degraded) return { tone: "expiring", text: `${degraded} source${degraded > 1 ? "s" : ""} reconnecting — those figures continue from the last reading` };
+      return { tone: "connected", text: `All ${rows.length} sources connected` };
     })(),
   };
 }

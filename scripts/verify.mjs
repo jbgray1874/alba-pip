@@ -592,35 +592,6 @@ check("two tiles never move in lockstep", () => {
   return a.some((v, i) => Math.abs(v - b[i]) > 0.5) || "every tile is drawing the same curve";
 });
 
-check("licence state is derived from the expiry date, not typed", () => {
-  const asOf = "2026-05-31";
-  for (const i of INTEGRATIONS) {
-    const st = licenceStatus(i, asOf);
-    if (!i.expires) { if (st.id !== "keyless") return `${i.name}: no expiry but status ${st.id}`; continue; }
-    const past = Date.parse(i.expires) < Date.parse(asOf);
-    if (past && st.id !== "expired") return `${i.name} expired ${i.expires} but reads ${st.id}`;
-    if (!past && st.id === "expired") return `${i.name} is valid until ${i.expires} but reads expired`;
-    if (!st.note || st.note.length < 20) return `${i.name}: no explanation of what its state means`;
-  }
-  return true;
-});
-
-check("the estate contains something lapsed and something expiring, or it proves nothing", () => {
-  const h = integrationHealth("2026-05-31");
-  if (!h.expired.length) return "no integration is lapsed — the degradation path is never exercised";
-  if (!h.expiring.length) return "nothing is close to expiry — the warning path is never exercised";
-  if (!h.connected.length) return "nothing is connected";
-  return true;
-});
-
-check("a lapsed credential degrades its feed rather than blanking it", () => {
-  const h = integrationHealth("2026-05-31");
-  for (const r of h.expired) {
-    if (!/continu/i.test(r.licence.note)) return `${r.name}: its expiry note does not say the figures continue`;
-    if (!r.feeds?.length) return `${r.name}: nothing records what it feeds, so nothing knows what to continue`;
-  }
-  return true;
-});
 
 // ── 9. Serverless imports ───────────────────────────────────────────────────
 section("Serverless — the API functions can reach the finance model");
@@ -818,6 +789,43 @@ check("both landing pages are real views", () => {
 const commandSrc = await codeOf("../src/views/CommandCentre.jsx");
 const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
 const guideSrc = await codeOf("../src/views/UserGuide.jsx");
+const integrationSrc = await codeOf("../src/views/IntegrationPlan.jsx");
+const stripSrc = await codeOf("../src/components/LiveStrip.jsx");
+
+check("no credential lifecycle is shown to a viewer", () => {
+  // Until the platform reads real token state from the providers, an expiry
+  // date here is a number someone typed, and a red chip on a demo screen is a
+  // claim about an account nobody in the room can check.
+  const dated = INTEGRATIONS.filter((i) => i.expires).map((i) => i.name);
+  if (dated.length) return `carrying typed expiry dates: ${dated.join(", ")}`;
+  const h = integrationHealth();
+  if (h.expired.length || h.expiring.length) return "an integration presents as lapsed or expiring";
+  if (h.connected.length !== INTEGRATIONS.length) return "not every source presents as connected";
+  return true;
+});
+
+check("no screen renders an expiry date or a lapsed chip", () => {
+  const offenders = [];
+  for (const [file, src] of [["IntegrationPlan.jsx", integrationSrc], ["UserGuide.jsx", guideSrc],
+                             ["LiveStrip.jsx", stripSrc]]) {
+    if (/\bexpires\b|\bExpired\b|\blapsed\b|AS_OF_DATE/.test(src)) offenders.push(file);
+  }
+  return offenders.length === 0 || `${offenders.join(", ")} still surfaces credential lifecycle`;
+});
+
+check("the degradation path still works when a source stops answering", () => {
+  // Exercised against a fixture rather than by shipping a lapsed credential.
+  // A provider going quiet is an ordinary demo event — no network on the day,
+  // a blocked origin in an embedded viewer — and the tile must keep moving.
+  const fixture = { id: "fixture", name: "Fixture", kind: "Test", feeds: ["Test"], expires: "2020-01-01" };
+  const st = licenceStatus(fixture, "2026-05-31");
+  if (st.id !== "expired") return `a source ${Math.round((Date.parse("2026-05-31") - Date.parse("2020-01-01")) / 86400000)} days past its date reads ${st.id}`;
+  if (!/continu/i.test(st.note)) return "the degraded note does not say the figures continue";
+  const vals = Array.from({ length: 30 }, (_, t) => readingAt("fixture-feed", 500, 0.004, t));
+  for (let i = 1; i < vals.length; i++) if (vals[i] === vals[i - 1]) return "a degraded feed freezes";
+  return true;
+});
+
 
 check("the live strip is on the screens a partner actually uses", () => {
   const missing = [];
