@@ -78,6 +78,9 @@ export default function App() {
   const [prefs, setPrefs] = useState(loadPrefs)
   const [view, setView]   = useState(prefs.home)
   const [collapsed, setCollapsed] = useState(false)
+  // Which company Portfolio Health handed over, if any. Cleared when the GP
+  // Dashboard is opened from the sidebar so it lands on the portfolio list.
+  const [openCompany, setOpenCompany] = useState(null)
   const active = VIEWS.find(v => v.id === view)
 
   const setHome  = (id)    => { setPrefs(savePrefs({ home: id })); setView(id) }
@@ -176,7 +179,7 @@ export default function App() {
 
         {/* Nav items */}
         {VIEWS.map(v => (
-          <button key={v.id} onClick={() => setView(v.id)} title={v.label}
+          <button key={v.id} onClick={() => { if (v.id === 'gp') setOpenCompany(null); setView(v.id) }} title={v.label}
             style={{
               display:'flex', alignItems:'center', gap:10,
               padding: collapsed ? '9px 0' : '9px 12px',
@@ -278,13 +281,13 @@ export default function App() {
 
         {/* View area — re-keyed on view change to trigger transition */}
         <div key={view} className="view-enter" style={{ flex:1, overflow:'hidden' }}>
-          {view==='command'      && <CommandCentre onOpenCompany={()=>setView('gp')} onGuide={()=>setView('guide')}/>}
+          {view==='command'      && <CommandCentre onOpenCompany={(id)=>{setOpenCompany(id);setView('gp')}} onGuide={()=>setView('guide')}/>}
       {view==='revenuemiss'  && <ScenarioRevenueMiss/>}
       {view==='expansion'    && <ScenarioExpansion/>}
           {view==='cash'         && <ScenarioCash/>}
           {view==='margin'       && <ScenarioMargin/>}
           {view==='procurement'  && <ScenarioProcurement/>}
-      {view==='gp'           && <GPDashboard onGuide={()=>setView('guide')}/>}
+      {view==='gp'           && <GPDashboard onGuide={()=>setView('guide')} openCompany={openCompany}/>}
           {view==='client'       && <ClientPortal/>}
           {view==='realtime'     && <RealTime/>}
           {view==='news'         && <NewsFeed/>}

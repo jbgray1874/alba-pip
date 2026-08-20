@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { buildInvestigation, investigationTargets } from "../lib/investigation.js";
 import { COMPANIES } from "../lib/companies.js";
+import { attentionActions } from "../lib/investigation.js";
 import { fmtMoney } from "../lib/fx.js";
 
 // Every demo below posts to /api/ai/agent, which grounds the request on the
@@ -329,7 +330,16 @@ function PortfolioQADemo() {
       setAns(d.text||"Unable to answer.");
       setLive(!!d.live);
     } catch(e) {
-      setAns("The analysis endpoint is unreachable. Nothing is shown rather than something unverified.");
+      // No serverless function behind this build (a static preview, or the API
+      // is down). Answer from the same calculation the endpoint would have used
+      // rather than showing an error — the figures are the point, not the prose.
+      const top = attentionActions(3);
+      setAns(
+        `Ranked on runway and revenue against plan, the companies needing attention are: ` +
+        top.map(a => `${a.company} — ${a.rationale}`).join("; ") + ".\n\n" +
+        `First is ${top[0].company}: ${top[0].action} (${top[0].owner}).\n\n` +
+        `This is the calculated ranking rather than an answer to the specific question — ` +
+        `no analysis endpoint is reachable from this build.`);
     }
     setLoading(false);
   }
@@ -384,7 +394,12 @@ function BoardPackDemo() {
       setPack(d.text);
       setLive(!!d.live);
     } catch(e) {
-      setPack("The board pack endpoint is unreachable. Nothing is shown rather than something unverified.");
+      const inv = buildInvestigation(co);
+      setPack(
+        `**${inv.company.name}**\n\n${inv.rootCause}\n\n**RECOMMENDED ACTIONS**\n` +
+        inv.actions.slice(0, 3).map(a => `• ${a.action} — ${a.owner}. ${a.rationale}.`).join("\n") +
+        `\n\n_Calculated from connected data as at ${inv.fin.asOf}. No analysis endpoint is reachable ` +
+        `from this build, so the narrative layer is absent — every figure above is unaffected._`);
     }
     setLoading(false);
   }

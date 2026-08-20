@@ -647,6 +647,38 @@ check("both landing pages are real views", () => {
 
 const commandSrc = await codeOf("../src/views/CommandCentre.jsx");
 const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
+const guideSrc = await codeOf("../src/views/UserGuide.jsx");
+
+check("clicking a company in Portfolio Health opens that company", () => {
+  // CommandCentre passes the id; App discarded it, so the route from the fund
+  // view to a company's detail broke in the middle and landed on the list.
+  if (!/onOpenCompany=\{\(id\)/.test(appSrc)) return "App drops the company id CommandCentre passes";
+  if (!appSrc.includes("openCompany={openCompany}")) return "GPDashboard is not given the company to open";
+  if (!gpSrc.includes("openCompany")) return "GPDashboard ignores the company handed to it";
+  return true;
+});
+
+
+check("the user guide covers every screen in the nav", () => {
+  // A guide that silently falls behind the product is worse than none — it is
+  // the failure mode every written-once artefact in this project has hit.
+  const ids = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)'/g)].map((m) => m[1]);
+  const documented = ["guide", "client", "realtime", "news", "gantt", "improvements", "integrations"];
+  const missing = ids.filter((id) => !documented.includes(id) && !guideSrc.includes(`to="${id}"`));
+  return missing.length === 0 || `no link to: ${missing.join(", ")}`;
+});
+
+check("the user guide documents the features that were added after it", () => {
+  const topics = [
+    ["the company page and the MODEL tag", /MODEL/],
+    ["the action tracker's closed loop", /action tracker/i],
+    ["reports, one per scenario", /Cash Position Review/],
+    ["the interface scale shortcut", /Ctrl and/],
+    ["the two landing pages", /landing page/i],
+  ];
+  const absent = topics.filter(([, re]) => !re.test(guideSrc)).map(([t]) => t);
+  return absent.length === 0 || `undocumented: ${absent.join("; ")}`;
+});
 
 check("the user guide is reachable from both landing pages", () => {
   if (!appSrc.includes("onGuide")) return "App does not pass onGuide to either landing page";

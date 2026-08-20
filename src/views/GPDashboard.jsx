@@ -389,8 +389,13 @@ function Sidebar({view,setView}){
 }
 
 // ── ROOT ──────────────────────────────────────────────────────────────────────
-export default function GPDashboard({ onGuide }){
-  const [view,setView]=useState("portfolio");const [co,setCo]=useState(null);
+export default function GPDashboard({ onGuide, openCompany }){
+  // Portfolio Health hands over the company that was clicked. Without this the
+  // click landed on the portfolio list with the selection discarded, so the
+  // route from the fund view to a company's detail was broken in the middle.
+  const initial=openCompany?COMPANIES.find(c=>c.id===openCompany):null;
+  const [view,setView]=useState(initial?"company":"portfolio");
+  const [co,setCo]=useState(initial);
   function sel(c){setCo(c);setView("company");}
   function nav(v){if(v!=="company")setCo(null);setView(v);}
   return(<div style={{display:"flex",height:"100%",background:T.bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",overflow:"hidden"}}><Sidebar view={view} setView={nav}/><div style={{flex:1,overflow:"hidden"}}>{view==="portfolio"&&<PortfolioView onSelect={sel} onGuide={onGuide}/>}{view==="company"&&co&&<CompanyView co={co} onBack={()=>nav("portfolio")}/>}{view==="alerts"&&<AlertsView/>}{view==="actions"&&<ActionsView/>}</div></div>);

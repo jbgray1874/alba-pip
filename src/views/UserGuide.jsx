@@ -14,6 +14,9 @@ import { useMemo } from "react";
 import { COMPANIES, FUNDS, financeOf } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
 import { SOURCES } from "../lib/kpiDefinitions.js";
+import { modulesFor, MODELLED_DISCIPLINES } from "../lib/companyModules.js";
+import { actionSummary } from "../lib/actionTracker.js";
+import { buildProcurement } from "../lib/scenarioProcurement.js";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -72,6 +75,10 @@ function Row({ k, v }) {
 export default function UserGuide({ onNavigate }) {
   const portfolio = useMemo(() => COMPANIES.map((c) => ({ c, f: financeOf(c.id) })), []);
   const worst = useMemo(() => attentionActions(3), []);
+  const actions = useMemo(() => actionSummary(), []);
+  const procurement = useMemo(() => buildProcurement().totals, []);
+  const sampleModules = useMemo(() => modulesFor(COMPANIES[0].id), []);
+  const measuredCount = Object.keys(sampleModules).filter((k) => k !== "meta").length - MODELLED_DISCIPLINES.length;
   const red = portfolio.filter((x) => x.c.rag === "RED").length;
   const amber = portfolio.filter((x) => x.c.rag === "AMBER").length;
   const green = portfolio.filter((x) => x.c.rag === "GREEN").length;
@@ -159,10 +166,12 @@ export default function UserGuide({ onNavigate }) {
           </div>
           <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6 }}>
             Supplier spend aggregated across all {COMPANIES.length} companies, after normalising the
-            ledger names that differ company to company. The same supplier appears under as many as
-            five trading names, which is why no single company has ever seen the total. Spend whose
-            identity is only a candidate match is held out of the headline saving and shown
-            separately.
+            ledger names that differ company to company — {procurement.suppliers} shared suppliers,
+            {" "}{Math.round(procurement.totalSpend / 1000 * 10) / 10}m of annual spend, and a saving
+            of {Math.round(procurement.saving)}k a year on the confirmed portion. The same supplier
+            appears under as many as five trading names, which is why no single company has ever seen
+            the total. Spend whose identity is only a candidate match is held out of the headline and
+            shown separately.
           </div>
           <Route steps={["Procurement", "any supplier", "the ledger names it matched"]} />
         </Card>
@@ -239,8 +248,34 @@ export default function UserGuide({ onNavigate }) {
         </Card>
       </Section>
 
+      {/* ── 4b · The company page ───────────────────────────────────────── */}
+      <Section n="5" title="The company page"
+               sub={`Eleven tabs per company, for every one of the ${COMPANIES.length} — not just the one with a live Xero connection.`}>
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6, marginBottom: 8 }}>
+            Finance, Sales, People and Cross-functional are <strong>read from the finance model</strong>, so they
+            cannot disagree with the portfolio table, the scenarios or the drill-downs. Operations, Procurement,
+            Technology and Compliance have no source system connected yet — those are derived from each company's
+            own discipline score, which is what drives the health ring at the top of the page. A company scoring
+            low on operations shows worse operational KPIs than one scoring high, so the tab and the ring agree.
+          </div>
+          <Card tone={`${T.amber}44`}>
+            <div style={{ color: T.amber, fontSize: 11, fontWeight: 700, marginBottom: 4 }}>Read the MODEL tag</div>
+            <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6 }}>
+              Every modelled figure carries an amber <strong>MODEL</strong> tag on its tile and names “Alba model”
+              as its source rather than a system it has never touched. The source strip under the company header
+              splits the {measuredCount} measured disciplines from the {MODELLED_DISCIPLINES.length} modelled ones.
+              Click any tile to see its threshold, its confidence and — where it is modelled — a plain statement
+              that it is.
+            </div>
+          </Card>
+          <Route steps={["Portfolio Health", "click a company", "any of the eleven tabs"]}
+                 note="Clicking a company in Portfolio Health opens that company directly. Opening the GP Dashboard from the sidebar starts on the portfolio list instead." />
+        </Card>
+      </Section>
+
       {/* ── 5 · Where the numbers come from ─────────────────────────────── */}
-      <Section n="5" title="Where the numbers come from"
+      <Section n="6" title="Where the numbers come from"
                sub="Each metric carries its source system and the date it was last refreshed.">
         <Card>
           {Object.values(SOURCES).map((s) => (
@@ -260,8 +295,71 @@ export default function UserGuide({ onNavigate }) {
         </div>
       </Section>
 
-      {/* ── 6 · Reading the screen ──────────────────────────────────────── */}
-      <Section n="6" title="Reading the screen">
+      {/* ── 7 · The action tracker ──────────────────────────────────────── */}
+      <Section n="7" title="The action tracker, closed"
+               sub="An action tracker that never checks whether the metric moved is a to-do list.">
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6, marginBottom: 10 }}>
+            Every action names the KPI it was raised against. Its baseline is read from the ledger at the month it
+            was raised, the current value comes from today's, and the verdict — improving, no movement, worsening —
+            is computed from those two figures rather than set by whoever owns the action. A move of less than 2%
+            counts as no movement.
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            {[
+              { l: "Open", v: actions.open, c: T.txt1 },
+              { l: "Metric improving", v: actions.working, c: T.green },
+              { l: "No movement", v: actions.noChange, c: T.txt3 },
+              { l: "Metric worsening", v: actions.worse, c: T.red },
+              { l: "Completed and delivered", v: `${actions.completedWorking}/${actions.completedTotal}`, c: T.green },
+            ].map((x) => (
+              <div key={x.l} style={{ background: T.bg, border: `1px solid ${T.accent}`, borderRadius: 6, padding: "8px 11px", flex: 1, minWidth: 110 }}>
+                <div style={{ color: T.txt3, fontSize: 8.5, marginBottom: 3 }}>{x.l}</div>
+                <div style={{ color: x.c, fontSize: 17, fontWeight: 700, fontFamily: "Georgia,serif" }}>{x.v}</div>
+              </div>
+            ))}
+          </div>
+          <Route steps={["GP Dashboard", "Actions", "any action"]}
+                 note="Opening an action shows the metric, its value when raised, its value now, and the elapsed months." />
+        </Card>
+      </Section>
+
+      {/* ── 8 · Reports ─────────────────────────────────────────────────── */}
+      <Section n="8" title="Reports"
+               sub="One per scenario. Each is built from the calculation, so it is correct with the AI layer switched off.">
+        <Card>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 460 }}>
+              <thead><tr style={{ color: T.txt3, fontSize: 9, textAlign: "left" }}>
+                {["Report", "Screen", "What it carries"].map((h) => (
+                  <th key={h} style={{ padding: "6px 9px", fontWeight: 400, borderBottom: `1px solid ${T.border}` }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>{[
+                ["Portfolio Performance Exception Report", "revenuemiss", "Revenue Risk", "Driver bridge with a share-of-gap column that sums to 100"],
+                ["Growth Opportunity Brief", "expansion", "Growth Opportunity", "Prioritised accounts and the factors each scored on"],
+                ["Cash Position Review", "cash", "Cash & Runway", "Three runway bases, outflow composition, thirteen weeks"],
+                ["Margin Deterioration Review", "margin", "Margin Erosion", "The margin bridge and the product mix behind it"],
+                ["Portfolio Procurement Opportunity", "procurement", "Procurement", "Saving by category, and what is held pending confirmation"],
+              ].map(([name, to, screen, carries]) => (
+                <tr key={name} style={{ borderBottom: `1px solid ${T.accent}` }}>
+                  <td style={{ padding: "7px 9px", color: T.txt1 }}>{name}</td>
+                  <td style={{ padding: "7px 9px" }}><Link to={to}>{screen}</Link></td>
+                  <td style={{ padding: "7px 9px", color: T.txt3, fontSize: 10 }}>{carries}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          <div style={{ color: T.txt3, fontSize: 10, marginTop: 9, lineHeight: 1.6 }}>
+            Every report carries a methodology paragraph and an evidence table with the source and refresh date for
+            each figure quoted above it. Generate one from the green button at the top right of its screen — it
+            downloads as a self-contained HTML file that opens and prints cleanly.
+          </div>
+        </Card>
+      </Section>
+
+      {/* ── 9 · Reading the screen ──────────────────────────────────────── */}
+      <Section n="9" title="Reading the screen">
         <Card>
           <Row k="Text too small?" v="Ctrl and + or − (Cmd on a Mac), or the SIZE control in the top bar — 100% to 150%, Ctrl+0 to reset. It scales the whole interface together, so no column, chart or table row is dropped at any setting. The browser's own zoom still works and stacks on top. The choice is remembered." />
           <Row k="Which page opens first?" v="Set it with the home switch in the top bar. Portfolio Health or GP Dashboard; the other stays one click away in the sidebar." />
