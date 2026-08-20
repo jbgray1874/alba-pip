@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { C } from "../lib/theme.js";
 import { ComposedChart, AreaChart, BarChart, LineChart, Line, Area, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import FinanceDrilldown from "./FinanceDrilldown.jsx";
 import { forDashboard } from "../lib/companies.js";
@@ -9,16 +10,30 @@ import { fmtMoney } from "../lib/fx.js";
 import { buildFinance } from "../lib/financeData.js";
 import { buildInvestigation } from "../lib/investigation.js";
 
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
-  border:"#172035", borderLt:"#1e2d4a",
-  txt1:"#e8edf8", txt2:"#7a90b8", txt3:"#3d5070",
-  green:"#00c97a", greenDim:"#00c97a14",
-  amber:"#f5a524", amberDim:"#f5a52414",
-  red:"#ff3d5a",   redDim:"#ff3d5a14",
-  blue:"#3d8bff",  blueDim:"#3d8bff14",
-  purple:"#9b6dff",purpleDim:"#9b6dff14",
-  teal:"#00c9c9",  tealDim:"#00c9c914",
+  bg: C.bg,
+  surface: C.bgDeep,
+  card: C.surface,
+  cardHov: C.surfaceUp,
+  border: C.border,
+  borderLt: C.borderLt,
+  green: C.green,
+  greenDim: C.greenSoft,
+  amber: C.amber,
+  amberDim: C.amberSoft,
+  red: C.red,
+  redDim: C.redSoft,
+  blue: C.blue,
+  blueDim: C.blueSoft,
+  purple: C.purple,
+  purpleDim: C.purpleSoft,
+  teal: C.teal,
+  tealDim: C.tealSoft,
+  txt1: C.txt1,
+  txt2: C.txt2,
+  txt3: C.txt3
 };
 const MO = ["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr"];
 const ragCol = s => ({green:T.green,amber:T.amber,red:T.red}[s]||T.txt3);

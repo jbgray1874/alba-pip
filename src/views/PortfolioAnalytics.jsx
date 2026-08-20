@@ -1,15 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
+import { C } from "../lib/theme.js";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
          LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { forAnalytics } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
 
 // ── Design tokens ────────────────────────────────────────────────
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: "#080B14", card: "#0F1525", border: "#1E2740",
-  txt1: "#F2EFE6", txt2: "#9AA3B5", txt3: "#5A6478",
-  gold: "#C5A572", goldb: "#E0C088",
-  green: "#3FB984", amber: "#F5A524", red: "#E25563", blue: "#5B8DEF",
+  bg: C.bg,
+  card: C.surface,
+  border: C.border,
+  gold: C.gold,
+  green: C.green,
+  amber: C.amber,
+  red: C.red,
+  blue: C.blue,
+  txt1: C.txt1,
+  txt2: C.txt2,
+  txt3: C.txt3
 };
 
 // ── Seed data ─────────────────────────────────────────────────────

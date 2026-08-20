@@ -14,13 +14,19 @@
 //  here and the number in the drill-down are the same number.
 // ════════════════════════════════════════════════════════════════════════════
 
+import { C } from "../lib/theme.js";
 import { useMemo } from "react";
 import { useLiveFeeds, integrationHealth } from "../lib/liveFeed.js";
 import { TIERS } from "../lib/liveData.js";
 
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  card: "#0f1525", border: "#1e2740", bg: "#020817",
-  txt1: "#e8edf8", txt2: "#7a90b8", txt3: "#3d5070",
+  card: C.surface,
+  border: C.border,
+  bg: C.bg,
+  txt1: C.txt1,
+  txt3: C.txt3
 };
 
 function Tile({ feed }) {

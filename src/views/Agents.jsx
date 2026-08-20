@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { C } from "../lib/theme.js";
 import { buildInvestigation, investigationTargets } from "../lib/investigation.js";
 import { COMPANIES } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
@@ -18,17 +19,32 @@ async function askAgent(body) {
   return r.json();
 }
 
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg:"#020817", surface:"#070d1a", card:"#0b1120", cardHov:"#0f1830",
-  border:"#172035", borderLt:"#1e2d4a",
-  txt1:"#e8edf8", txt2:"#7a90b8", txt3:"#3d5070",
-  green:"#00c97a", greenDim:"#00c97a14",
-  amber:"#f5a524", amberDim:"#f5a52414",
-  red:"#ff3d5a",   redDim:"#ff3d5a14",
-  blue:"#3d8bff",  blueDim:"#3d8bff14",
-  purple:"#9b6dff",purpleDim:"#9b6dff14",
-  teal:"#00c9c9",  tealDim:"#00c9c914",
-  pink:"#f43f8e",  pinkDim:"#f43f8e14",
+  bg: C.bg,
+  surface: C.bgDeep,
+  card: C.surface,
+  cardHov: C.surfaceUp,
+  border: C.border,
+  borderLt: C.borderLt,
+  green: C.green,
+  greenDim: C.greenSoft,
+  amber: C.amber,
+  amberDim: C.amberSoft,
+  red: C.red,
+  redDim: C.redSoft,
+  blue: C.blue,
+  blueDim: C.blueSoft,
+  purple: C.purple,
+  purpleDim: C.purpleSoft,
+  teal: C.teal,
+  tealDim: C.tealSoft,
+  pink: C.pink,
+  pinkDim: C.pinkSoft,
+  txt1: C.txt1,
+  txt2: C.txt2,
+  txt3: C.txt3
 };
 
 // ── AGENT REGISTRY ────────────────────────────────────────────────────────────

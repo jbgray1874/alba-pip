@@ -10,6 +10,7 @@
 //  total is drawn so a viewer can check it rather than take it on trust.
 // ════════════════════════════════════════════════════════════════════════════
 
+import { C } from "../lib/theme.js";
 import { useMemo, useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, ReferenceLine } from "recharts";
 import { buildRevenueMiss } from "../lib/scenarioRevenueMiss.js";
@@ -18,10 +19,20 @@ import { fmtMoney } from "../lib/fx.js";
 import InsightCard from "../components/InsightCard.jsx";
 import ReportPanel from "../components/ReportPanel.jsx";
 
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
-  txt1: "#e8edf8", txt2: "#7a90b8", txt3: "#3d5070",
-  blue: "#3d8bff", green: "#00c97a", amber: "#f5a524", red: "#ff3d5a",
+  bg: C.bg,
+  card: C.surface,
+  border: C.border,
+  accent: C.surfaceUp,
+  blue: C.blue,
+  green: C.green,
+  amber: C.amber,
+  red: C.red,
+  txt1: C.txt1,
+  txt2: C.txt2,
+  txt3: C.txt3
 };
 
 function Panel({ title, sub, right, children }) {

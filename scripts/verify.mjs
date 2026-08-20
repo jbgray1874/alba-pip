@@ -791,6 +791,68 @@ const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
 const guideSrc = await codeOf("../src/views/UserGuide.jsx");
 const integrationSrc = await codeOf("../src/views/IntegrationPlan.jsx");
 const stripSrc = await codeOf("../src/components/LiveStrip.jsx");
+const viewFiles = (await readdir(new URL("../src/views/", import.meta.url))).filter((f) => f.endsWith(".jsx"));
+const viewSources = new Map(await Promise.all(viewFiles.map(async (f) => [f, await codeOf(`../src/views/${f}`)])));
+
+section("Brand — one design system, not seventeen");
+
+const themeSrc = await codeOfEarly("../src/lib/theme.js");
+const indexSrc = await readFile(new URL("../index.html", import.meta.url), "utf8");
+
+check("no view declares a colour outside the token file", () => {
+  // Seventeen palettes, each a shade adrift of the next, was how the app came
+  // to look nothing like the product it is named after.
+  const offenders = [];
+  for (const file of viewFiles) {
+    const src = viewSources.get(file);
+    const block = /^const T = \{[\s\S]*?^\};?$/m.exec(src);
+    if (!block) continue;
+    const literals = block[0].match(/#[0-9a-fA-F]{6,8}/g) ?? [];
+    // A handful of accent shades have no token yet; more than a couple means a
+    // view has started keeping its own palette again.
+    if (literals.length > 4) offenders.push(`${file} (${literals.length} raw colours)`);
+  }
+  return offenders.length === 0 || offenders.join(", ");
+});
+
+check("every palette resolves — no view references a token it does not define", () => {
+  for (const file of viewFiles) {
+    const src = viewSources.get(file);
+    const block = /^const T = \{[\s\S]*?^\};?$/m.exec(src);
+    if (!block) continue;
+    const defined = new Set([...block[0].matchAll(/^\s*([a-zA-Z][a-zA-Z0-9]*)\s*:/gm)].map((m) => m[1]));
+    const used = new Set([...src.matchAll(/\bT\.([a-zA-Z][a-zA-Z0-9]*)/g)].map((m) => m[1]));
+    const missing = [...used].filter((k) => !defined.has(k));
+    if (missing.length) return `${file} uses T.${missing[0]} but never defines it`;
+  }
+  return true;
+});
+
+check("the brand typefaces are loaded and declared", () => {
+  for (const face of ["Inter", "Source+Serif+4", "IBM+Plex+Mono"]) {
+    if (!indexSrc.includes(face)) return `${face.replace(/\+/g, " ")} is not requested`;
+  }
+  if (!/Hanken|Fraunces|JetBrains/.test(indexSrc) === false) return "a prototype typeface is still being loaded";
+  for (const key of ["sans", "serif", "mono"]) {
+    if (!themeSrc.includes(`${key}:`)) return `theme has no ${key} stack`;
+  }
+  // Every face needs a real fallback — a blocked font request must not drop to
+  // a default the design never anticipated.
+  if (!themeSrc.includes("sans-serif") || !themeSrc.includes("Georgia")) return "a typeface has no fallback stack";
+  return true;
+});
+
+check("the shell matches the reference: sections across the top, not a list down the side", () => {
+  for (const g of ["Portfolio", "Intelligence", "Actions", "Reports"]) {
+    if (!appSrc.includes(`'${g}'`)) return `no ${g} section`;
+  }
+  if (!appSrc.includes("GROUPS")) return "the navigation is not grouped";
+  if (!appSrc.includes("Wordmark")) return "the mark is missing from the top bar";
+  const ungrouped = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)',\s*group:/g)].length;
+  const total = [...appSrc.matchAll(/\{\s*id:\s*'([a-z]+)'/g)].length;
+  return ungrouped === total || `${total - ungrouped} views have no section`;
+});
+
 
 check("no credential lifecycle is shown to a viewer", () => {
   // Until the platform reads real token state from the providers, an expiry

@@ -1,4 +1,5 @@
 import { useState, useMemo, createContext, useContext } from "react";
+import { C } from "../lib/theme.js";
 import { COMPANIES, companyById } from "../lib/companies.js";
 import { buildFinance } from "../lib/financeData.js";
 import { modulesFor } from "../lib/companyModules.js";
@@ -6,16 +7,31 @@ import LiveStrip from "../components/LiveStrip.jsx";
 import { AreaChart, Area, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 // ── TOKENS ────────────────────────────────────────────────────────────────────
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg:"#f8f9fc", surface:"#ffffff", card:"#ffffff",
-  border:"#e2e8f0", borderDk:"#cbd5e1",
-  txt1:"#0f172a", txt2:"#475569", txt3:"#94a3b8",
-  green:"#059669", greenDim:"#d1fae5", greenBrd:"#6ee7b7",
-  amber:"#d97706", amberDim:"#fef3c7", amberBrd:"#fcd34d",
-  red:"#dc2626",   redDim:"#fee2e2",   redBrd:"#fca5a5",
-  blue:"#2563eb",  blueDim:"#dbeafe",  blueBrd:"#93c5fd",
-  purple:"#7c3aed",purpleDim:"#ede9fe",purpleBrd:"#c4b5fd",
-  navy:"#0f172a",
+  bg: C.bg,
+  surface: C.bgDeep,
+  card: C.surface,
+  border: C.border,
+  green: C.green,
+  greenDim: C.greenSoft,
+  amber: C.amber,
+  amberDim: C.amberSoft,
+  red: C.red,
+  redDim: C.redSoft,
+  blue: C.blue,
+  blueDim: C.blueSoft,
+  purple: C.purple,
+  purpleDim: C.purpleSoft,
+  navy: C.gold,
+  amberBrd: C.goldLine,
+  blueBrd: "#5B8DEF55",
+  greenBrd: "#3FCF6E55",
+  redBrd: "#F4525F55",
+  txt1: C.txt1,
+  txt2: C.txt2,
+  txt3: C.txt3
 };
 const ragCol = s => ({green:T.green,amber:T.amber,red:T.red}[s]||T.txt3);
 const ragBg  = s => ({green:T.greenDim,amber:T.amberDim,red:T.redDim}[s]||"transparent");

@@ -16,34 +16,43 @@ import NewsFeed        from './views/NewsFeed.jsx'
 import PortfolioAnalytics from './views/PortfolioAnalytics.jsx'
 import UserGuide      from './views/UserGuide.jsx'
 import { HOMES, SCALES, loadPrefs, savePrefs } from './lib/prefs.js'
+import { C, F, S } from './lib/theme.js'
+import { Wordmark } from './components/Shell.jsx'
 
+// Grouped as the reference screens group them. The top bar carries the four
+// sections; the rail below carries every view within the active section.
 const VIEWS = [
-  { id:'command',      label:'Portfolio Health',  icon:' ◎ ', sub:'Command centre · Risks vs opportunities · 9 companies' },
-  { id:'revenuemiss',  label:'Revenue Risk',      icon:' ▽ ', sub:'Straits Analytics · Forecast miss · Driver bridge' },
-  { id:'expansion',    label:'Growth Opportunity',icon:' △ ', sub:'Zafira Systems · Cross-sell radar · Account scoring' },
-  { id:'cash',         label:'Cash & Runway',     icon:' ◷ ', sub:'Nusantara Foods · 13-week model · Three runway bases' },
-  { id:'margin',       label:'Margin Erosion',    icon:' ◱ ', sub:'ForgeTech · Green everywhere · 8 points of gross margin' },
-  { id:'procurement',  label:'Procurement',       icon:' ⬢ ', sub:'Cross-portfolio · Supplier consolidation · Savings' },
-  { id:'gp',           label:'GP Dashboard',      icon:'⬡', sub:'Fund manager · All companies · 9 modules' },
-  { id:'client',       label:'Client Portal',      icon:'◈', sub:'Portfolio company · Role-based · Configurable' },
-  { id:'realtime',     label:'Live Data',          icon:'◉', sub:'Real-time feeds · Market data · Activity stream' },
-  { id:'news',         label:'News & Sentiment',   icon:'📰', sub:'Per-company news · Sentiment · NewsAPI-ready' },
-  { id:'analytics',   label:'Portfolio Analytics',  icon:'SS', sub:'Heatmap - Scenario - Returns - Board Pack - IRR' },
-  { id:'agents',       label:'AI Agents',          icon:'🤖', sub:'12 agents · Live demos · Investigation · Q&A' },
-  { id:'gantt',        label:'Delivery Plan',      icon:'📅', sub:'7-day prototype + 12-month production Gantt' },
-  { id:'improvements', label:'UI Improvements',    icon:'✦',  sub:'28 improvements · Priority stack · This week' },
-  { id:'integrations', label:'Integration Plan',   icon:'🔌', sub:'Live vs mock · 22 systems · Cost + effort' },
-  { id:'guide',        label:'User Guide',         icon:'📖', sub:'Screens · Drill-down routes · Walkthrough' },
+  { id:'command',      group:'Portfolio',    label:'Command Centre',     icon:'◎', sub:'Fund health · Risks vs opportunities · 9 companies' },
+  { id:'gp',           group:'Portfolio',    label:'Company Detail',     icon:'⬡', sub:'One company · Eleven modules · Finance drill-downs' },
+  { id:'client',       group:'Portfolio',    label:'Company Portal',     icon:'◈', sub:'Role-based views for the portfolio company' },
+  { id:'realtime',     group:'Portfolio',    label:'Live Data',          icon:'◉', sub:'Continuous readings · Market data · Activity' },
+
+  { id:'revenuemiss',  group:'Intelligence', label:'Revenue Risk',       icon:'▽', sub:'Straits Analytics · Forecast miss · Driver bridge' },
+  { id:'expansion',    group:'Intelligence', label:'Opportunity Radar',  icon:'△', sub:'Zafira Systems · Cross-sell · Account scoring' },
+  { id:'cash',         group:'Intelligence', label:'Cash & Runway',      icon:'◷', sub:'Nusantara Foods · 13-week model · Three bases' },
+  { id:'margin',       group:'Intelligence', label:'Margin Erosion',     icon:'◱', sub:'ForgeTech · Green everywhere · 8 points lost' },
+  { id:'procurement',  group:'Intelligence', label:'Procurement',        icon:'⬢', sub:'Cross-portfolio · Supplier consolidation' },
+  { id:'analytics',    group:'Intelligence', label:'Analytics',          icon:'▦', sub:'Heatmap · Scenario · Returns · IRR' },
+  { id:'news',         group:'Intelligence', label:'News & Sentiment',   icon:'◫', sub:'Per-company news · Materiality · Sentiment' },
+
+  { id:'agents',       group:'Actions',      label:'AI Agents',          icon:'◐', sub:'Investigation · Portfolio Q&A · Board pack' },
+  { id:'improvements', group:'Actions',      label:'Improvement Stack',  icon:'✦', sub:'28 improvements · Priority order' },
+  { id:'gantt',        group:'Actions',      label:'Delivery Plan',      icon:'▤', sub:'Prototype and production timeline' },
+  { id:'integrations', group:'Actions',      label:'Connected Sources',  icon:'⌘', sub:'Systems · What each one feeds' },
+
+  { id:'guide',        group:'Reports',      label:'User Guide',         icon:'◧', sub:'Screens · Drill-down routes · Walkthrough' },
 ]
+
+const GROUPS = ['Portfolio', 'Intelligence', 'Actions', 'Reports']
 
 // ── TOAST SYSTEM ────────────────────────────────────────────────────────────
 const TOAST_POOL = [
-  { type:'alert',  icon:'🔴', color:'#ff3d5a', title:'Threshold breached', msg:'CareOS cash runway fell below 3 months' },
-  { type:'sync',   icon:'✓',  color:'#00c97a', title:'Data synced',         msg:'Xero · Meridian SaaS · P&L updated' },
-  { type:'news',   icon:'📰', color:'#3d8bff', title:'News flagged',        msg:'PayFlo secured new enterprise contract' },
-  { type:'agent',  icon:'🤖', color:'#9b6dff', title:'Agent action',        msg:'Investigation Agent completed — CareOS revenue' },
-  { type:'sync',   icon:'✓',  color:'#00c97a', title:'Live feed',           msg:'Market data refreshed · GBP/USD updated' },
-  { type:'alert',  icon:'⚡', color:'#f5a524', title:'Action due',          msg:'SwiftLogix — SLA review due today' },
+  { type:'alert',  icon:'▲', color:'#F4525F', title:'Threshold breached', msg:'CareOS cash runway fell below 3 months' },
+  { type:'sync',   icon:'✓',  color:'#3FCF6E', title:'Data synced',         msg:'Xero · Meridian SaaS · P&L updated' },
+  { type:'news',   icon:'◫', color:'#5B8DEF', title:'News flagged',        msg:'PayFlo secured new enterprise contract' },
+  { type:'agent',  icon:'◐', color:'#9B7BEF', title:'Agent action',        msg:'Investigation Agent completed — CareOS revenue' },
+  { type:'sync',   icon:'✓',  color:'#3FCF6E', title:'Live feed',           msg:'Market data refreshed · GBP/USD updated' },
+  { type:'alert',  icon:'◷', color:'#E5A83C', title:'Action due',          msg:'SwiftLogix — SLA review due today' },
 ]
 
 function Toasts({ toasts, dismiss }) {
@@ -52,7 +61,7 @@ function Toasts({ toasts, dismiss }) {
       {toasts.map(t => (
         <div key={t.id} style={{
           pointerEvents:'auto', minWidth:280, maxWidth:340,
-          background:'rgba(11,17,32,0.96)', backdropFilter:'blur(12px)',
+          background:'rgba(19,19,21,0.97)', backdropFilter:'blur(12px)',
           border:`1px solid ${t.color}40`, borderLeft:`3px solid ${t.color}`,
           borderRadius:10, padding:'12px 14px',
           boxShadow:'0 12px 40px rgba(0,0,0,0.4)',
@@ -61,10 +70,10 @@ function Toasts({ toasts, dismiss }) {
         }}>
           <span style={{ fontSize:15, marginTop:1 }}>{t.icon}</span>
           <div style={{ flex:1 }}>
-            <div style={{ color:'#e8edf8', fontSize:12, fontWeight:700, marginBottom:2 }}>{t.title}</div>
-            <div style={{ color:'#7a90b8', fontSize:11, lineHeight:1.4 }}>{t.msg}</div>
+            <div style={{ color:C.txt1, fontSize:12, fontWeight:600, marginBottom:2 }}>{t.title}</div>
+            <div style={{ color:C.txt2, fontSize:11, lineHeight:1.4 }}>{t.msg}</div>
           </div>
-          <button onClick={()=>dismiss(t.id)} style={{ background:'transparent', border:'none', color:'#3d5070', cursor:'pointer', fontSize:13, padding:0, lineHeight:1 }}>×</button>
+          <button onClick={()=>dismiss(t.id)} style={{ background:'transparent', border:'none', color:C.txt3, cursor:'pointer', fontSize:13, padding:0, lineHeight:1 }}>×</button>
         </div>
       ))}
     </div>
@@ -127,160 +136,113 @@ export default function App() {
     return () => { clearTimeout(first); clearInterval(loop) }
   }, [dismiss])
 
+  const group = active?.group ?? GROUPS[0]
+  const inGroup = VIEWS.filter(v => v.group === group)
+  const railBtn = (v) => ({
+    width:36, height:36, borderRadius:5, cursor:'pointer', fontFamily:'inherit',
+    display:'flex', alignItems:'center', justifyContent:'center', fontSize:15,
+    background: view===v.id ? C.goldSoft : 'transparent',
+    border:`1px solid ${view===v.id ? C.goldLine : 'transparent'}`,
+    color: view===v.id ? C.gold : C.txt3,
+  })
+  const open = (v) => { if (v.id === 'gp') setOpenCompany(null); setView(v.id) }
+
   return (
     <>
-    {/*
-      The whole interface is scaled together rather than the type alone: 340 of
-      the prototype's 578 type sizes are 10px or below, and raising those in
-      isolation would reflow every panel they sit in and change what fits on a
-      screen. `zoom` scales text, charts, spacing and tables in proportion, so
-      no column or table row is lost at any setting. The height is divided by
-      the same factor so the app still fills exactly one viewport.
-    */}
+    {/* The whole interface scales together rather than the type alone; the
+        height is divided by the same factor so it still fills one viewport. */}
     <div style={{
       zoom: prefs.scale,
-      display:'flex', height:`calc(100vh / ${prefs.scale})`, overflow:'hidden',
-      fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      background:'#020817',
+      display:'flex', flexDirection:'column', height:`calc(100vh / ${prefs.scale})`, overflow:'hidden',
+      fontFamily: F.sans, background: C.bg, color: C.txt1,
     }}>
 
-      {/* Sidebar */}
-      <div style={{
-        width: collapsed ? 52 : 220,
-        background:'#04091a',
-        borderRight:'1px solid #0f1a30',
-        display:'flex', flexDirection:'column',
-        padding:'14px 0', gap:2, flexShrink:0,
-        transition:'width 0.2s ease',
-        overflow:'hidden',
-      }}>
-
-        {/* Logo + collapse toggle */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, padding:'0 10px', marginBottom:16 }}>
-          <div style={{
-            width:32, height:32, borderRadius:8, flexShrink:0,
-            background:'linear-gradient(135deg,#3d8bff,#9b6dff)',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            color:'#fff', fontSize:14, fontWeight:800,
-          }}>A</div>
-          {!collapsed && (
-            <div>
-              <div style={{ color:'#e8edf8', fontSize:11, fontWeight:700, lineHeight:1.2 }}>Alba PIP</div>
-              <div style={{ color:'#3d5070', fontSize:9 }}>Caledonia Alba</div>
-            </div>
-          )}
-          <button onClick={() => setCollapsed(p=>!p)} style={{
-            marginLeft:'auto', background:'transparent', border:'none',
-            color:'#3d5070', cursor:'pointer', fontSize:14, padding:0, flexShrink:0,
-          }}>
-            {collapsed ? '›' : '‹'}
-          </button>
-        </div>
-
-        {/* Nav items */}
-        {VIEWS.map(v => (
-          <button key={v.id} onClick={() => { if (v.id === 'gp') setOpenCompany(null); setView(v.id) }} title={v.label}
-            style={{
-              display:'flex', alignItems:'center', gap:10,
-              padding: collapsed ? '9px 0' : '9px 12px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              background: view===v.id ? '#0f2140' : 'transparent',
-              border:'none',
-              borderLeft: view===v.id ? '3px solid #3d8bff' : '3px solid transparent',
-              cursor:'pointer', width:'100%', textAlign:'left',
-              transition:'background 0.15s',
-            }}>
-            <span style={{ fontSize:15, flexShrink:0 }}>{v.icon}</span>
-            {!collapsed && (
-              <div>
-                <div style={{ color: view===v.id ? '#e8edf8' : '#7a90b8', fontSize:11, fontWeight: view===v.id ? 700 : 400 }}>
-                  {v.label}
-                </div>
-                <div style={{ color:'#3d5070', fontSize:8.5, marginTop:1, lineHeight:1.3 }}>{v.sub}</div>
-              </div>
-            )}
-          </button>
-        ))}
-
-        {/* Footer */}
-        {!collapsed && (
-          <div style={{ marginTop:'auto', padding:'10px 12px', borderTop:'1px solid #0f1a30' }}>
-            <div style={{ color:'#3d5070', fontSize:8, lineHeight:1.5 }}>
-              Alba PIP Prototype · May 2026<br/>
-              1 developer · Node.js + React<br/>
-              npm run dev → localhost:5173
+      {/* ── Top bar: mark, sections, fund, account ── */}
+      <div style={{ display:'flex', alignItems:'center', gap:22, padding:'0 18px', height:48,
+                    borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
+        <Wordmark/>
+        <nav style={{ display:'flex', gap:2, marginLeft:8 }}>
+          {GROUPS.map(g => {
+            const on = g === group
+            const first = VIEWS.find(v => v.group === g)
+            return (
+              <button key={g} onClick={() => first && setView(first.id)}
+                style={{ padding:'15px 13px 13px', background:'transparent', border:'none',
+                         borderBottom:`2px solid ${on ? C.gold : 'transparent'}`,
+                         color: on ? C.txt1 : C.txt3, cursor:'pointer', fontFamily:'inherit',
+                         fontSize:S.label, fontWeight:600, letterSpacing:'0.12em', textTransform:'uppercase' }}>
+                {g}
+              </button>
+            )
+          })}
+        </nav>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:9 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <span style={{ color:C.txt3, fontSize:S.micro, letterSpacing:'0.1em' }}>HOME</span>
+            <div style={{ display:'flex', border:`1px solid ${C.border}`, borderRadius:4, overflow:'hidden' }}>
+              {HOMES.map(h => (
+                <button key={h.id} onClick={() => setHome(h.id)} title={`Open on ${h.label} — ${h.blurb}`}
+                  style={{ padding:'3px 8px', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:S.micro,
+                           fontWeight: prefs.home===h.id ? 700 : 400,
+                           background: prefs.home===h.id ? C.gold : 'transparent',
+                           color: prefs.home===h.id ? '#141005' : C.txt2 }}>{h.label}</button>
+              ))}
             </div>
           </div>
-        )}
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <span style={{ color:C.txt3, fontSize:S.micro, letterSpacing:'0.1em' }}>SIZE</span>
+            <div style={{ display:'flex', border:`1px solid ${C.border}`, borderRadius:4, overflow:'hidden' }}>
+              {SCALES.map(sc => (
+                <button key={sc.id} onClick={() => setScale(sc.id)} title={sc.blurb}
+                  style={{ padding:'3px 6px', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:S.micro,
+                           fontWeight: prefs.scale===sc.id ? 700 : 400,
+                           background: prefs.scale===sc.id ? C.gold : 'transparent',
+                           color: prefs.scale===sc.id ? '#141005' : C.txt2 }}>{sc.label}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:8, paddingLeft:8, borderLeft:`1px solid ${C.border}` }}>
+            <span style={{ color:C.txt2, fontSize:S.label, letterSpacing:'0.09em', textTransform:'uppercase' }}>Alba Growth I</span>
+            <span style={{ width:26, height:26, borderRadius:'50%', border:`1px solid ${C.goldLine}`,
+                           background:C.goldSoft, color:C.gold, display:'flex', alignItems:'center',
+                           justifyContent:'center', fontSize:9.5, fontWeight:700 }}>GM</span>
+          </div>
+        </div>
       </div>
 
-      {/* Main content */}
-      <div style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
-
-        {/* Top bar */}
-        <div style={{
-          background:'#070d1a', borderBottom:'1px solid #172035',
-          padding:'8px 20px', display:'flex', alignItems:'center',
-          justifyContent:'space-between', flexShrink:0,
-        }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{ fontSize:16 }}>{active?.icon}</span>
-            <div>
-              <span style={{ color:'#e8edf8', fontSize:13, fontWeight:700 }}>{active?.label}</span>
-              <span style={{ color:'#3d5070', fontSize:10, marginLeft:10 }}>{active?.sub}</span>
-            </div>
-          </div>
-          <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-
-            {/* Home switch — which of the two landing pages opens first. */}
-            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-              <span style={{ color:'#3d5070', fontSize:9, letterSpacing:'0.08em' }}>HOME</span>
-              <div style={{ display:'flex', border:'1px solid #172035', borderRadius:5, overflow:'hidden' }}>
-                {HOMES.map(h => (
-                  <button key={h.id} onClick={() => setHome(h.id)}
-                    title={`Open on ${h.label} — ${h.blurb}`}
-                    style={{
-                      padding:'3px 9px', border:'none', cursor:'pointer', fontSize:9.5,
-                      fontWeight: prefs.home===h.id ? 700 : 400,
-                      background: prefs.home===h.id ? '#3d8bff' : 'transparent',
-                      color: prefs.home===h.id ? '#fff' : '#7a90b8',
-                    }}>{h.label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Interface size. */}
-            <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-              <span style={{ color:'#3d5070', fontSize:9, letterSpacing:'0.08em' }}>SIZE</span>
-              <div style={{ display:'flex', border:'1px solid #172035', borderRadius:5, overflow:'hidden' }}>
-                {SCALES.map(s => (
-                  <button key={s.id} onClick={() => setScale(s.id)} title={s.blurb}
-                    style={{
-                      padding:'3px 7px', border:'none', cursor:'pointer', fontSize:9.5,
-                      fontWeight: prefs.scale===s.id ? 700 : 400,
-                      background: prefs.scale===s.id ? '#9b6dff' : 'transparent',
-                      color: prefs.scale===s.id ? '#fff' : '#7a90b8',
-                    }}>{s.label}</button>
-                ))}
-              </div>
-            </div>
-
-            <button onClick={() => setView('guide')}
-              style={{
-                padding:'3px 10px', background:'transparent', border:'1px solid #172035',
-                borderRadius:5, color: view==='guide' ? '#e8edf8' : '#7a90b8',
-                fontSize:9.5, cursor:'pointer', fontFamily:'inherit',
-              }}>📖 User guide</button>
-
-            <span style={{
-              padding:'3px 10px', background:'#00c97a14', border:'1px solid #00c97a30',
-              borderRadius:5, color:'#00c97a', fontSize:9, fontWeight:700,
-            }}>● PROTOTYPE RUNNING</span>
+      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+        {/* ── Icon rail ── */}
+        <div style={{ width:52, background:C.bgDeep, borderRight:`1px solid ${C.border}`, flexShrink:0,
+                      display:'flex', flexDirection:'column', alignItems:'center', paddingTop:10, gap:2 }}>
+          {inGroup.map(v => (
+            <button key={v.id} onClick={() => open(v)} title={`${v.label} — ${v.sub}`} style={railBtn(v)}>{v.icon}</button>
+          ))}
+          <div style={{ marginTop:'auto', paddingBottom:12 }}>
+            <button onClick={() => setView('guide')} title="User guide"
+              style={{ width:36, height:36, borderRadius:5, cursor:'pointer', background:'transparent',
+                       border:'1px solid transparent', color: view==='guide' ? C.gold : C.txt3, fontSize:15,
+                       fontFamily:'inherit' }}>?</button>
           </div>
         </div>
 
-        {/* View area — re-keyed on view change to trigger transition */}
-        <div key={view} className="view-enter" style={{ flex:1, overflow:'hidden' }}>
+        <div style={{ flex:1, display:'flex', flexDirection:'column', overflow:'hidden', minWidth:0 }}>
+          {/* ── Section bar ── */}
+          <div style={{ display:'flex', alignItems:'center', gap:3, padding:'0 18px', height:36,
+                        borderBottom:`1px solid ${C.border}`, flexShrink:0, overflowX:'auto' }}>
+            {inGroup.map(v => (
+              <button key={v.id} onClick={() => open(v)}
+                style={{ padding:'5px 10px', borderRadius:4, cursor:'pointer', fontFamily:'inherit',
+                         whiteSpace:'nowrap', fontSize:S.small,
+                         background: view===v.id ? C.surfaceUp : 'transparent',
+                         border:`1px solid ${view===v.id ? C.border : 'transparent'}`,
+                         color: view===v.id ? C.txt1 : C.txt3 }}>{v.label}</button>
+            ))}
+            <span style={{ marginLeft:'auto', color:C.txt3, fontSize:S.micro, whiteSpace:'nowrap', paddingLeft:12 }}>
+              {active?.sub}
+            </span>
+          </div>
+
+          <div key={view} className="view-enter" style={{ flex:1, overflow:'hidden', minWidth:0 }}>
           {view==='command'      && <CommandCentre onOpenCompany={(id)=>{setOpenCompany(id);setView('gp')}} onGuide={()=>setView('guide')}/>}
       {view==='revenuemiss'  && <ScenarioRevenueMiss/>}
       {view==='expansion'    && <ScenarioExpansion/>}
@@ -297,6 +259,7 @@ export default function App() {
           {view==='improvements' && <Improvements/>}
           {view==='integrations' && <IntegrationPlan/>}
           {view==='guide'        && <UserGuide onNavigate={setView}/>}
+          </div>
         </div>
       </div>
     </div>

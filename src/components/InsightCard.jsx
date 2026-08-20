@@ -11,12 +11,24 @@
 //  flow" — a second screen breaks the flow; a disclosure does not.
 // ════════════════════════════════════════════════════════════════════════════
 
+import { C } from "../lib/theme.js";
 import { useState } from "react";
 
+// Palette from the shared design tokens. Every view used to carry its own
+// copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  card: "#0f1525", bg: "#020817", border: "#1e2740", accent: "#172035",
-  txt1: "#e8edf8", txt2: "#7a90b8", txt3: "#3d5070",
-  blue: "#3d8bff", green: "#00c97a", amber: "#f5a524", red: "#ff3d5a", purple: "#9b6dff",
+  card: C.surface,
+  bg: C.bg,
+  border: C.border,
+  accent: C.surfaceUp,
+  blue: C.blue,
+  green: C.green,
+  amber: C.amber,
+  red: C.red,
+  purple: C.purple,
+  txt1: C.txt1,
+  txt2: C.txt2,
+  txt3: C.txt3
 };
 
 function money(v, ccy) {
