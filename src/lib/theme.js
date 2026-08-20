@@ -52,6 +52,20 @@ export const C = {
   pink:      "#EF5DA8",
   pinkSoft:  "#EF5DA81A",
   goldOn:    "#141005",   // text on a gold fill
+
+  // The report sheet. Screens 6 and 9 print onto paper, not onto the dark
+  // interface, so the ink has its own scale — a report a partner circulates is
+  // read on a screen and then on a printer, and #F2F2F0 on #131315 does not
+  // survive the second one.
+  paper:       "#F5F2EA",
+  paperEdge:   "#E4DFD2",
+  paperShadow: "rgba(0,0,0,0.45)",
+  ink1:        "#1A1814",
+  ink2:        "#4A453C",
+  ink3:        "#8A8477",
+  inkRule:     "#D6D0C2",
+  inkRed:      "#9B2C2C",   // a shortfall, printed
+  inkGreen:    "#1F6B45",   // an upside, printed
 };
 
 /**

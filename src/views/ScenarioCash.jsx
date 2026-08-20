@@ -8,7 +8,7 @@
 //  arithmetic that produced each closing balance.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C } from "../lib/theme.js";
+import { C, F } from "../lib/theme.js";
 import { useMemo, useState } from "react";
 import { buildCash, buildCashScenario, PARAMS } from "../lib/scenarioCash.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -98,7 +98,7 @@ export default function ScenarioCash() {
         ].map((x) => (
           <div key={x.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 150 }}>
             <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: "Georgia,serif", lineHeight: 1 }}>{x.v}</div>
+            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>{x.v}</div>
             <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
           </div>
         ))}
@@ -118,7 +118,7 @@ export default function ScenarioCash() {
             </div>
             <div style={{ textAlign: "right", flexShrink: 0 }}>
               <div style={{ color: b.id === "trend" ? T.red : b.id === "plan" ? T.amber : T.txt2,
-                            fontSize: 16, fontWeight: 700, fontFamily: "Georgia,serif" }}>
+                            fontSize: 16, fontWeight: 700, fontFamily: F.serif }}>
                 {b.months === Infinity ? "—" : `${b.months}mo`}
               </div>
               <div style={{ color: T.txt3, fontSize: 9, marginTop: 2 }}>
@@ -184,7 +184,7 @@ export default function ScenarioCash() {
                         display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div>
               <div style={{ color: T.txt3, fontSize: 9 }}>RUNWAY UNDER THESE LEVERS</div>
-              <div style={{ color: runwayDelta > 0.05 ? T.green : T.txt1, fontSize: 22, fontWeight: 700, fontFamily: "Georgia,serif", lineHeight: 1.1 }}>
+              <div style={{ color: runwayDelta > 0.05 ? T.green : T.txt1, fontSize: 22, fontWeight: 700, fontFamily: F.serif, lineHeight: 1.1 }}>
                 {live.runwayMonths === Infinity ? "cash positive" : `${live.runwayMonths}mo`}
               </div>
             </div>

@@ -11,7 +11,7 @@
 //  flow" — a second screen breaks the flow; a disclosure does not.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C } from "../lib/theme.js";
+import { C, F } from "../lib/theme.js";
 import { useState } from "react";
 
 // Palette from the shared design tokens. Every view used to carry its own
@@ -65,7 +65,7 @@ export default function InsightCard({ insight, defaultOpen = false, onAction }) 
           </div>
         </div>
         <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ color: tone, fontSize: 22, fontWeight: 700, fontFamily: "Georgia,serif", lineHeight: 1 }}>
+          <div style={{ color: tone, fontSize: 22, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>
             {sign}{money(insight.impact.value, insight.impact.currency)}
           </div>
           <div style={{ color: T.txt3, fontSize: 9, marginTop: 3 }}>{insight.impact.horizon}</div>

@@ -10,7 +10,7 @@
 //  route to every drill-down, and where the numbers come from.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C } from "../lib/theme.js";
+import { C, F } from "../lib/theme.js";
 import { useMemo } from "react";
 import { COMPANIES, FUNDS, financeOf } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
@@ -112,7 +112,7 @@ export default function UserGuide({ onNavigate }) {
         <div style={{ color: T.blue, fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>
           Alba · Portfolio Intelligence
         </div>
-        <h1 style={{ color: T.txt1, fontSize: 22, fontWeight: 700, margin: 0, fontFamily: "Georgia,serif" }}>User guide</h1>
+        <h1 style={{ color: T.txt1, fontSize: 22, fontWeight: 700, margin: 0, fontFamily: F.serif }}>User guide</h1>
         <div style={{ color: T.txt2, fontSize: 12, marginTop: 8, lineHeight: 1.6, maxWidth: 700 }}>
           {COMPANIES.length} companies across {FUNDS.length} funds — {red} red, {amber} amber, {green} green.
           Every figure on every screen is calculated from one finance model, so a number
@@ -366,7 +366,7 @@ export default function UserGuide({ onNavigate }) {
             ].map((x) => (
               <div key={x.l} style={{ background: T.bg, border: `1px solid ${T.accent}`, borderRadius: 6, padding: "8px 11px", flex: 1, minWidth: 110 }}>
                 <div style={{ color: T.txt3, fontSize: 8.5, marginBottom: 3 }}>{x.l}</div>
-                <div style={{ color: x.c, fontSize: 17, fontWeight: 700, fontFamily: "Georgia,serif" }}>{x.v}</div>
+                <div style={{ color: x.c, fontSize: 17, fontWeight: 700, fontFamily: F.serif }}>{x.v}</div>
               </div>
             ))}
           </div>

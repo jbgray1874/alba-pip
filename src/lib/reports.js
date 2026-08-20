@@ -40,6 +40,15 @@ export function buildExceptionReport(s) {
   return {
     kind: "Portfolio Performance Exception Report",
     company: company.name,
+    // The band of four across the head of the sheet. Declared rather than
+    // scraped out of the first section, because two of the five reports open
+    // on a table and were rendering the band empty.
+    figures: [
+      { label: "Plan", value: money(f.planRevenue, ccy) },
+      { label: "Forecast", value: money(f.forecastRevenue, ccy) },
+      { label: "Forecast gap", value: `\u2212${money(f.forecastGap, ccy)}`, tone: "red" },
+      { label: "Share of plan", value: `${((f.forecastGap / f.planRevenue) * 100).toFixed(1)}%`, tone: "red" },
+    ],
     subtitle: `${company.sectorLong} · ${company.geo} · reported in ${ccy}`,
     preparedAt: insight.raisedOn,
     executiveSummary:
@@ -88,6 +97,12 @@ export function buildGrowthBrief(s) {
   return {
     kind: "Growth Opportunity Brief",
     company: company.name,
+    figures: [
+      { label: "Qualified accounts", value: String(qualified.length) },
+      { label: "Expected ARR", value: money(t.expected, ccy), tone: "green" },
+      { label: "Range", value: `${money(t.low, ccy)} \u2013 ${money(t.high, ccy)}` },
+      { label: "Penetration today", value: `${(t.penetration * 100).toFixed(0)}%` },
+    ],
     subtitle: `${company.sectorLong} · ${company.geo} · reported in ${ccy}`,
     preparedAt: insight.raisedOn,
     executiveSummary:
@@ -145,6 +160,12 @@ export function buildCashReport(s) {
   return {
     kind: "Cash Position Review",
     company: company.name,
+    figures: [
+      { label: "Cash", value: money(t.cashTo, ccy) },
+      { label: "Reported runway", value: `${s.fin.runway} months` },
+      { label: "On the burn trend", value: `${bases[2].months} months`, tone: "red" },
+      { label: "Floor reached", value: `Month ${bases[2].monthsToFloor}`, tone: "red" },
+    ],
     subtitle: `${company.sectorLong} \u00b7 ${company.geo} \u00b7 reported in ${ccy}`,
     preparedAt: insight.raisedOn,
     executiveSummary:
@@ -202,10 +223,16 @@ export function buildCashReport(s) {
 
 /** Margin Deterioration Review \u2014 scenario 3. */
 export function buildMarginReport(s) {
-  const { company, bridge, lines, insight, currency: ccy } = s;
+  const { company, bridge, lines, insight, currency: ccy, marginNow, marginThen, marginMove } = s;
   return {
     kind: "Margin Deterioration Review",
     company: company.name,
+    figures: [
+      { label: "Gross margin now", value: `${marginNow}%`, tone: "red" },
+      { label: "At the start", value: `${marginThen}%` },
+      { label: "Movement", value: `${marginMove > 0 ? "+" : "\u2212"}${Math.abs(marginMove).toFixed(1)} points`, tone: "red" },
+      { label: "Annualised effect", value: money(Math.abs(insight.impact.value), ccy), tone: "red" },
+    ],
     subtitle: `${company.sectorLong} \u00b7 ${company.geo} \u00b7 reported in ${ccy}`,
     preparedAt: insight.raisedOn,
     executiveSummary:
@@ -266,6 +293,12 @@ export function buildProcurementReport(s) {
   return {
     kind: "Portfolio Procurement Opportunity",
     company: "Caledonia Alba portfolio",
+    figures: [
+      { label: "Shared suppliers", value: String(t.suppliers) },
+      { label: "Annual spend", value: money(t.totalSpend, ccy) },
+      { label: "Saving available", value: money(t.saving, ccy), tone: "green" },
+      { label: "Held pending", value: money(t.savingIfConfirmed, ccy) },
+    ],
     subtitle: `${t.companies} companies \u00b7 ${t.suppliers} shared suppliers \u00b7 restated into ${ccy}`,
     preparedAt: insight.raisedOn,
     executiveSummary:

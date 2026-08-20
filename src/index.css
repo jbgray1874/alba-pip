@@ -1,25 +1,38 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* The brand typefaces, matching src/lib/theme.js and the faces index.html
+   actually loads. This file used to declare Hanken Grotesk, Fraunces and
+   JetBrains Mono — none of which are loaded any more — so every screen fell
+   back to a system face while the design tokens said something else. */
 :root {
-  --font-ui: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --font-display: 'Fraunces', serif;
+  --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+
+  --alba-bg: #0A0A0B;
+  --alba-surface: #131315;
+  --alba-border: #242428;
+  --alba-gold: #E5A83C;
 }
 
 body {
   font-family: var(--font-ui);
+  background: var(--alba-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Make every monospace number use the premium mono font */
+/* Any inline style that asks for monospace gets the brand mono. */
 [style*="monospace"] { font-family: var(--font-mono) !important; }
 
-/* Scrollbars */
-::-webkit-scrollbar { width: 5px; height: 5px; }
+/* Form controls do not inherit the page font on their own. */
+button, input, select, textarea { font-family: inherit; }
+
+/* Scrollbars, in the brand's own greys rather than the old blue. */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #1e2d4a; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #2a3d5e; }
+::-webkit-scrollbar-thumb { background: #2A2A30; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3A3A42; }
 
 /* ── Animations ──────────────────────────────────────────────────── */
 @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(1.5); } }
@@ -34,7 +47,7 @@ body {
 
 /* Skeleton shimmer utility */
 .skeleton {
-  background: linear-gradient(90deg, #0f1830 25%, #1a2540 50%, #0f1830 75%);
+  background: linear-gradient(90deg, var(--alba-surface) 25%, #1E1E22 50%, var(--alba-surface) 75%);
   background-size: 800px 100%;
   animation: shimmer 1.4s infinite linear;
   border-radius: 6px;
@@ -42,3 +55,23 @@ body {
 
 /* Smooth hover transitions on interactive cards */
 button, a { transition: all 0.18s ease; }
+
+/* ── The reference body layouts ──────────────────────────────────────
+   Evidence left, intelligence right. Below a laptop width the two stack,
+   because a 1.35fr column at 900px is a table nobody can read. The scale
+   control multiplies the effective width, so these thresholds are in the
+   scaled units the columns are actually laid out in. */
+@media (max-width: 1180px) {
+  .alba-two-col { grid-template-columns: 1fr !important; }
+  .alba-three-col { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 820px) {
+  .alba-three-col { grid-template-columns: 1fr !important; }
+}
+
+/* The report preview's three columns collapse to the sheet alone on a narrow
+   viewport — the checklist and the settings are context, the paper is the
+   deliverable. */
+@media (max-width: 1000px) {
+  .alba-report-cols { grid-template-columns: 1fr !important; }
+}

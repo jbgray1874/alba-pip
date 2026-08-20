@@ -8,7 +8,7 @@
 //  apart is a number nobody acts on.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C } from "../lib/theme.js";
+import { C, F } from "../lib/theme.js";
 import { useMemo, useState } from "react";
 import { buildProcurement, CATEGORIES, PARAMS } from "../lib/scenarioProcurement.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -93,7 +93,7 @@ export default function ScenarioProcurement() {
         ].map((x) => (
           <div key={x.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 155 }}>
             <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: "Georgia,serif", lineHeight: 1 }}>{x.v}</div>
+            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>{x.v}</div>
             <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
           </div>
         ))}

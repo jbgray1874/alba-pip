@@ -7,7 +7,7 @@
 //  worth. Everything below that exists to let a sceptical CFO take it apart.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C } from "../lib/theme.js";
+import { C, F } from "../lib/theme.js";
 import { useMemo, useState } from "react";
 import { buildMargin, LINES, PARAMS } from "../lib/scenarioMargin.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -85,7 +85,7 @@ export default function ScenarioMargin() {
           <div key={x.l} style={{ background: T.card, border: `1px solid ${x.t === T.red ? `${T.red}44` : T.border}`,
                                   borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 150 }}>
             <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: "Georgia,serif", lineHeight: 1 }}>{x.v}</div>
+            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: F.serif, lineHeight: 1 }}>{x.v}</div>
             <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
           </div>
         ))}
@@ -100,14 +100,14 @@ export default function ScenarioMargin() {
         <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div>
             <div style={{ color: T.txt3, fontSize: 9 }}>REVENUE OUTPERFORMANCE, ANNUALISED</div>
-            <div style={{ color: T.green, fontSize: 22, fontWeight: 700, fontFamily: "Georgia,serif" }}>
+            <div style={{ color: T.green, fontSize: 22, fontWeight: 700, fontFamily: F.serif }}>
               {money(s.revenueOutperformance)}
             </div>
           </div>
           <div style={{ color: T.txt3, fontSize: 16, paddingBottom: 6 }}>vs</div>
           <div>
             <div style={{ color: T.txt3, fontSize: 9 }}>GROSS PROFIT LOST TO MARGIN, ANNUALISED</div>
-            <div style={{ color: T.red, fontSize: 22, fontWeight: 700, fontFamily: "Georgia,serif" }}>
+            <div style={{ color: T.red, fontSize: 22, fontWeight: 700, fontFamily: F.serif }}>
               {money(s.annualGrossProfitLost)}
             </div>
           </div>

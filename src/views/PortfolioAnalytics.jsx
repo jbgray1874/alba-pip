@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { C } from "../lib/theme.js";
+import { C, F } from "../lib/theme.js";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
          LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { forAnalytics } from "../lib/companies.js";
@@ -52,7 +52,7 @@ function KPIBanner({ stripe }) {
     <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 1, marginBottom: 24, background: T.border, borderRadius: 10, overflow: "hidden" }}>
       {kpis.map((k, i) => (
         <div key={i} style={{ background: T.card, padding: "14px 16px", textAlign: "center" }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: k.color, fontFamily: "Georgia,serif" }}>{k.value}</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: k.color, fontFamily: F.serif }}>{k.value}</div>
           <div style={{ fontSize: 10, color: T.txt3, marginTop: 3, textTransform: "uppercase", letterSpacing: 1 }}>{k.label}</div>
         </div>
       ))}
@@ -116,7 +116,7 @@ function RAGHeatmap() {
                   );
                 })}
                 <td style={{ textAlign: "center", padding: 5 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: RAG_COLOR[c.rag], fontFamily: "Georgia,serif" }}>{c.score}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: RAG_COLOR[c.rag], fontFamily: F.serif }}>{c.score}</div>
                 </td>
               </tr>
             ))}
@@ -205,7 +205,7 @@ function ScenarioPlanner() {
           {/* Scenario result */}
           <div style={{ marginTop: 20, background: T.bg, borderRadius: 8, padding: 14, border: `1px solid ${runwayColor}40` }}>
             <div style={{ fontSize: 10, color: T.txt3, marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Scenario Runway</div>
-            <div style={{ fontSize: 36, fontWeight: 700, color: runwayColor, fontFamily: "Georgia,serif" }}>
+            <div style={{ fontSize: 36, fontWeight: 700, color: runwayColor, fontFamily: F.serif }}>
               {adjRunway.toFixed(1)}<span style={{ fontSize: 16 }}>mo</span>
             </div>
             <div style={{ fontSize: 11, color: runwayDiff >= 0 ? T.green : T.red, marginTop: 4 }}>
@@ -267,12 +267,12 @@ function IRRTable() {
               </td>
               <td style={{ padding: "10px 10px", fontSize: 11, color: T.txt2 }}>{c.stage}</td>
               <td style={{ padding: "10px 10px" }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: c.irr > 30 ? T.green : c.irr > 15 ? T.amber : T.red, fontFamily: "Georgia,serif" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: c.irr > 30 ? T.green : c.irr > 15 ? T.amber : T.red, fontFamily: F.serif }}>
                   {c.irr}%
                 </span>
               </td>
               <td style={{ padding: "10px 10px" }}>
-                <span style={{ fontSize: 15, fontWeight: 700, color: c.moic > 2 ? T.green : c.moic > 1 ? T.amber : T.red, fontFamily: "Georgia,serif" }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: c.moic > 2 ? T.green : c.moic > 1 ? T.amber : T.red, fontFamily: F.serif }}>
                   {c.moic}x
                 </span>
               </td>
@@ -493,7 +493,7 @@ ${pack.actions.map(a => `<div class="action"><span>${a.action}</span><div style=
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 12 }}>
             {pack.keyMetrics?.map((m, i) => (
               <div key={i} style={{ background: T.bg, borderRadius: 8, padding: 10, textAlign: "center" }}>
-                <div style={{ fontSize: 18, fontWeight: 700, color: ragCol[m.rag] || T.gold, fontFamily: "Georgia,serif" }}>{m.value}</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: ragCol[m.rag] || T.gold, fontFamily: F.serif }}>{m.value}</div>
                 <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>{m.label}</div>
                 <div style={{ fontSize: 9, color: T.txt3 }}>{m.vs}</div>
               </div>
@@ -558,7 +558,7 @@ function HubSpotPipeline({ hubspot }) {
             ["Companies", companyCount, T.txt2],
           ].map(([l,v,c]) => (
             <div key={l} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: c, fontFamily: "Georgia,serif" }}>{v}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: c, fontFamily: F.serif }}>{v}</div>
               <div style={{ fontSize: 9, color: T.txt3, textTransform: "uppercase", letterSpacing: 1 }}>{l}</div>
             </div>
           ))}
@@ -630,7 +630,7 @@ export default function PortfolioAnalytics() {
       {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 10, color: T.gold, letterSpacing: 3, textTransform: "uppercase", marginBottom: 4 }}>Caledonia Alba · Portfolio Intelligence</div>
-        <h1 style={{ margin: 0, fontFamily: "Georgia,serif", fontSize: 28, color: T.txt1 }}>Portfolio Analytics</h1>
+        <h1 style={{ margin: 0, fontFamily: F.serif, fontSize: 28, color: T.txt1 }}>Portfolio Analytics</h1>
         <div style={{ fontSize: 12, color: T.txt2, marginTop: 4 }}>
           Fund overview · Scenario modelling · Returns · Board packs
           {stripe?.connected && <span style={{ marginLeft: 12, color: T.green }}>● Stripe live</span>}
