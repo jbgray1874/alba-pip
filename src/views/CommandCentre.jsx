@@ -23,7 +23,7 @@ import { buildRevenueMiss } from "../lib/scenarioRevenueMiss.js";
 import { buildExpansion } from "../lib/scenarioExpansion.js";
 import { portfolioAlerts } from "../lib/alertsFeed.js";
 import { integrationHealth } from "../lib/liveFeed.js";
-import { fmtMoney } from "../lib/fx.js";
+import { fmtMoney, CURRENCY_SYMBOL } from "../lib/fx.js";
 import { useLiveRates } from "../lib/liveData.js";
 import LiveBadge from "../components/LiveBadge.jsx";
 import LiveStrip from "../components/LiveStrip.jsx";
@@ -415,7 +415,19 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
           { key: "fund-burn",   label: "Monthly net burn",    base: roll.burn,      amplitude: 0.004,  integration: "bankfeed", fmt: money },
           { key: "fund-rev",    label: "Monthly revenue",     base: roll.revenue,   amplitude: 0.003,  integration: "xero",     fmt: money },
           { key: "fund-pipe",   label: "Open pipeline",       base: roll.pipeline,  amplitude: 0.005,  integration: "hubspot",  fmt: money },
-          { key: "fund-heads",  label: "Portfolio headcount", base: roll.headcount, amplitude: 0.0012, integration: "bamboo",   fmt: (v) => Math.round(v).toLocaleString() },
+    // Headcount is a stock that changes monthly. On a two-second strip its
+    // reading rounded to the same integer every tick — a tile badged as a live
+    // reading that never moved, which is the one thing this strip exists to
+    // avoid. Revenue per head carries the same people dimension, is a figure a
+    // partner actually watches, and moves because revenue moves.
+          { key: "fund-rph",    label: "Revenue per head",
+            base: (roll.revenue * 1000 * 12) / Math.max(roll.headcount, 1),
+            amplitude: 0.0035, integration: "bamboo",
+            // In full units, not thousands. Rounded to the nearest £k this
+            // figure sits on £121k and never leaves it — the formatter has to
+            // carry enough precision to show the movement, or the tile is
+            // frozen for a second time by a different route.
+            fmt: (v) => `${CURRENCY_SYMBOL[REPORTING] ?? ""}${Math.round(v).toLocaleString()}` },
           { key: "fund-gbpusd", label: "GBP / USD",           base: 1.2712,         amplitude: 0.0011, integration: "fx",       fmt: (v) => v.toFixed(4) },
         ]}
         note="Live readings across the fund, moving around the reported figures below. A lapsed credential keeps its reading moving and drops the badge to SIMULATED rather than blanking the tile."

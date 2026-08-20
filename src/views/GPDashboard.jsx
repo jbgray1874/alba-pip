@@ -10,7 +10,7 @@ import { modulesFor, benchmarksFor, salesQualityFor } from "../lib/companyModule
 import { trackedActions, actionSummary } from "../lib/actionTracker.js";
 import { portfolioAlerts, portfolioActions, alertSummary } from "../lib/alertsFeed.js";
 import LiveStrip from "../components/LiveStrip.jsx";
-import { fmtMoney } from "../lib/fx.js";
+import { fmtMoney, CURRENCY_SYMBOL } from "../lib/fx.js";
 import { buildFinance } from "../lib/financeData.js";
 import { buildInvestigation } from "../lib/investigation.js";
 
@@ -198,7 +198,15 @@ function CompanyLiveStrip({co}){
     { key:`${co.id}-burn`,  label:"Net burn",         base:n.burn,    amplitude:0.005,  integration:"bankfeed", fmt:money },
     { key:`${co.id}-rev`,   label:"Monthly revenue",  base:n.revenue, amplitude:0.003,  integration:"xero",     fmt:money },
     { key:`${co.id}-pipe`,  label:"Open pipeline",    base:n.budget*3*fin.sales.pipelineCoverage, amplitude:0.006, integration:"hubspot", fmt:money },
-    { key:`${co.id}-heads`, label:"Headcount",        base:fin.people.headcount, amplitude:0.001, integration:"bamboo", fmt:(v)=>Math.round(v).toLocaleString() },
+    // Headcount is a stock that changes monthly. On a two-second strip its
+    // reading rounded to the same integer every tick — a tile badged as a live
+    // reading that never moved, which is the one thing this strip exists to
+    // avoid. Revenue per head carries the same people dimension, is a figure a
+    // partner actually watches, and moves because revenue moves.
+    { key:`${co.id}-rph`,   label:"Revenue per head",
+      base:(n.revenue*1000*12)/Math.max(fin.people.headcount,1),
+      amplitude:0.0035, integration:"bamboo",
+      fmt:(v)=>`${CURRENCY_SYMBOL[ccy] ?? ""}${Math.round(v).toLocaleString()}` },
     { key:`${co.id}-ar`,    label:"Overdue AR",       base:fin.cash.overdueTotal, amplitude:0.007, integration:"xero", fmt:money },
   ]),[co.id]);
   return <LiveStrip specs={specs} note={`Live readings for ${co.name}, moving around the reported figures in the tabs below.`}/>;

@@ -484,7 +484,14 @@ function Dashboard({role}) {
     { key: `cp-${COMPANY.id}-cash`,  label: "Cash balance",    base: COMPANY.cash,        amplitude: 0.0025, integration: "bankfeed", fmt: (v) => `${Math.round(v).toLocaleString()}` },
     { key: `cp-${COMPANY.id}-rev`,   label: "Monthly revenue", base: COMPANY.revenue,     amplitude: 0.003,  integration: "xero",     fmt: (v) => `${Math.round(v).toLocaleString()}` },
     { key: `cp-${COMPANY.id}-pipe`,  label: "Pipeline cover",  base: COMPANY.pipeline,    amplitude: 0.006,  integration: "hubspot",  fmt: (v) => `${v.toFixed(2)}x` },
-    { key: `cp-${COMPANY.id}-heads`, label: "Headcount",       base: COMPANY.headcount,   amplitude: 0.001,  integration: "bamboo",   fmt: (v) => Math.round(v).toLocaleString() },
+    // Headcount is a stock that changes monthly. On a two-second strip its
+    // reading rounded to the same integer every tick — a tile badged as a live
+    // reading that never moved, which is the one thing this strip exists to
+    // avoid. Revenue per head carries the same people dimension, is a figure a
+    // partner actually watches, and moves because revenue moves.
+    { key: `cp-${COMPANY.id}-rph`,   label: "Revenue per head",
+      base: (COMPANY.revenue * 1000 * 12) / Math.max(COMPANY.headcount, 1),
+      amplitude: 0.0035, integration: "bamboo",   fmt: (v) => `${Math.round(v).toLocaleString()}` },
   ]), [COMPANY]);
   const [editMode, setEditMode] = useState(false);
   const [actions, setActions] = useState(MY_ACTIONS);

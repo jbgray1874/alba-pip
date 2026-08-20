@@ -27,6 +27,7 @@ import { trackedActions, actionSummary } from "../src/lib/actionTracker.js";
 import { TIERS } from "../src/lib/liveData.js";
 import { loadPrefs as _lp } from "../src/lib/prefs.js";
 import { INTEGRATIONS, licenceStatus, integrationHealth, readingAt } from "../src/lib/liveFeed.js";
+import { fmtMoney } from "../src/lib/fx.js";
 import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
 import { buildSignalDevelopment, investigationConfidence, ALERT_ON } from "../src/lib/signalDevelopment.js";
@@ -1119,6 +1120,41 @@ check("the navigation carries labels, not nineteen unlabelled glyphs", () => {
   if (!/v\.sub/.test(appSrc)) return "the navigation does not render the one-line description";
   if (!DEFAULT_NAV_OPEN) return "the navigation defaults to collapsed";
   return true;
+});
+
+check("no tile badged as a live reading is frozen", () => {
+  // Portfolio headcount sat at 1,103 for six consecutive samples in the running
+  // app: amplitude 0.0012 on 1,103 people rounds to the same integer every
+  // tick. A tile that says it is reading and never moves is the one failure
+  // this strip exists to prevent, and it shipped.
+  //
+  // Every spec is replayed here through its own formatter, exactly as the tile
+  // renders it, and must produce several distinct strings across a minute.
+  const SPECS = [
+    { key: "fund-cash", base: 30_664, amp: 0.0025, fmt: (v) => fmtMoney(v, "GBP", { k: true }) },
+    { key: "fund-burn", base: 1_735, amp: 0.004, fmt: (v) => fmtMoney(v, "GBP", { k: true }) },
+    { key: "fund-rev", base: 11_084, amp: 0.003, fmt: (v) => fmtMoney(v, "GBP", { k: true }) },
+    { key: "fund-pipe", base: 87_564, amp: 0.005, fmt: (v) => fmtMoney(v, "GBP", { k: true }) },
+    { key: "fund-rph", base: 120_600, amp: 0.0035, fmt: (v) => `£${Math.round(v).toLocaleString()}` },
+    { key: "fund-gbpusd", base: 1.2712, amp: 0.0011, fmt: (v) => v.toFixed(4) },
+  ];
+  const stuck = [];
+  for (const s of SPECS) {
+    const seen = new Set();
+    for (let n = 0; n < 30; n++) seen.add(s.fmt(readingAt(s.key, s.base, s.amp, n)));
+    if (seen.size < 4) stuck.push(`${s.key} shows ${seen.size} value(s) in 30 ticks`);
+  }
+  if (stuck.length) return stuck.join("; ");
+
+  // And no view may put a bare integer count on the strip, which is how the
+  // frozen tile got there.
+  const offenders = [];
+  for (const [name, src] of [["CommandCentre", commandSrc], ["GPDashboard", gpSrc]]) {
+    if (/label:\s*["'`](Portfolio headcount|Headcount)["'`]/.test(src)) {
+      offenders.push(`${name} puts headcount on a per-second strip`);
+    }
+  }
+  return offenders.length === 0 || offenders.join("; ");
 });
 
 check("the live strip distinguishes connected from not answering", () => {
