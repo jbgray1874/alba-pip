@@ -1111,6 +1111,20 @@ check("the user guide says where each of the nine screens is", () => {
   return true;
 });
 
+check("the top bar cannot clip its own controls", () => {
+  // A fixed 48px row with marginLeft:auto on the right-hand group meant that in
+  // a window under about 1150px the SIZE control, the fund selector and the
+  // account were pushed off the edge — not scrolled to, not collapsed, gone,
+  // with nothing to indicate they existed. It was reported as "can't see the
+  // menu items you refer to", which is exactly what it looked like.
+  const bar = appSrc.match(/className="alba-topbar"[\s\S]{0,320}?\}\}/);
+  if (!bar) return "the top bar is not identifiable — has the class been removed?";
+  if (!/flexWrap:\s*'wrap'/.test(bar[0])) return "the top bar does not wrap, so it will clip again";
+  if (/height:\s*48\b/.test(bar[0])) return "the top bar is still a fixed height and cannot wrap";
+  if (!/minHeight:\s*48/.test(bar[0])) return "the top bar has lost its resting height";
+  return true;
+});
+
 check("the navigation carries labels, not nineteen unlabelled glyphs", () => {
   // It shipped as a 52px icon-only rail — which is what the reference screens
   // draw, but the reference screens have four destinations and this has

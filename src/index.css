@@ -75,3 +75,11 @@ button, a { transition: all 0.18s ease; }
 @media (max-width: 1000px) {
   .alba-report-cols { grid-template-columns: 1fr !important; }
 }
+
+/* The top bar wraps rather than clipping its right-hand controls. When it does
+   wrap, the two rows need breathing room the fixed 48px did not allow, and the
+   HOME switch — a preference, not a destination — is the first thing to go so
+   SIZE and the fund selector survive on the narrowest windows. */
+@media (max-width: 1150px) {
+  .alba-topbar { padding-top: 6px !important; padding-bottom: 6px !important; }
+}

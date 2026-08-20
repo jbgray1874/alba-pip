@@ -187,9 +187,16 @@ export default function App() {
       fontFamily: F.sans, background: C.bg, color: C.txt1,
     }}>
 
-      {/* ── Top bar: mark, sections, fund, account ── */}
-      <div style={{ display:'flex', alignItems:'center', gap:22, padding:'0 18px', height:48,
-                    borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
+      {/* ── Top bar: mark, sections, fund, account ──
+          A fixed 48px row with `marginLeft:auto` on the right-hand group meant
+          that in a window narrower than about 1150px the controls on the right
+          — HOME, SIZE, the fund and the account — were simply pushed off the
+          edge and clipped. Not scrolled to, not collapsed: gone, with no
+          indication they existed. The bar now wraps to a second row instead, so
+          nothing is ever unreachable at any window width. */}
+      <div className="alba-topbar"
+           style={{ display:'flex', alignItems:'center', gap:'6px 22px', padding:'0 18px', minHeight:48,
+                    flexWrap:'wrap', borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
         <Wordmark/>
         <nav style={{ display:'flex', gap:2, marginLeft:8 }}>
           {GROUPS.map(g => {
@@ -206,7 +213,7 @@ export default function App() {
             )
           })}
         </nav>
-        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:9 }}>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:9, flexWrap:'wrap' }}>
           <div style={{ display:'flex', alignItems:'center', gap:5 }}>
             <span style={{ color:C.txt3, fontSize:S.micro, letterSpacing:'0.1em' }}>HOME</span>
             <div style={{ display:'flex', border:`1px solid ${C.border}`, borderRadius:4, overflow:'hidden' }}>
