@@ -34,6 +34,126 @@ function sharesOf(values, total) {
   return out;
 }
 
+/**
+ * Drafted narrative arrives with markdown emphasis in it, because that is how a
+ * language model writes when nobody stops it. A report sheet has its own type
+ * hierarchy and no use for asterisks, so they come out — the emphasis is lost,
+ * which is the correct trade against `**Orbit Commerce**` printed on paper.
+ */
+const plainProse = (s) => String(s)
+  .replace(/\*\*(.+?)\*\*/gs, "$1")
+  .replace(/(^|\s)[_*](\S(?:.*?\S)?)[_*](?=[\s.,;:!?)]|$)/gs, "$1$2")
+  .replace(/^#+\s*/gm, "")
+  .replace(/^[•\-*]\s+/gm, "— ")
+  .replace(/\n{3,}/g, "\n\n")
+  .trim();
+
+/**
+ * Investigation Report — the output of the Run Investigation agent.
+ *
+ * The agent showed its reasoning on screen and then stopped. Everything it had
+ * worked out — the findings, the ranked causes, the recommended actions —
+ * evaporated when the panel closed, which makes it a demonstration rather than
+ * a tool. This turns the same investigation object into a document somebody can
+ * put in front of a board.
+ *
+ * Nothing is re-derived here. The findings are the agent's own reasoning steps,
+ * the ranking is its own contribution table, and the actions are the ones it
+ * recommended, in its own priority order.
+ *
+ * The same object is what the board pack agent circulates, under its own title
+ * and with the drafted narrative carried in front of it. The narrative is put
+ * in its own section, attributed, rather than allowed to stand in for the
+ * executive summary — a reader has to be able to tell which sentences were
+ * calculated and which were written.
+ *
+ * @param {object} inv         from buildInvestigation()
+ * @param {string} [opt.kind]  override the document title
+ * @param {object} [opt.commentary] `{ text, source }` — drafted prose to carry
+ */
+export function buildInvestigationReport(inv, opt = {}) {
+  const { company, fin, contributions, rootCause, actions, total, underStress, currency: ccy } = inv;
+  const varPct = (fin.revenue.total / fin.revenue.budget - 1) * 100;
+  const marginMove = fin.ebitda.grossMargin - fin.history.ebitda[0].grossMarginPct;
+  const shares = sharesOf(contributions.map((c) => c.impact), total || 1);
+
+  return {
+    kind: opt.kind ?? (underStress ? "Company Investigation Report" : "Company Monitoring Report"),
+    company: company.name,
+    subtitle: `${company.sectorLong} · ${company.geo} · reported in ${ccy}`,
+    preparedAt: fin.asOf,
+    figures: [
+      { label: "Cash", value: money(fin.cash.balance, ccy) },
+      { label: "Runway", value: `${fin.runway} months`,
+        tone: fin.runway < 6 ? "red" : fin.runway < 12 ? undefined : "green" },
+      { label: "Revenue vs plan", value: `${varPct >= 0 ? "+" : ""}${varPct.toFixed(1)}%`,
+        tone: varPct < -2 ? "red" : "green" },
+      { label: "Gross margin", value: `${fin.ebitda.grossMargin}%`,
+        tone: marginMove < -1 ? "red" : undefined },
+    ],
+    executiveSummary: rootCause,
+    sections: [
+      // When no analytical layer is reachable the caller falls back to the
+      // calculated root cause, which is already the executive summary. Printing
+      // it twice under two headings makes the report look padded and makes the
+      // reader distrust both copies, so the section only appears when the
+      // narrative is genuinely something else.
+      ...(opt.commentary?.text && plainProse(opt.commentary.text) !== rootCause ? [{
+        title: "Commentary",
+        text: plainProse(opt.commentary.text),
+        attribution: opt.commentary.source,
+      }] : []),
+      {
+        title: "What the investigation read",
+        table: {
+          head: ["Finding"],
+          rows: inv.steps.filter((s) => s.kind === "finding").map((s) => [s.text]),
+        },
+      },
+      ...(contributions.length ? [{
+        title: underStress ? "Ranked causes" : "Watch list — no threshold breached",
+        table: {
+          head: ["Driver", "Effect on cash, monthly", "Share", "How it was measured"],
+          rows: contributions.map((c, i) => [c.label, money(c.impact, ccy), `${shares[i]}%`, c.basis]),
+        },
+      }] : []),
+      {
+        title: "Recommended actions",
+        table: {
+          head: ["Priority", "Action", "Owner", "Why"],
+          rows: actions.map((a) => [
+            a.priority.charAt(0).toUpperCase() + a.priority.slice(1), a.action, a.owner, a.rationale,
+          ]),
+        },
+      },
+      {
+        title: "Position",
+        rows: [
+          ["Cash", money(fin.cash.balance, ccy)],
+          ["Net burn, monthly", money(fin.cash.burn, ccy)],
+          ["Runway", `${fin.runway} months`],
+          ["Revenue against plan", `${money(fin.revenue.total, ccy)} of ${money(fin.revenue.budget, ccy)}`],
+          ["Gross margin", `${fin.ebitda.grossMargin}%, from ${fin.history.ebitda[0].grossMarginPct}% ${fin.history.months.length} months ago`],
+          ["Headcount", `${fin.people.headcount} against a plan of ${fin.people.planHeadcount}, attrition ${fin.people.attritionPct}%`],
+          ["Pipeline coverage", `${fin.sales.pipelineCoverage}×, from ${fin.sales.coverageFrom}×`],
+          ["Overdue receivables", `${money(fin.cash.overdueTotal, ccy)} across ${fin.cash.debtors.length} accounts`],
+        ],
+      },
+    ],
+    accountable: underStress
+      ? "Deal team, with the company's CFO confirming the figures before circulation"
+      : "Deal team — standard monthly cycle, no intervention proposed",
+    reviewDate: "30 Jun 2026",
+    methodology:
+      `Causes are ranked on a single basis: the effect each has on cash in one month. Receivables are a stock ` +
+      `rather than a flow, so the overdue balance is spread across a quarter to make it comparable, and that ` +
+      `is stated against the line rather than assumed. A company inside its thresholds is reported as a watch ` +
+      `list rather than given a root cause — an investigation that finds a culprit at a company with two years ` +
+      `of runway is one nobody believes the second time. Every figure is read from the ` +
+      `${fin.history.months.length}-month ledger to ${fin.asOf}; none is estimated by the language model.`,
+  };
+}
+
 /** Portfolio Performance Exception Report — scenario 1. */
 export function buildExceptionReport(s) {
   const { company, currentQuarter: q, forecast: f, bridge, insight, currency: ccy } = s;
@@ -363,6 +483,9 @@ export function reportToHtml(r) {
   const rows = (list) => `<table class="kv"><tbody>${
     list.map(([k, v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("")}</tbody></table>`;
 
+  const prose = (s) => s.text.split(/\n{2,}/).map((p) => `<p>${esc(p).replace(/\n/g, "<br>")}</p>`).join("") +
+    (s.attribution ? `<p class="attrib">${esc(s.attribution)}</p>` : "");
+
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>${esc(r.kind)} — ${esc(r.company)}</title>
 <style>
@@ -379,6 +502,7 @@ table{width:100%;border-collapse:collapse;font-size:12.5px;margin:0 0 6px}
 th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--line);vertical-align:top}
 thead th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
 table.kv th{width:220px;color:var(--muted);font-weight:500}
+.attrib{color:var(--muted);font-size:11.5px;font-style:italic;margin:8px 0 0}
 .foot{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:11.5px}
 @media print{body{padding:0}}
 </style></head><body><div class="wrap">
@@ -386,7 +510,7 @@ table.kv th{width:220px;color:var(--muted);font-weight:500}
 <h1>${esc(r.kind)}</h1>
 <p class="sub">${esc(r.company)} · ${esc(r.subtitle)} · prepared ${esc(r.preparedAt)}</p>
 <div class="summary">${esc(r.executiveSummary)}</div>
-${r.sections.map((s) => `<h2>${esc(s.title)}</h2>${s.table ? table(s.table) : rows(s.rows)}`).join("")}
+${r.sections.map((s) => `<h2>${esc(s.title)}</h2>${s.table ? table(s.table) : s.rows ? rows(s.rows) : prose(s)}`).join("")}
 <h2>Methodology</h2><p>${esc(r.methodology)}</p>
 <div class="foot"><strong>Accountable:</strong> ${esc(r.accountable)} · <strong>Review date:</strong> ${esc(r.reviewDate)}<br>
 Every figure in this report is calculated from connected source systems. Sources and refresh dates are listed against each metric above.</div>

@@ -1,7 +1,7 @@
 {
   "name": "alba-pip",
   "version": "1.0.0",
-  "description": "Caledonia Alba \u2013 Portfolio Intelligence Platform",
+  "description": "Caledonia Alba – Portfolio Intelligence Platform",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,8 @@
     "check": "npm run verify && npm run build"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "recharts": "^2.12.0"

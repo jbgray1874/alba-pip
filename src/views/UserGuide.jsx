@@ -320,8 +320,8 @@ export default function UserGuide({ onNavigate }) {
         <Card tone={`${T.purple}44`}>
           <div style={{ color: T.purple, fontSize: 11.5, fontWeight: 700, marginBottom: 6 }}>The investigation drill-down</div>
           <Route
-            steps={["AI Agents", "Investigation Agent", "pick a company", "Run Investigation"]}
-            note="The reasoning chain is computed, not scripted. It ends with the ranking that produced the conclusion — each candidate cause with its monthly cash impact, its share, and the arithmetic behind it."
+            steps={["AI Agents", "Investigation Agent", "pick a company", "Run Investigation", "Report as PDF"]}
+            note="The reasoning chain is computed, not scripted. It ends with the ranking that produced the conclusion — each candidate cause with its monthly cash impact, its share, and the arithmetic behind it. Report as PDF turns the same investigation into an A4 document: the findings, the ranking and the recommended actions, nothing re-derived. The Board Pack tab does the same from Pack as PDF, with the drafted commentary carried in front of the calculated sections and attributed."
           />
         </Card>
 
@@ -461,9 +461,14 @@ export default function UserGuide({ onNavigate }) {
             Every report carries a methodology paragraph and an evidence table with the source and refresh date for
             each figure quoted above it. Generate one from the button at the top right of its screen. It opens as a
             preview first — the sheet you see is the whole report, set on paper against the dark interface, with a
-            checklist of its contents to the left and its settings to the right. Download saves it as a
-            self-contained HTML file and Print opens it for a printer, but a shared link runs inside a sandbox that
-            blocks both, which is exactly why the report opens on screen rather than going straight to a file.
+            checklist of its contents to the left and its settings to the right.
+            <br /><br />
+            <b style={{ color: T.txt2 }}>Download PDF</b> sets the same report as an A4 document with the marque on
+            every page: real type rather than a picture of a page, so it can be searched, copied out of and printed
+            at any size. It is built in the browser, which is why the first one takes a moment. Save as HTML gives a
+            single self-contained file that opens anywhere, and Print sends the same sheet to a printer. The report
+            opens on screen first because a shared link can run inside a sandbox that blocks a download outright;
+            where that happens the file opens in a tab instead.
           </div>
         </Card>
       </Section>
@@ -507,7 +512,7 @@ export default function UserGuide({ onNavigate }) {
       <Section n="10" title="Reading the screen">
         <Card>
           <Row k="Every screen, every company" v={`Client Portal and Live Data each carry a company selector, and the GP Dashboard's eleven tabs and benchmarks are populated for all ${COMPANIES.length}. Nothing is pinned to one company any more.`} />
-          <Row k="Generating a report" v="Opens it on screen first, with Print and Download inside the panel. A download is silently blocked in some embedded viewers, so the report is shown rather than only offered as a file." />
+          <Row k="Generating a report" v="Opens it on screen first, with Download PDF, Save as HTML and Print inside the panel. A download is silently blocked in some embedded viewers, so the report is shown rather than only offered as a file." />
           <Row k="Text too small?" v="Ctrl and + or − (Cmd on a Mac), or the SIZE control in the top bar — 100% to 150%, Ctrl+0 to reset. It scales the whole interface together, so no column, chart or table row is dropped at any setting. The browser's own zoom still works and stacks on top. The choice is remembered." />
           <Row k="Which page opens first?" v="Set it with the home switch in the top bar. Portfolio Health or GP Dashboard; the other stays one click away in the sidebar." />
           <Row k="Status pips" v="Five per company on Portfolio Health — revenue, EBITDA, cash, people, sales. Hover any pip for the figure behind it." />

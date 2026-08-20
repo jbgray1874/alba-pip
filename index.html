@@ -7,7 +7,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" /><rect width='100' height='100' fill='%230A0A0B'/><path d='M35 7 H74 A26 26 0 0 1 74 59 H48 V94 H35 Z M48 20 H74 A13 13 0 0 1 74 46 H48 Z' fill='%23F2F2F0' fill-rule='evenodd'/><path d='M0 94 L38 28 L76 94 Z M18 82 L38 48 L58 82 Z' fill='%23F2F2F0' fill-rule='evenodd' stroke='%230A0A0B' stroke-width='4.5' stroke-linejoin='round'/></svg>" /><rect width='100' height='100' fill='%230A0A0B'/><path d='M46 6 H72 A23 23 0 0 1 72 52 H59 V94 H46 Z M59 19 H72 A10 10 0 0 1 72 39 H59 Z' fill='%23F2F2F0' fill-rule='evenodd'/><path d='M35 20 L69 94 H57 L35 46 L24 70 H43 L48 81 H7 Z' fill='%23F2F2F0' stroke='%230A0A0B' stroke-width='5' stroke-linejoin='round'/></svg>" /><rect x='4' y='4' width='92' height='92' rx='27' fill='none' stroke='%23E5A83C' stroke-width='6.5'/><path d='M24.6 74.6 42.9 26.3l9.2 23.7' fill='none' stroke='%23E5A83C' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/><path d='M33.3 57.1h15.4' fill='none' stroke='%23E5A83C' stroke-width='6.7' stroke-linecap='round'/><path d='M59.6 74.6V26.3h8.8a12.1 12.1 0 0 1 0 24.6h-8.8' fill='none' stroke='%23E5A83C' stroke-width='8' stroke-linecap='round' stroke-linejoin='round'/></svg>" /><rect x='4' y='4' width='92' height='92' rx='24' fill='none' stroke='%23E5A83C' stroke-width='7'/><path d='M26 70 46 30l9 20' stroke='%23E5A83C' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M56 70h13a10 10 0 0 0 0-20h-8' stroke='%23E5A83C' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+    <!--
+      The tab icon is the supplied artwork at public/favicon.png.
+
+      It was an inline SVG data URI four times before this, the mark redrawn by
+      hand on each attempt, and every replacement left the tail of the one
+      before it loose in the head. A browser will not keep stray element content
+      in <head>: it moved all four fragments to the top of the body, so every
+      page in the application opened with a row of `" />` above the title.
+      One line, one file, nothing left behind.
+    -->
+    <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
   </head>
   <body style="margin:0;padding:0;background:#0A0A0B;">
     <div id="root"></div>

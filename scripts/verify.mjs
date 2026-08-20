@@ -28,7 +28,8 @@ import { TIERS } from "../src/lib/liveData.js";
 import { loadPrefs as _lp } from "../src/lib/prefs.js";
 import { INTEGRATIONS, licenceStatus, integrationHealth, readingAt } from "../src/lib/liveFeed.js";
 import { fmtMoney } from "../src/lib/fx.js";
-import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
+import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, buildInvestigationReport, reportToHtml } from "../src/lib/reports.js";
+import { reportToPdf, pdfSafe, unmappable } from "../src/lib/pdf.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
 import { buildSignalDevelopment, investigationConfidence, ALERT_ON } from "../src/lib/signalDevelopment.js";
 import { buildProtectionPlan } from "../src/lib/protectionPlan.js";
@@ -521,6 +522,171 @@ check("every insight carries the date it was raised", () => {
   return true;
 });
 
+// ── 8c. The PDF ─────────────────────────────────────────────────────────────
+//  A report that can only be looked at is a demonstration. These check the file
+//  somebody actually attaches to an email.
+section("Reports — the file that leaves the building");
+
+// The PDF stores text in WinAnsi, which puts the typographic characters in
+// 0x80–0x9F where Unicode has control codes. Reading a page back means undoing
+// that: the en dash in "$1,416k – $1,916k" is byte 0x96 on the page, and
+// without this table it comes back as U+0096 and the figure appears to have
+// gone missing when it is sitting there correctly. Five slots are unassigned.
+const CP1252 = "€�‚ƒ„…†‡ˆ‰Š‹Œ�Ž��‘’“”•–—˜™š›œ�žŸ";
+
+/**
+ * The words on the page, read back out of the PDF's own content streams.
+ *
+ * This is the only way to check that the file says what the preview said. Built
+ * uncompressed so the streams are legible, then the text-showing operators are
+ * pulled out and their escapes undone. If this returns nothing, the report has
+ * been rendered as a picture and every check below is worthless.
+ */
+async function pdfTextOf(report) {
+  const doc = await reportToPdf(report, { compress: false });
+  return [...doc.output().matchAll(/\(((?:\\.|[^()\\])*)\)\s*Tj/g)]
+    .map((m) => m[1]
+      .replace(/\\([()\\])/g, "$1")
+      .replace(/\\(\d{3})/g, (_, o) => String.fromCharCode(parseInt(o, 8)))
+      .replace(/[\u0080-\u009f]/g, (c) => CP1252[c.charCodeAt(0) - 0x80]))
+    .join(" ");
+}
+
+// Every report the application can produce, including the two the AI Agents
+// screen circulates. The investigation is built for a company under stress and
+// one that is not, because they take different branches.
+const investigated = COMPANIES.map((c) => buildInvestigation(c.id));
+const allReports = [
+  ["exception", buildExceptionReport(s1)],
+  ["growth", buildGrowthBrief(s4)],
+  ["cash", buildCashReport(s2)],
+  ["margin", buildMarginReport(s3)],
+  ["procurement", buildProcurementReport(s5)],
+  ...investigated.map((inv) => [`investigation · ${inv.company.name}`, buildInvestigationReport(inv)]),
+];
+
+check("every report the application can produce sets as a PDF", async () => {
+  for (const [name, r] of allReports) {
+    const doc = await reportToPdf(r);
+    const bytes = doc.output("arraybuffer").byteLength;
+    const pages = doc.getNumberOfPages();
+    if (pages < 1) return `${name}: no pages`;
+    // A typeset report is tens of kilobytes. Much smaller means the sections
+    // came out empty; much larger means something is being rasterised.
+    if (bytes < 4000) return `${name}: only ${bytes} bytes across ${pages} pages — the pages are empty`;
+    if (bytes > 400_000) return `${name}: ${Math.round(bytes / 1024)}KB — that is a bitmap, not type`;
+  }
+  return true;
+});
+
+check("the PDF quotes the same figures as the sheet it was previewed as", async () => {
+  for (const [name, r] of allReports) {
+    const text = await pdfTextOf(r);
+    if (text.length < 800) return `${name}: only ${text.length} characters of real text in the file`;
+    if (/undefined|NaN|\[object Object\]/.test(text)) return `${name}: the page shows undefined, NaN or [object Object]`;
+    if (!text.includes(r.company)) return `${name}: the file never names ${r.company}`;
+    for (const f of r.figures ?? []) {
+      if (!text.includes(pdfSafe(f.value)))
+        return `${name}: the sheet leads on ${f.label} ${f.value} and the file does not carry it`;
+    }
+    for (const sec of r.sections) {
+      if (!text.includes(pdfSafe(sec.title).toUpperCase()))
+        return `${name}: section "${sec.title}" is in the preview and missing from the file`;
+    }
+    if (!text.includes(pdfSafe(r.methodology).slice(0, 60)))
+      return `${name}: the methodology did not reach the page`;
+  }
+  return true;
+});
+
+check("no character in a report is lost on its way to the page", () => {
+  // The standard PDF fonts are WinAnsi. Anything outside it is substituted in
+  // words — the arrow becomes "to" — and anything the table has not been told
+  // about is dropped instead, which is how a figure quietly loses its units.
+  for (const [name, r] of allReports) {
+    const lost = unmappable(JSON.stringify(r));
+    if (lost.length) return `${name}: ${lost.map((c) => `"${c}" (U+${c.codePointAt(0).toString(16)})`).join(", ")} would be dropped — add to SUBSTITUTE in pdf.js`;
+  }
+  return true;
+});
+
+check("a drafted narrative is carried as prose and attributed, in all three outputs", async () => {
+  // The board pack's commentary is written; everything under it is calculated.
+  // A reader has to be able to tell which is which, so the section is separate
+  // and attributed rather than standing in for the executive summary.
+  const draft = "**Orbit Commerce** is _behind plan_.\n\n• Cash is the binding constraint.";
+  const r = buildInvestigationReport(investigated[0], {
+    kind: "Board Pack",
+    commentary: { text: draft, source: "Drafted by the analytical layer." },
+  });
+  if (r.kind !== "Board Pack") return "the title override was ignored";
+  const sec = r.sections.find((x) => x.title === "Commentary");
+  if (!sec?.text) return "the narrative did not become a section";
+  if (/\*\*|^_|_$/m.test(sec.text)) return `markdown emphasis reached the sheet: ${JSON.stringify(sec.text)}`;
+  if (!sec.text.includes("Orbit Commerce")) return "stripping the emphasis took the words with it";
+  if (!sec.attribution) return "the narrative is unattributed";
+
+  const html = reportToHtml(r);
+  if (!html.includes("Commentary") || !html.includes(sec.attribution)) return "the HTML export drops the commentary";
+  const text = await pdfTextOf(r);
+  if (!text.includes("COMMENTARY")) return "the PDF drops the commentary section";
+  if (!text.includes("Cash is the binding constraint.")) return "the PDF drops the narrative itself";
+  if (!text.includes(sec.attribution)) return "the PDF drops the attribution";
+  return true;
+});
+
+check("a report never prints the same paragraph under two headings", () => {
+  // With no analytical layer reachable both agent demos fall back to the
+  // calculated root cause — which is already the executive summary. Carrying it
+  // through as commentary as well printed it twice, one heading apart.
+  const inv = investigated[0];
+  const echoed = buildInvestigationReport(inv, {
+    kind: "Board Pack",
+    commentary: { text: inv.rootCause, source: "Drafted from the calculated evidence." },
+  });
+  if (echoed.sections.some((s) => s.title === "Commentary"))
+    return "the fallback narrative is the executive summary and it is being repeated as commentary";
+
+  const drafted = buildInvestigationReport(inv, {
+    commentary: { text: "Something a model actually wrote.", source: "Drafted." },
+  });
+  if (!drafted.sections.some((s) => s.title === "Commentary"))
+    return "a genuinely different narrative was dropped along with the echo";
+  return true;
+});
+
+check("a table row is never broken across the page break", async () => {
+  // Left to itself the table plugin will split a wrapped cell at the foot of a
+  // page, which put "attrition is running at" on one page and "14%" on the next.
+  const src = await readFile(new URL("../src/lib/pdf.js", import.meta.url), "utf8");
+  if (!/rowPageBreak:\s*"avoid"/.test(src)) return "rowPageBreak is not set — a row can split mid-sentence";
+  return true;
+});
+
+check("nothing leaks out of the page head into the top of the screen", async () => {
+  // Four inline-SVG favicons were replaced in turn and each replacement left
+  // the tail of the one before it loose in the head — a `</svg>" />` and the
+  // paths above it. A browser will not keep element content in <head>, so it
+  // relocated all four into the body, and every page in the application opened
+  // with `" />" />" />" />` printed above the title.
+  const src = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const head = src.slice(src.indexOf("<head"), src.indexOf("</head>"));
+  const stray = head.replace(/<!--[\s\S]*?-->/g, "").match(/<\/svg>|\/>\s*"/g);
+  if (stray) return `loose markup in <head>: ${stray.slice(0, 3).map((s) => JSON.stringify(s)).join(", ")}`;
+  return true;
+});
+
+check("the investigation agent can circulate what it found", async () => {
+  // The agent used to reason on screen and stop. Both demos on the AI Agents
+  // screen now open the same report the scenarios do.
+  const src = await readFile(new URL("../src/views/Agents.jsx", import.meta.url), "utf8");
+  if (!src.includes("ReportPanel")) return "the AI Agents screen still has no way to circulate a result";
+  if (!src.includes("buildInvestigationReport")) return "the agents build their report from something other than the investigation";
+  const buttons = (src.match(/as PDF/g) ?? []).length;
+  if (buttons < 2) return `only ${buttons} of the two agent demos offers a document`;
+  return true;
+});
+
 // ── 8d. Live data ───────────────────────────────────────────────────────────
 section("Live data — the badge must be able to be wrong");
 
@@ -992,6 +1158,8 @@ check("the user guide documents the features that were added after it", () => {
     ["reports, one per scenario", /Cash Position Review/],
     ["the interface scale shortcut", /Ctrl and/],
     ["the two landing pages", /landing page/i],
+    ["the PDF output", /Download PDF/],
+    ["circulating an agent's result", /Report as PDF/],
   ];
   const absent = topics.filter(([, re]) => !re.test(guideSrc)).map(([t]) => t);
   return absent.length === 0 || `undocumented: ${absent.join("; ")}`;

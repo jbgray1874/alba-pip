@@ -1,7 +1,9 @@
 import { useState, useMemo } from "react";
 import { C, F, S, label as labelStyle } from "../lib/theme.js";
 import { PageHeader, Chip, Metric } from "../components/Shell.jsx";
+import ReportPanel from "../components/ReportPanel.jsx";
 import { buildInvestigation, investigationTargets } from "../lib/investigation.js";
+import { buildInvestigationReport } from "../lib/reports.js";
 import { COMPANIES } from "../lib/companies.js";
 import { attentionActions } from "../lib/investigation.js";
 import { fmtMoney } from "../lib/fx.js";
@@ -69,7 +71,7 @@ const AGENTS = [
     tagline:"When a KPI turns red, it investigates why before you even ask.",
     color:T.amber,
     what:"Triggered by a threshold breach. Runs a multi-step investigation: queries related KPIs, looks for correlations (e.g. cash falling = AR rising + revenue missing), cross-references HR data (high attrition + low headcount = execution risk), then generates a root cause narrative with a chain of evidence. Shows its reasoning steps on screen.",
-    prototype:"Live demo — click Investigate on any red KPI. Runs 4–5 visible reasoning steps. Returns root cause + evidence chain.",
+    prototype:"Live demo — click Investigate on any red KPI. Runs 4–5 visible reasoning steps. Returns root cause + evidence chain, then sets the whole investigation as an A4 PDF from the same object it reasoned over.",
     production:"Auto-triggered by Monitor Agent. Attached to every critical alert. Feeds into action recommendations.",
     tools:["Multi-KPI query","Correlation engine","Historical trend fetch","Narrative generation"],
     why:"A GP seeing 'cash runway 4.8 months' doesn't know if it's an AR problem, a burn problem, or a revenue problem. This agent tells them in 10 seconds.",
@@ -121,9 +123,9 @@ const AGENTS = [
     tagline:"One click. Full board pack. PDF ready in 30 seconds.",
     color:T.green,
     what:"Takes all current KPI data, alerts, actions, and trend data for a company. Generates: executive summary, performance commentary, KPI scorecard, risk section, action tracker, and forward outlook. Formats it as a print-ready document. Human reviews and approves before sending — agent does the drafting.",
-    prototype:"Live demo — click Generate Board Pack for any company. Returns structured board pack text with all sections populated from live KPI data.",
-    production:"Claude API + PDF generation (Puppeteer/WeasyPrint). Versioned. Human approval gate before export. Audit log of all generated packs.",
-    tools:["KPI data fetch","Alert summary","Action tracker query","Narrative generation","PDF formatting"],
+    prototype:"Live demo — click Generate Board Pack for any company, then Pack as PDF. The narrative is drafted; the figures, the ranked causes and the actions under it are calculated. Real A4 typesetting in the browser, text throughout rather than a picture of a page.",
+    production:"Claude API for the narrative; the document itself is already produced client-side. Versioned. Human approval gate before export. Audit log of all generated packs.",
+    tools:["KPI data fetch","Alert summary","Action tracker query","Narrative generation","PDF typesetting"],
     why:"Board pack preparation is 1–2 days of work per company per month. This makes it 30 minutes.",
     build:"Claude API + Puppeteer PDF + human approval gate",
   },
@@ -230,11 +232,26 @@ function InvestigationDemo() {
   const [shown, setShown] = useState(0);
   const [summary, setSummary] = useState(null);
   const [live, setLive] = useState(false);
+  const [showReport, setShowReport] = useState(false);
 
   const inv = useMemo(() => buildInvestigation(target), [target]);
 
+  // The investigation used to end on the screen. Everything it worked out —
+  // the findings, the ranked causes, the actions — went when the panel closed,
+  // which makes it a demonstration rather than a tool. The same object becomes
+  // the report, so nothing is re-derived and nothing is lost.
+  const report = useMemo(
+    () => buildInvestigationReport(inv, summary
+      ? { commentary: { text: summary, source: live
+          ? "Drafted by the analytical layer over the calculated evidence in this report."
+          : "Drafted from the calculated evidence in this report. No analytical layer was reachable." } }
+      : {}),
+    [inv, summary, live]);
+
+  const done = shown >= inv.steps.length;
+
   async function runInvestigation() {
-    setRunning(true); setShown(0); setSummary(null); setLive(false);
+    setRunning(true); setShown(0); setSummary(null); setLive(false); setShowReport(false);
 
     // Reveal the computed chain a step at a time. The pace is fixed rather than
     // random — nothing on this screen should be non-deterministic.
@@ -263,7 +280,7 @@ function InvestigationDemo() {
       </div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {TARGETS.map(t=>(
-          <button key={t.id} onClick={()=>{setTarget(t.id);setShown(0);setSummary(null);}}
+          <button key={t.id} onClick={()=>{setTarget(t.id);setShown(0);setSummary(null);setShowReport(false);}}
             style={{padding:"6px 12px",background:target===t.id?T.red:T.surface,
               border:`1px solid ${target===t.id?T.red:T.border}`,borderRadius:6,
               color:target===t.id?C.goldOn:C.txt2,cursor:"pointer",fontSize:S.small}}>
@@ -271,12 +288,22 @@ function InvestigationDemo() {
           </button>
         ))}
       </div>
-      <button onClick={runInvestigation} disabled={running} style={{
-        padding:"9px 20px",background:running?T.borderLt:T.amber,color:running?T.txt3:T.bg,
-        border:"none",borderRadius:7,cursor:running?"wait":"pointer",fontSize:12,fontWeight:700,
-        alignSelf:"flex-start"}}>
-        {running?"🔍 Investigating…":"🔍 Run Investigation"}
-      </button>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
+        <button onClick={runInvestigation} disabled={running} style={{
+          padding:"9px 20px",background:running?T.borderLt:T.amber,color:running?T.txt3:T.bg,
+          border:"none",borderRadius:7,cursor:running?"wait":"pointer",fontSize:12,fontWeight:700}}>
+          {running?"🔍 Investigating…":"🔍 Run Investigation"}
+        </button>
+        {/* Only once there is an investigation to report on. A button that
+            produces an empty document is worse than no button. */}
+        {done && !running && (
+          <button onClick={()=>setShowReport(true)} style={{
+            padding:"9px 18px",background:"transparent",color:C.gold,
+            border:`1px solid ${C.goldLine}`,borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:700}}>
+            📄 Report as PDF
+          </button>
+        )}
+      </div>
 
       {visible.length>0&&(
         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:16,
@@ -304,7 +331,9 @@ function InvestigationDemo() {
         </div>
       )}
 
-      {shown>=inv.steps.length&&inv.contributions.length>0&&(
+      {showReport && <ReportPanel report={report} onClose={()=>setShowReport(false)} />}
+
+      {done&&inv.contributions.length>0&&(
         <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 14px"}}>
           <div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:8}}>
             {inv.underStress ? "HOW THE CAUSES WERE RANKED" : "WATCH LIST — NO THRESHOLD BREACHED"}
@@ -396,6 +425,21 @@ function BoardPackDemo() {
   const [loading, setLoading] = useState(false);
   const [pack, setPack] = useState(null);
   const [live, setLive] = useState(false);
+  const [showReport, setShowReport] = useState(false);
+
+  // The card above promises a PDF. Until this existed the demo produced a
+  // paragraph of text on screen and nothing else, which is the gap between a
+  // claim and a product. The pack is the same calculated report the
+  // investigation circulates, with the drafted narrative carried in front of it
+  // under its own heading.
+  const report = useMemo(
+    () => buildInvestigationReport(buildInvestigation(co), {
+      kind: "Board Pack",
+      commentary: pack ? { text: pack, source: live
+        ? "Drafted by the analytical layer over the calculated evidence in this report."
+        : "Drafted from the calculated evidence in this report. No analytical layer was reachable." } : null,
+    }),
+    [co, pack, live]);
 
   // Drawn from the registry rather than restated, so a company added to the
   // fund appears here without anyone remembering to edit this file.
@@ -405,7 +449,7 @@ function BoardPackDemo() {
   })), []);
 
   async function generate() {
-    setLoading(true); setPack(null); setLive(false);
+    setLoading(true); setPack(null); setLive(false); setShowReport(false);
     try {
       const d = await askAgent({ type:"boardpack", companyId:co });
       setPack(d.text);
@@ -423,18 +467,28 @@ function BoardPackDemo() {
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-        {COS.map(c=><button key={c.id} onClick={()=>{setCo(c.id);setPack(null);}}
+        {COS.map(c=><button key={c.id} onClick={()=>{setCo(c.id);setPack(null);setShowReport(false);}}
           style={{padding:"6px 12px",background:co===c.id?T.green:T.surface,
             border:`1px solid ${co===c.id?T.green:T.border}`,borderRadius:6,
             color:co===c.id?T.bg:T.txt3,cursor:"pointer",fontSize:10}}>
           {c.l}
         </button>)}
       </div>
-      <button onClick={generate} disabled={loading} style={{padding:"9px 20px",
-        background:loading?T.borderLt:T.green,color:loading?T.txt3:T.bg,border:"none",
-        borderRadius:7,cursor:loading?"wait":"pointer",fontSize:12,fontWeight:700,alignSelf:"flex-start"}}>
-        {loading?"Generating board pack…":"📋 Generate Board Pack"}
-      </button>
+      <div style={{display:"flex",gap:7,flexWrap:"wrap",alignItems:"center"}}>
+        <button onClick={generate} disabled={loading} style={{padding:"9px 20px",
+          background:loading?T.borderLt:T.green,color:loading?T.txt3:T.bg,border:"none",
+          borderRadius:7,cursor:loading?"wait":"pointer",fontSize:12,fontWeight:700}}>
+          {loading?"Generating board pack…":"📋 Generate Board Pack"}
+        </button>
+        {pack && !loading && (
+          <button onClick={()=>setShowReport(true)} style={{
+            padding:"9px 18px",background:"transparent",color:C.gold,
+            border:`1px solid ${C.goldLine}`,borderRadius:7,cursor:"pointer",fontSize:12,fontWeight:700}}>
+            📄 Pack as PDF
+          </button>
+        )}
+      </div>
+      {showReport && <ReportPanel report={report} onClose={()=>setShowReport(false)} />}
       {pack&&<div style={{background:T.surface,border:`1px solid ${T.borderLt}`,borderRadius:8,
         padding:16,color:T.txt2,fontSize:11,lineHeight:1.8,whiteSpace:"pre-wrap",
         fontFamily:"inherit"}}>

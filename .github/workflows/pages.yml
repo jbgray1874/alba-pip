@@ -40,8 +40,9 @@ jobs:
 
       - run: npm ci
 
-      # The same 159 checks that guard the arithmetic locally. A push that
-      # breaks an identity should not reach a URL someone has been sent.
+      # The same checks that guard the arithmetic locally — the suite prints its
+      # own count. A push that breaks an identity should not reach a URL
+      # someone has been sent.
       - run: npm run verify
 
       - run: npm run build

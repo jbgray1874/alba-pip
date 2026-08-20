@@ -253,7 +253,15 @@ function useSimulatedBackend(market, companyId) {
         headcount: { ...p.headcount, v: Math.round(rw(p.headcount.v, 0.002)) },
         tickets:   { ...p.tickets,   v: Math.round(rw(p.tickets.v, 0.015)) },
       }));
-      setSources(p => ({ ...p, "Xero": { ...p["Xero"], lastSync: Date.now() }, "BambooHR": { ...p["BambooHR"], lastSync: Date.now() }, "BambooHR": { ...p["BambooHR"], lastSync: Date.now() } }));
+      // Burn comes from Xero and headcount from BambooHR, so both feeds are
+      // stamped. Tickets are modelled — there is no connector behind them to
+      // stamp, and the third key here was a second copy of BambooHR that the
+      // object literal silently discarded.
+      setSources(p => ({
+        ...p,
+        "Xero":     { ...p["Xero"],     lastSync: Date.now() },
+        "BambooHR": { ...p["BambooHR"], lastSync: Date.now() },
+      }));
     }, 25000));
 
     return () => intervals.forEach(clearInterval);

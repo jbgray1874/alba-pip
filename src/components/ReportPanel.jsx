@@ -16,11 +16,12 @@
 //  what it was set to.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { C, F, S, label as labelStyle } from "../lib/theme.js";
 import { Chip, Button } from "./Shell.jsx";
 import { Mark } from "./Marque.jsx";
 import { reportToHtml, downloadReport } from "../lib/reports.js";
+import { downloadPdf } from "../lib/pdf.js";
 
 /** Roughly how many characters of this report fit on a printed page. */
 const CHARS_PER_PAGE = 2600;
@@ -59,6 +60,27 @@ function PaperTable({ head, rows }) {
           </tr>
         ))}</tbody>
       </table>
+    </div>
+  );
+}
+
+/**
+ * A prose section — the drafted narrative a board pack carries. Attributed
+ * underneath, because a reader has to be able to tell the written sentences
+ * from the calculated ones without asking.
+ */
+function PaperProse({ text, attribution }) {
+  return (
+    <div>
+      {String(text).split(/\n{2,}/).map((p, i) => (
+        <p key={i} style={{ fontSize: 11.5, lineHeight: 1.75, color: C.ink1,
+                            margin: i === 0 ? 0 : "10px 0 0", whiteSpace: "pre-wrap" }}>{p}</p>
+      ))}
+      {attribution && (
+        <p style={{ fontSize: 10, lineHeight: 1.6, color: C.ink3, fontStyle: "italic", margin: "9px 0 0" }}>
+          {attribution}
+        </p>
+      )}
     </div>
   );
 }
@@ -107,6 +129,11 @@ const figureInk = (tone) => (tone === "red" ? C.inkRed : tone === "green" ? C.in
  * @param {Function} onClose
  */
 export default function ReportPanel({ report, onClose }) {
+  // idle · "busy" while the typesetter loads and sets the pages · a sentence if
+  // it could not be delivered. The PDF library is fetched on first use, so the
+  // first click has a wait in it that the button has to account for.
+  const [pdfState, setPdfState] = useState(null);
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
@@ -151,6 +178,12 @@ export default function ReportPanel({ report, onClose }) {
     w.print();
   };
 
+  const savePdf = async () => {
+    setPdfState("busy");
+    const r = await downloadPdf(report);
+    setPdfState(r.ok ? null : r.reason);
+  };
+
   return (
     <div onClick={onClose}
          style={{ position: "fixed", inset: 0, background: "rgba(7,7,8,0.82)", zIndex: 9998,
@@ -180,10 +213,20 @@ export default function ReportPanel({ report, onClose }) {
             </div>
           </div>
           <div style={{ display: "flex", gap: 7, flexShrink: 0, alignItems: "center", flexWrap: "wrap" }}>
-            <Button variant="outline" onClick={() => downloadReport(report)}>Download</Button>
+            <Button variant="primary" onClick={savePdf} disabled={pdfState === "busy"}
+                    title="A4, text throughout — the file to attach to the board pack">
+              {pdfState === "busy" ? "Setting the pages…" : "Download PDF"}
+            </Button>
+            <Button variant="outline" onClick={() => downloadReport(report)}
+                    title="Self-contained HTML — opens in any browser, no assets">Save as HTML</Button>
             <Button variant="outline" onClick={print}>Print</Button>
             <Button variant="ghost" onClick={onClose}>Close</Button>
           </div>
+          {pdfState && pdfState !== "busy" && (
+            <div style={{ flexBasis: "100%", color: C.amber, fontSize: S.small }}>
+              {pdfState} Save as HTML, or use Print and choose “Save as PDF”.
+            </div>
+          )}
         </div>
 
         {/* ── Three columns ── */}
@@ -267,7 +310,9 @@ export default function ReportPanel({ report, onClose }) {
               {report.sections.map((s) => (
                 <div key={s.title} style={{ marginTop: 20 }}>
                   <SheetLabel>{s.title}</SheetLabel>
-                  {s.table ? <PaperTable head={s.table.head} rows={s.table.rows} /> : <PaperRows list={s.rows} />}
+                  {s.table ? <PaperTable head={s.table.head} rows={s.table.rows} />
+                    : s.rows ? <PaperRows list={s.rows} />
+                      : <PaperProse text={s.text} attribution={s.attribution} />}
                 </div>
               ))}
 
@@ -295,7 +340,7 @@ export default function ReportPanel({ report, onClose }) {
             {[
               { glyph: "◉", k: "Audience", v: "Investment committee" },
               { glyph: "◷", k: "Period", v: `To ${report.preparedAt}` },
-              { glyph: "◧", k: "Format", v: "Self-contained HTML" },
+              { glyph: "◧", k: "Format", v: "PDF, or self-contained HTML" },
               { glyph: "▤", k: "Detail", v: `Full · ${report.sections.length} sections` },
               { glyph: "▦", k: "Pages", v: `${meta.pages} at A4` },
             ].map((row) => (
@@ -312,9 +357,16 @@ export default function ReportPanel({ report, onClose }) {
               Assembled from {meta.metrics} calculated metrics
               {meta.sources.length ? ` across ${meta.sources.length} source systems` : ""}.
               <br /><br />
-              The sheet beside this is the whole report — nothing is held back for the download. Download saves it
-              as a self-contained file and Print opens it for a printer, but a shared link runs inside a sandbox
-              that blocks both, which is why the report opens here rather than going straight to a file.
+              The sheet beside this is the whole report — nothing is held back for the download.
+              <br /><br />
+              Download PDF sets the same report as an A4 document: text throughout rather than a picture of a
+              page, so it can be searched, copied out of and printed at any size. It is built in the browser,
+              which is why the first one takes a moment.
+            </div>
+            <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 11, paddingTop: 11,
+                          color: C.txt3, fontSize: S.micro, lineHeight: 1.6 }}>
+              The report opens here rather than going straight to a file because a shared link can run inside a
+              sandbox that blocks a download outright. Where that happens the file opens in a tab instead.
             </div>
           </div>
         </div>
