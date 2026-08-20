@@ -1,0 +1,69 @@
+# ════════════════════════════════════════════════════════════════════════════
+#  Publish Alba PIP to GitHub Pages
+#  ----------------------------------------------------------------------------
+#  A public URL that needs no third-party account and no credentials — the repo
+#  is public and Pages is free on it. Every push to main rebuilds and republishes.
+#
+#  What this does NOT carry is the /api serverless functions, so Connect Xero
+#  and live FX are inert on the Pages site exactly as they are in the shared
+#  artifact. Those need Vercel. This exists so there is a real URL to hand over
+#  today rather than after an account is set up.
+# ════════════════════════════════════════════════════════════════════════════
+
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; let a newer push supersede one already running.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The same 159 checks that guard the arithmetic locally. A push that
+      # breaks an identity should not reach a URL someone has been sent.
+      - run: npm run verify
+
+      - run: npm run build
+        env:
+          GITHUB_PAGES: "1"
+
+      # Pages serves 404.html for any unknown path. This app holds its whole
+      # route in state rather than the URL, so a refresh on a deep link would
+      # otherwise land on GitHub's 404 instead of the application.
+      - run: cp dist/index.html dist/404.html
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
