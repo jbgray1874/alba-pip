@@ -558,10 +558,30 @@ export default function RealTime() {
   // Looked up, not spelled out: this banner named "Meridian SaaS" for four
   // commits after the registry renamed the company.
   const connectedCompanyName = companyById(CONNECTED_COMPANY_ID)?.name ?? "the connected company";
+  // Three states, not two.
+  //
+  // This used to swallow the failure — `.catch(() => {})` — so a build with no
+  // serverless functions behind it showed "not connected" and a live-looking
+  // CONNECT XERO button that 404ed on click and did nothing visible. The
+  // endpoint being absent is not the same as the connection being absent, and
+  // the difference is the whole answer to "why doesn't this work".
+  //
+  //   api-missing  — no serverless runtime (static build, or `vite` instead of
+  //                  `vercel dev`). Connecting is impossible here, so say so.
+  //   ready        — the endpoint answered; Xero is simply not linked yet.
+  //   connected    — linked, and named.
+  const [xeroState, setXeroState] = useState("checking");
   useEffect(() => {
-    fetch("/api/xero/status").then(r=>r.json()).then(d=>{
-      if(d?.connected){ setXeroConnected(true); setXeroName(d.tenantName); }
-    }).catch(()=>{});
+    let cancelled = false;
+    fetch("/api/xero/status")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => {
+        if (cancelled) return;
+        if (d?.connected) { setXeroConnected(true); setXeroName(d.tenantName); setXeroState("connected"); }
+        else setXeroState("ready");
+      })
+      .catch(() => { if (!cancelled) setXeroState("api-missing"); });
+    return () => { cancelled = true; };
   }, []);
 
   const TABS = [
@@ -579,17 +599,30 @@ export default function RealTime() {
       <MarketTicker market={market}/>
 
       {/* Xero connection banner */}
-      <div style={{ padding:"8px 24px", borderBottom:`1px solid ${T.border}`, background: xeroConnected ? "rgba(63,185,132,0.06)" : "rgba(245,165,36,0.05)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ width:8, height:8, borderRadius:"50%", background: xeroConnected ? T.green : T.amber, boxShadow: xeroConnected ? `0 0 8px ${T.green}` : "none" }}/>
-          <span style={{ fontSize:11, color: xeroConnected ? T.green : T.amber, fontWeight:600 }}>
-            {xeroConnected ? `Xero connected · ${xeroName || "Demo Company"} · live accounting data feeding ${connectedCompanyName}` : "Xero accounting — not connected"}
-          </span>
-        </div>
-        {!xeroConnected && (
-          <a href="/api/xero/connect" style={{ padding:"6px 13px", background:C.gold, borderRadius:4, color:C.goldOn, textDecoration:"none", fontFamily:F.sans, fontSize:S.label, fontWeight:600, letterSpacing:"0.1em", textTransform:"uppercase" }}>Connect Xero →</a>
-        )}
-      </div>
+      {(() => {
+        const tone = xeroState === "connected" ? C.green : xeroState === "api-missing" ? C.txt3 : C.gold;
+        const text = {
+          checking:      "Checking the accounting connection…",
+          connected:     `Xero connected · ${xeroName || "the authorised organisation"} · live receivables feeding ${connectedCompanyName}`,
+          ready:         `Xero accounting — not linked. Connecting reads live receivables into ${connectedCompanyName}'s cash drill-down.`,
+          "api-missing": "Xero cannot be connected from this build — it needs the serverless functions. Run `npx vercel dev` locally, or open the deployed site.",
+        }[xeroState];
+        return (
+          <div style={{ padding:"8px 24px", borderBottom:`1px solid ${C.border}`, background:`${tone}0d`,
+                        display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", flexShrink:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, minWidth:0 }}>
+              <span style={{ width:7, height:7, borderRadius:"50%", background:tone, flexShrink:0 }}/>
+              <span style={{ fontSize:S.small, color:tone }}>{text}</span>
+            </div>
+            {xeroState === "ready" && (
+              <a href="/api/xero/connect"
+                 style={{ padding:"6px 13px", background:C.gold, borderRadius:4, color:C.goldOn, textDecoration:"none",
+                          fontFamily:F.sans, fontSize:S.label, fontWeight:600, letterSpacing:"0.1em",
+                          textTransform:"uppercase", whiteSpace:"nowrap", flexShrink:0 }}>Connect Xero</a>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Header */}
       <div style={{ padding:"12px 24px", borderBottom:`1px solid ${C.border}`, display:"flex",
