@@ -31,6 +31,7 @@ const T = {
   blue: C.blue,
   green: C.green,
   amber: C.amber,
+  gold: C.gold,
   red: C.red,
   purple: C.purple,
   txt1: C.txt1,
@@ -204,6 +205,42 @@ export default function UserGuide({ onNavigate }) {
             {" "}scores every customer account against six weighted factors.
           </div>
           <Route steps={["Revenue Risk", "any driver row"]} note="Each bridge is an identity — the drivers cannot fail to add up to the total." />
+        </Card>
+
+        <Card>
+          <div style={{ color: T.gold, fontSize: 11.5, fontWeight: 700, marginBottom: 5 }}>
+            Where the next pound of value is — the Opportunity Radar
+          </div>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6 }}>
+            <Link to="radar">Opportunity Radar</Link> is the upside counterpart to the Command
+            Centre: one opportunity per company, ranked across the whole fund on a
+            confidence-weighted value, plotted so the size of the bubble carries the money and the
+            position on the axis carries how much the evidence supports it. Nothing on it is typed,
+            including the confidence percentages — those are counted from how many independent
+            indicators agree, and the indicator list sits beside the headline so a sceptic can
+            check the count. From a bubble you drill into
+            {" "}<Link to="expansion">Customer Expansion</Link>, which scores that company's
+            individual accounts against six weighted factors.
+          </div>
+          <Route steps={["Opportunity Radar", "a company bubble", "Customer Expansion", "an account", "why it scored"]} />
+        </Card>
+
+        <Card>
+          <div style={{ color: T.gold, fontSize: 11.5, fontWeight: 700, marginBottom: 5 }}>
+            From a finding to somebody's diary — the two plans
+          </div>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6 }}>
+            A finding nobody owns is a slide. Two screens close that gap.
+            {" "}<Link to="protection">Protection Plan</Link> converts the forecast risk on Revenue
+            Risk into interventions with an owner, a date and an expected impact, and states the
+            arithmetic on the page: forecast risk less targeted recovery is the residual gap, an
+            identity rather than three separate figures. Its recovery total is the sum of the
+            impacts in the table above it, so a CFO can take it apart in ten seconds.
+            {" "}<Link to="actionplan">Commercial Plan</Link> does the same for the upside — a
+            prioritised campaign with owners, action dates, a playbook and a milestone timeline.
+          </div>
+          <Route steps={["Revenue Risk", "Create action plan", "Protection Plan", "any action row"]}
+                 note="Recovery target and residual gap are derived from the action table, not entered — change an impact and both move." />
         </Card>
       </Section>
 

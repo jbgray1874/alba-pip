@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 //  Alba PIP — Scenario 3: margin deterioration masked by revenue growth
 //  ----------------------------------------------------------------------------
-//  ForgeTech is the company nobody would open. Revenue is above plan, EBITDA is
+//  Apex Manufacturing is the company nobody would open. Revenue is above plan, EBITDA is
 //  18%, the health score is 84 and the RAG is green. Every headline says leave
 //  it alone.
 //

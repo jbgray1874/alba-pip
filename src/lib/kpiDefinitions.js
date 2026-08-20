@@ -14,7 +14,7 @@
 /** Systems a figure can come from, with how it is currently supplied. */
 export const SOURCES = {
   accounting: { id: "accounting", label: "Xero", kind: "Accounting", live: true,
-                note: "Live for Meridian SaaS; representative for other companies until connected" },
+                note: "Live for the connected company; representative for the rest until connected" },
   banking:    { id: "banking", label: "Xero bank feed", kind: "Banking", live: true,
                 note: "Cash position and movements" },
   billing:    { id: "billing", label: "Stripe", kind: "Billing", live: true,
@@ -129,3 +129,13 @@ export function provenanceOf(key, asOf) {
   if (!k) return null;
   return `${k.formula} · ${k.source.label}${asOf ? ` · as of ${asOf}` : ""}`;
 }
+
+/**
+ * The one company with a live accounting connection.
+ *
+ * Held here as an id rather than a name, because the name is the registry's to
+ * decide — RealTime.jsx and FinanceDrilldown.jsx both used to spell it out, and
+ * both still said "Meridian SaaS" for four commits after the company was
+ * renamed. Anything that needs to display it looks the name up.
+ */
+export const CONNECTED_COMPANY_ID = "meridian";

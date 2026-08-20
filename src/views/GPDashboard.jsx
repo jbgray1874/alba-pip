@@ -5,6 +5,7 @@ import FinanceDrilldown from "./FinanceDrilldown.jsx";
 import { forDashboard } from "../lib/companies.js";
 import { modulesFor, benchmarksFor } from "../lib/companyModules.js";
 import { trackedActions, actionSummary } from "../lib/actionTracker.js";
+import { portfolioAlerts, portfolioActions, alertSummary } from "../lib/alertsFeed.js";
 import LiveStrip from "../components/LiveStrip.jsx";
 import { fmtMoney } from "../lib/fx.js";
 import { buildFinance } from "../lib/financeData.js";
@@ -52,29 +53,21 @@ const mk = vals => MO.map((m,i) => ({ m, v: vals[i] }));
 // is modelled.
 const MODULES = Object.fromEntries(COMPANIES.map(c => [c.id, modulesFor(c.id)]));
 
-// ── ALERTS ────────────────────────────────────────────────────────────────────
-const ALERTS_DATA = [
-  { id:1,  co:"CareOS",       sev:"critical", kpi:"Cash Runway",      msg:"Cash runway at 2.3 months. Bridge financing or emergency cost reduction required. GP must act this week.", time:"3h ago",   st:"open" },
-  { id:2,  co:"CareOS",       sev:"critical", kpi:"Revenue vs Budget",msg:"Revenue 36% below budget. Pipeline coverage 0.8× — shortfall unrecoverable without significant pipeline injection.", time:"3h ago",   st:"open" },
-  { id:3,  co:"Meridian SaaS",sev:"high",     kpi:"Cash Runway",      msg:"Runway 4.8 months. Burn +£12k MoM, DSO widened 15 days. Debtor collection escalation needed immediately.", time:"4h ago",   st:"open" },
-  { id:4,  co:"CareOS",       sev:"high",     kpi:"Attrition",        msg:"23% annualised attrition. 5 critical roles vacant 60+ days. Execution capacity materially impaired.", time:"1d ago",   st:"acknowledged" },
-  { id:5,  co:"SwiftLogix",   sev:"high",     kpi:"On-Time Delivery", msg:"SLA at 87% vs 95% target. Two enterprise clients issued formal warnings. £420k revenue at risk.", time:"Yesterday",st:"open" },
-  { id:6,  co:"Meridian SaaS",sev:"high",     kpi:"Pipeline Coverage",msg:"Pipeline 2.1× vs 3× target. Win rate declining third consecutive month. Sales cycle +8 days.", time:"4h ago",   st:"open" },
-  { id:7,  co:"SwiftLogix",   sev:"watchlist",kpi:"Attrition",        msg:"19% attrition — approaching red. Operations most affected at 24%.", time:"2d ago",   st:"open" },
-  { id:8,  co:"ForgeTech",    sev:"watchlist",kpi:"Inventory Turnover",msg:"Inventory aging 11% above target. Recommend SKU review before Q2 close.", time:"1d ago",   st:"open" },
-];
+// ── ALERTS AND ACTIONS ────────────────────────────────────────────────────────
+// Both lists used to be typed literals here — eight alerts and eight actions
+// naming CareOS, Meridian SaaS, SwiftLogix and ForgeTech, none of which are in
+// the registry any more, and quoting a 2.3-month runway and a 36% revenue miss
+// that appear nowhere in the ledger. They are now derived: an alert exists
+// because a reading crossed a named threshold, and the action list is the
+// tracker's own, so the dashboard and the Action Tracker cannot disagree about
+// what is open. See src/lib/alertsFeed.js.
+const ALERTS_DATA = portfolioAlerts().map((a) => ({
+  id: a.id, co: a.company, companyId: a.companyId, sev: a.severity, kpi: a.kpi,
+  msg: a.message, reading: a.reading, threshold: a.threshold, source: a.source,
+  thresholdNote: a.thresholdNote, asOf: a.asOf, st: "open",
+}));
 
-// ── ACTIONS ───────────────────────────────────────────────────────────────────
-const ACTIONS_DATA = [
-  { id:1, co:"CareOS",       dept:"Finance",    title:"Emergency debtor review — top 5 overdue accounts (£94k)", owner:"GP Team",       due:"2026-06-02", pri:"critical", st:"open",       kpi:"Cash Runway",       created:"Today" },
-  { id:2, co:"CareOS",       dept:"Finance",    title:"Prepare bridge financing options for board review",        owner:"CFO",           due:"2026-06-05", pri:"critical", st:"open",       kpi:"Cash Runway",       created:"Today" },
-  { id:3, co:"CareOS",       dept:"People",     title:"Head of Sales role — 60+ days vacant, escalate immediately",owner:"CEO",          due:"2026-06-03", pri:"high",     st:"open",       kpi:"Open Roles",        created:"Yesterday" },
-  { id:4, co:"Meridian SaaS",dept:"Finance",    title:"Debtor collection escalation — DSO at 47 days",           owner:"CFO",           due:"2026-06-07", pri:"high",     st:"open",       kpi:"DSO",               created:"Today" },
-  { id:5, co:"Meridian SaaS",dept:"Finance",    title:"Hiring freeze — all non-critical open roles",             owner:"CEO",           due:"2026-06-01", pri:"high",     st:"in_progress",kpi:"Cash Runway",       created:"2d ago" },
-  { id:6, co:"Meridian SaaS",dept:"Sales",      title:"Pipeline review — top 10 most winnable deals",           owner:"Head of Sales", due:"2026-06-10", pri:"high",     st:"open",       kpi:"Pipeline Coverage", created:"Today" },
-  { id:7, co:"SwiftLogix",   dept:"Operations", title:"Enterprise SLA response — 2 client formal warnings",     owner:"COO",           due:"2026-06-04", pri:"high",     st:"in_progress",kpi:"On-Time Delivery",  created:"Yesterday" },
-  { id:8, co:"ForgeTech",    dept:"Procurement","title":"Inventory aging review — slow-moving SKU identification",owner:"COO",          due:"2026-06-21", pri:"medium",   st:"open",       kpi:"Inventory Turnover",created:"1d ago" },
-];
+const ACTIONS_DATA = portfolioActions();
 
 // ── BENCHMARKS ────────────────────────────────────────────────────────────────
 
@@ -243,12 +236,27 @@ function SourceStrip({co,d}){
 function CockpitView({co}){
   const d=MODULES[co.id];
   const [mode,setMode]=useState("ceo");
+
+  // The month-on-month movements used to be typed — "burn increased £12k MoM,
+  // DSO widened 15 days, coverage dropped from 2.5x to 2.1x" — on every company,
+  // including the ones where burn had fallen. They are read from the ledger now.
+  const fin=useMemo(()=>buildFinance({id:co.id,status:co.status}),[co.id,co.status]);
+  const m=(v)=>fmtMoney(v,fin.currency,{k:true});
+  const burnPrev=fin.history.cash[fin.history.cash.length-2]?.burn ?? fin.cash.burn;
+  const burnMove=fin.cash.burn-burnPrev;
+  const coverageMove=fin.sales.pipelineCoverage-fin.sales.coverageFrom;
+  const varPct=(fin.revenue.total/fin.revenue.budget-1)*100;
+  const mine=ACTIONS_DATA.filter(a=>a.companyId===co.id);
+  const open=mine.filter(a=>a.st!=="done");
+  const alerts=ALERTS_DATA.filter(a=>a.companyId===co.id);
+  const worstAlert=alerts[0];
+
   const ceoPoints=[
-    {q:"Current condition?", a:`Health score ${co.score}/100. ${co.status==="red"?"Critical intervention required.":co.status==="amber"?"Monitoring required — two active concerns.":"Tracking well."} Cash runway ${co.runway} months.`},
-    {q:"What changed since last month?", a:`Burn increased £12k MoM. DSO widened 15 days. Pipeline coverage dropped from 2.5× to 2.1×.`},
-    {q:"What is projected if trends continue?", a:`At current burn trajectory, cash depletes in ${co.runway} months. Revenue gap vs budget may widen to 18% by Q3 without pipeline recovery.`},
-    {q:"What actions are open?", a:`${ACTIONS_DATA.filter(a=>a.co===co.name).length} active actions. ${ACTIONS_DATA.filter(a=>a.co===co.name&&a.pri==="critical").length} critical, ${ACTIONS_DATA.filter(a=>a.co===co.name&&a.pri==="high").length} high priority.`},
-    {q:"What needs board/investor attention?", a:`Cash runway requires board resolution. Bring bridge financing options and debtor recovery plan to next board meeting.`},
+    {q:"Current condition?", a:`Health score ${co.score}/100. ${co.status==="red"?"Critical intervention required.":co.status==="amber"?"Monitoring required.":"Tracking well."} Cash runway ${co.runway} months on ${m(fin.cash.balance)} of cash.`},
+    {q:"What changed since last month?", a:`Net burn ${burnMove>=0?"up":"down"} ${m(Math.abs(burnMove))} to ${m(fin.cash.burn)}. Pipeline coverage ${fin.sales.pipelineCoverage}× against ${fin.sales.coverageFrom}× at the start of the period (${coverageMove>=0?"+":""}${coverageMove.toFixed(1)}). Win rate ${fin.sales.winRatePct}%, from ${fin.sales.winRateFrom}%.`},
+    {q:"What is projected if trends continue?", a:`At ${m(fin.cash.burn)} a month, cash depletes in ${co.runway} months. Revenue is ${varPct.toFixed(1)}% against plan — a shortfall of ${m(fin.revenue.budget-fin.revenue.total)} a month at the current run rate.`},
+    {q:"What actions are open?", a:`${open.length} of ${mine.length} actions still open. ${open.filter(a=>a.pri==="critical").length} critical, ${open.filter(a=>a.pri==="high").length} high priority.`},
+    {q:"What needs board/investor attention?", a: worstAlert ? `${worstAlert.kpi} — ${worstAlert.msg} Read from ${worstAlert.source}.` : `No threshold is breached from the connected data. Keep the company on the standard monthly cycle.`},
   ];
   const gpPoints=[
     {q:"On or off thesis?", a:`${co.score>=70?"Broadly on thesis — core metrics tracking.":"Off thesis in finance and commercial dimensions. Intervention warranted."} Ownership ${co.own}%.`},
@@ -323,7 +331,7 @@ function PortfolioView({onSelect,onGuide}){
 }
 
 // ── ALERTS, ACTIONS ───────────────────────────────────────────────────────────
-function AlertsView(){const [alerts,setAlerts]=useState(ALERTS_DATA);const toggle=id=>setAlerts(p=>p.map(a=>a.id===id?{...a,st:a.st==="open"?"acknowledged":"open"}:a));const sc={critical:T.red,high:T.amber,watchlist:T.blue};const sb={critical:T.redDim,high:T.amberDim,watchlist:T.blueDim};return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,marginBottom:4}}>Alerts & Exceptions</h1><div style={{color:T.txt3,fontSize:11,marginBottom:18}}><span style={{color:T.red,fontWeight:700}}>{alerts.filter(a=>a.sev==="critical").length} critical</span> · {alerts.filter(a=>a.st==="open").length} open · {alerts.filter(a=>a.st==="acknowledged").length} acknowledged</div>{["critical","high","watchlist"].map(sev=>{const g=alerts.filter(a=>a.sev===sev);if(!g.length)return null;return(<div key={sev} style={{marginBottom:18}}><div style={{color:sc[sev],fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:7}}>{sev} ({g.length})</div>{g.map(a=><div key={a.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${sc[a.sev]}`,borderRadius:7,padding:"12px 13px",marginBottom:5,opacity:a.st==="acknowledged"?0.5:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div style={{flex:1}}><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}><span style={{color:sc[a.sev],fontSize:9,fontWeight:700,background:sb[a.sev],padding:"2px 7px",borderRadius:3}}>{a.sev.toUpperCase()}</span><span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.co}</span><span style={{color:T.txt3,fontSize:9}}>· {a.kpi} · {a.time}</span></div><div style={{color:T.txt2,fontSize:11,lineHeight:1.5}}>{a.msg}</div></div><button onClick={()=>toggle(a.id)} style={{marginLeft:10,padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer",flexShrink:0}}>{a.st==="open"?"Acknowledge":"Re-open"}</button></div></div>)}</div>);})}</div>);}
+function AlertsView(){const [alerts,setAlerts]=useState(ALERTS_DATA);const toggle=id=>setAlerts(p=>p.map(a=>a.id===id?{...a,st:a.st==="open"?"acknowledged":"open"}:a));const sc={critical:T.red,high:T.amber,watchlist:T.blue};const sb={critical:T.redDim,high:T.amberDim,watchlist:T.blueDim};return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><h1 style={{color:T.txt1,fontSize:20,fontWeight:700,marginBottom:4}}>Alerts & Exceptions</h1><div style={{color:T.txt3,fontSize:11,marginBottom:18}}><span style={{color:T.red,fontWeight:700}}>{alerts.filter(a=>a.sev==="critical").length} critical</span> · {alerts.filter(a=>a.st==="open").length} open · {alerts.filter(a=>a.st==="acknowledged").length} acknowledged</div>{["critical","high","watchlist"].map(sev=>{const g=alerts.filter(a=>a.sev===sev);if(!g.length)return null;return(<div key={sev} style={{marginBottom:18}}><div style={{color:sc[sev],fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",marginBottom:7}}>{sev} ({g.length})</div>{g.map(a=><div key={a.id} style={{background:T.card,border:`1px solid ${T.border}`,borderLeft:`3px solid ${sc[a.sev]}`,borderRadius:7,padding:"12px 13px",marginBottom:5,opacity:a.st==="acknowledged"?0.5:1}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}><div style={{flex:1}}><div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}><span style={{color:sc[a.sev],fontSize:9,fontWeight:700,background:sb[a.sev],padding:"2px 7px",borderRadius:3}}>{a.sev.toUpperCase()}</span><span style={{color:T.txt1,fontSize:11,fontWeight:600}}>{a.co}</span><span style={{color:T.txt3,fontSize:9}} title={a.thresholdNote||undefined}>· {a.kpi} · {a.reading} against a threshold of {a.threshold} · {a.source} · as of {a.asOf}</span></div><div style={{color:T.txt2,fontSize:11,lineHeight:1.5}}>{a.msg}</div></div><button onClick={()=>toggle(a.id)} style={{marginLeft:10,padding:"4px 9px",background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,color:T.txt3,fontSize:9,cursor:"pointer",flexShrink:0}}>{a.st==="open"?"Acknowledge":"Re-open"}</button></div></div>)}</div>);})}</div>);}
 
 function ActionsView(){
   const actions=useMemo(()=>trackedActions(),[]);

@@ -5,7 +5,7 @@
 //
 //  Agents.jsx previously held the chain as three hand-typed arrays of strings.
 //  They had drifted: Meridian's cash was quoted at £412k against a seed of
-//  £663k, and CareOS's monthly revenue gap was given as £253k when £253k is its
+//  £663k, and Northstar Health's monthly revenue gap was given as £253k when £253k is its
 //  budget and the gap is £91k. A screen whose selling point is that the agent
 //  investigates cannot be the one screen carrying numbers nothing checks.
 //

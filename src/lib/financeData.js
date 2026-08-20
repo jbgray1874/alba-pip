@@ -35,6 +35,7 @@ export const FIN_SEED = {
 import { buildSeries, seriesOf, MONTH_KEYS } from "./portfolioSeries.js";
 import { convert, conversionNote } from "./fx.js";
 import { SOURCES, KPIS, provenanceOf } from "./kpiDefinitions.js";
+import { customerBook, debtorProfile } from "./customers.js";
 
 const MONTHS = ["Dec","Jan","Feb","Mar","Apr","May"];
 const k = (n) => `£${Math.round(n).toLocaleString()}k`;
@@ -59,7 +60,10 @@ const REV_REGIONS = [
   { key:"na", label:"North America",   prop:0.16 },
 ];
 
-const CUSTOMERS = ["Acme Corporation","Beta Holdings","TechVentures Ltd","Delta Systems","Gamma Industries","Orion Retail","Vertex Group","Halo Logistics"];
+// Counterparties are drawn per company from src/lib/customers.js. There used to
+// be a single shared list here — Acme Corporation, Beta Holdings, TechVentures
+// Ltd — which appeared on the receivables table and the revenue ledger of all
+// nine companies, including a marine services business in Abu Dhabi.
 
 export function buildFinance(co, opts = {}) {
   const id = FIN_SEED[co.id] ? co.id : "meridian";
@@ -86,11 +90,15 @@ export function buildFinance(co, opts = {}) {
   });
 
   // ── AR / overdue debtors (the cash story) ──
+  // The book, the split and the ages are all per company. They used to be one
+  // shared literal, so every company in the portfolio was owed money by the
+  // same five customers at the same five ages — which put an identical
+  // "52 days overdue" alert on all nine. See src/lib/customers.js.
   const overdueTotal = +(s.revenue * 0.28).toFixed(0);
-  const debtorSplit = [0.33, 0.245, 0.20, 0.13, 0.095];
-  const debtorDays  = [47, 38, 52, 33, 41];
+  const book = customerBook(id, 8);
+  const { split: debtorSplit, days: debtorDays } = debtorProfile(id, 5);
   const debtors = debtorSplit.map((p, i) => ({
-    party: CUSTOMERS[i],
+    party: book[i],
     amount: Math.round(overdueTotal * p * 1000),
     daysOverdue: debtorDays[i],
     invoice: `INV-${2400 + i * 7}`,
@@ -107,7 +115,7 @@ export function buildFinance(co, opts = {}) {
   // ── Revenue breakdowns ──
   const revByProduct = REV_PRODUCTS.map((p) => ({ ...p, value: s.revenue * p.prop, series: seriesOf(ledger, "revenue", p.prop) }));
   const revByRegion  = REV_REGIONS.map((r) => ({ ...r, value: s.revenue * r.prop }));
-  const revDeals = CUSTOMERS.slice(0, 6).map((c, i) => ({
+  const revDeals = book.slice(0, 6).map((c, i) => ({
     party: c,
     amount: Math.round(s.revenue * [0.16,0.13,0.11,0.09,0.07,0.05][i] * 1000),
     product: REV_PRODUCTS[i % 3].label,

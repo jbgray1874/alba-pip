@@ -86,7 +86,7 @@ const IMPROVEMENTS = [
 
   { id:12, cat:"Navigation & UX", impact:"medium",effort:"low",   day:2,
     title:"Breadcrumb + back navigation",
-    what:"Portfolio → Meridian SaaS → Finance. Click any level to jump back. History preserved.",
+    what:"Portfolio → a company → Finance. Click any level to jump back. History preserved.",
     result:"Users never feel lost. Reduces demo friction." },
 
   { id:13, cat:"Navigation & UX", impact:"medium",effort:"medium",day:4,

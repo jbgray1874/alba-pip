@@ -24,8 +24,8 @@ import { FIN_SEED } from "./financeData.js";
  * into — companies keep their own currency in FIN_SEED.
  */
 export const FUNDS = [
-  { id: "growth1", name: "Alba Growth I", vintage: 2023, strategy: "Growth & venture", reportingCurrency: "GBP" },
-  { id: "opps2", name: "Alba Opportunities II", vintage: 2025, strategy: "Buyout & later stage", reportingCurrency: "GBP" },
+  { id: "growth1", name: "Northstar Growth Fund III", vintage: 2023, strategy: "Growth & venture", reportingCurrency: "GBP" },
+  { id: "opps2", name: "Northstar Opportunities II", vintage: 2025, strategy: "Buyout & later stage", reportingCurrency: "GBP" },
 ];
 
 export function fundById(id) {
@@ -36,9 +36,13 @@ export function fundById(id) {
  * Canonical portfolio. Presentation fields only — anything computable from
  * the finance seed is derived below instead of being stored twice.
  */
+// Display names follow the nine reference screens so the demo flow and the
+// design reference name the same companies. The `id` of each is unchanged —
+// every seed, ledger, scenario and cross-reference keys off the id, so renaming
+// moves no figure anywhere in the platform.
 export const COMPANIES = [
   {
-    id: "meridian", fund: "growth1", currency: "GBP", name: "Meridian SaaS",
+    id: "meridian", fund: "growth1", currency: "GBP", name: "Orbit Commerce",
     sector: "B2B SaaS", sectorLabel: "B2B SaaS", sectorLong: "B2B SaaS",
     stage: "Series A", geo: "UK", own: 22,
     score: 62, rag: "AMBER", headcount: 29, irr: 31, moic: 1.8,
@@ -60,7 +64,7 @@ export const COMPANIES = [
     trend: "up", actions: 1, alerts: 0, att: 7, upd: "1h ago", freshness: 100,
   },
   {
-    id: "swiftlogix", fund: "growth1", currency: "GBP", name: "SwiftLogix",
+    id: "swiftlogix", fund: "growth1", currency: "GBP", name: "Veridian Logistics",
     sector: "Logistics", sectorLabel: "Logistics", sectorLong: "Logistics · Series B",
     stage: "Series B", geo: "UK", own: 18,
     score: 71, rag: "AMBER", headcount: 41, irr: 28, moic: 2.1,
@@ -71,7 +75,7 @@ export const COMPANIES = [
     trend: "stable", actions: 2, alerts: 2, att: 19, upd: "Yesterday", freshness: 84,
   },
   {
-    id: "careos", fund: "growth1", currency: "GBP", name: "CareOS",
+    id: "careos", fund: "growth1", currency: "GBP", name: "Northstar Health",
     sector: "HealthTech", sectorLabel: "HealthTech", sectorLong: "HealthTech · Series A",
     stage: "Series A", geo: "UK", own: 29,
     score: 34, rag: "RED", headcount: 38, irr: 8, moic: 0.7,
@@ -82,7 +86,7 @@ export const COMPANIES = [
     trend: "down", actions: 6, alerts: 4, att: 23, upd: "3d ago", freshness: 61,
   },
   {
-    id: "forgetech", fund: "opps2", currency: "GBP", name: "ForgeTech",
+    id: "forgetech", fund: "opps2", currency: "GBP", name: "Apex Manufacturing",
     sector: "Manufacturing", sectorLabel: "Manufacturing", sectorLong: "Manufacturing · PE Growth",
     stage: "PE Growth", geo: "UK", own: 55,
     score: 84, rag: "GREEN", headcount: 67, irr: 44, moic: 2.8,
@@ -93,7 +97,7 @@ export const COMPANIES = [
     trend: "up", actions: 1, alerts: 1, att: 9, upd: "12h ago", freshness: 96,
   },
   {
-    id: "straits", fund: "growth1", currency: "USD", name: "Straits Analytics",
+    id: "straits", fund: "growth1", currency: "USD", name: "NovaTech Solutions",
     sector: "B2B Software", sectorLabel: "B2B Software", sectorLong: "B2B Software · Series B",
     stage: "Series B", geo: "Singapore", own: 34,
     score: 76, rag: "GREEN", headcount: 182, irr: 38, moic: 2.4,
@@ -115,7 +119,7 @@ export const COMPANIES = [
     trend: "down", actions: 3, alerts: 2, att: 17, upd: "6h ago", freshness: 91,
   },
   {
-    id: "zafira", fund: "opps2", currency: "USD", name: "Zafira Systems",
+    id: "zafira", fund: "opps2", currency: "USD", name: "BrightWave Digital",
     sector: "B2B SaaS", sectorLabel: "B2B SaaS", sectorLong: "B2B SaaS · Multi-product",
     stage: "Growth PE", geo: "Dubai, UAE", own: 38,
     score: 83, rag: "GREEN", headcount: 141, irr: 41, moic: 2.6,

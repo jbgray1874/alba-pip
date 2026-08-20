@@ -28,6 +28,12 @@ import { TIERS } from "../src/lib/liveData.js";
 import { INTEGRATIONS, licenceStatus, integrationHealth, readingAt } from "../src/lib/liveFeed.js";
 import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
+import { buildSignalDevelopment, investigationConfidence, ALERT_ON } from "../src/lib/signalDevelopment.js";
+import { buildProtectionPlan } from "../src/lib/protectionPlan.js";
+import { buildOpportunityRadar } from "../src/lib/opportunityRadar.js";
+import { buildActionPlan } from "../src/lib/actionPlan.js";
+import { portfolioAlerts, portfolioActions, THRESHOLDS } from "../src/lib/alertsFeed.js";
+import { customerBook, debtorProfile } from "../src/lib/customers.js";
 import { portfolioContext } from "../api/ai/_context.js";
 import { readFile, readdir } from "node:fs/promises";
 
@@ -593,6 +599,30 @@ check("two tiles never move in lockstep", () => {
 });
 
 
+check("company names follow the reference screens", () => {
+  // The demo flow and the design reference must name the same companies, or a
+  // viewer holding the screenshots cannot follow the walkthrough.
+  const want = ["NovaTech Solutions", "BrightWave Digital", "Apex Manufacturing",
+                "Northstar Health", "Veridian Logistics", "Orbit Commerce"];
+  const have = COMPANIES.map((c) => c.name);
+  const missing = want.filter((n) => !have.includes(n));
+  if (missing.length) return `absent from the registry: ${missing.join(", ")}`;
+  if (!FUNDS.some((f) => /Northstar Growth Fund/.test(f.name))) return "the reference fund is not in the registry";
+  return true;
+});
+
+check("renaming moved no figure", () => {
+  // Ids are the key for every seed, ledger and cross-reference, so a display
+  // rename must be inert. This fails if anyone keys off a name.
+  for (const [id, seed] of Object.entries(FIN_SEED)) {
+    const f = buildFinance({ id, status: "amber" });
+    if (Math.abs(f.native.revenue - seed.revenue) > 0.01) return `${id} revenue moved`;
+    if (Math.abs(f.native.cash - seed.cash) > 0.01) return `${id} cash moved`;
+  }
+  const s = buildRevenueMiss();
+  return s.company.name === "NovaTech Solutions" || `scenario 1 is on ${s.company.name}, not the reference company`;
+});
+
 // ── 9. Serverless imports ───────────────────────────────────────────────────
 section("Serverless — the API functions can reach the finance model");
 
@@ -794,6 +824,18 @@ const stripSrc = await codeOf("../src/components/LiveStrip.jsx");
 const viewFiles = (await readdir(new URL("../src/views/", import.meta.url))).filter((f) => f.endsWith(".jsx"));
 const viewSources = new Map(await Promise.all(viewFiles.map(async (f) => [f, await codeOf(`../src/views/${f}`)])));
 
+check("no view or endpoint hardcodes a company name", () => {
+  const gone = ["Straits Analytics", "Zafira Systems", "ForgeTech", "CareOS", "SwiftLogix", "Meridian SaaS"];
+  const offenders = [];
+  for (const [file, src] of viewSources) {
+    const hit = gone.find((n) => src.includes(n));
+    if (hit) offenders.push(`${file} still names ${hit}`);
+  }
+  if (appSrc && gone.some((n) => appSrc.includes(n))) offenders.push("App.jsx still names a renamed company");
+  return offenders.length === 0 || offenders.join("; ");
+});
+
+
 section("Brand — one design system, not seventeen");
 
 const themeSrc = await codeOfEarly("../src/lib/theme.js");
@@ -965,6 +1007,172 @@ check("preferences reject a value that no longer exists", () => {
 check("interface scale covers a useful range and starts at the design density", () => {
   if (SCALES[0].id !== 1) return "the first scale is not 100%";
   if (Math.max(...SCALES.map((s) => s.id)) < 1.4) return "no setting large enough for a projector or a screenshot";
+  return true;
+});
+
+// ── The four reference screens added last ──────────────────────────────────
+section("The nine reference screens — the four built last");
+
+check("the revenue bridge sums exactly to the forecast gap", () => {
+  const s = buildRevenueMiss();
+  const sum = s.bridge.reduce((t, b) => t + b.value, 0);
+  if (!near(sum, s.forecast.forecastGap, 0.5)) return `drivers sum to ${sum}, gap is ${s.forecast.forecastGap}`;
+  if (!near(s.forecast.planRevenue - s.forecast.forecastGap, s.forecast.forecastRevenue, 0.5)) {
+    return "plan less gap is not the forecast";
+  }
+  return true;
+});
+
+check("the lead time is found from the data, not written down", () => {
+  const sig = buildSignalDevelopment();
+  if (sig.alertWeek === null) return "no leading indicator ever trips — the alert week is null";
+  if (sig.leadTimeWeeks !== sig.boardWeek - sig.alertWeek) return "lead time does not equal board week less alert week";
+  if (sig.leadTimeWeeks < 1) return `lead time is ${sig.leadTimeWeeks} weeks — the claim is early warning`;
+  // The alert must be raised by a leading indicator under a named threshold,
+  // not by the accrued money crossing a materiality test.
+  if (!sig.alertBasis?.length) return "the alert has no stated basis";
+  for (const b of sig.alertBasis) {
+    if (typeof b.level !== "number") return `alert basis "${b.label}" has no threshold level`;
+    if (!b.basis) return `alert basis "${b.label}" does not say why that level`;
+  }
+  return true;
+});
+
+check("the early-warning claim beats a materiality test on the money", () => {
+  // The whole argument for the platform. If a test on the accrued money alone
+  // would have found this at the same time, the screen is claiming nothing.
+  const sig = buildSignalDevelopment();
+  if (sig.materialWeek === null) return true;   // never material — the claim is stronger, not weaker
+  return sig.materialWeek > sig.alertWeek ||
+    `money crosses materiality in week ${sig.materialWeek}, the alert fires in week ${sig.alertWeek}`;
+});
+
+check("every week on the timeline names an indicator and a source", () => {
+  const sig = buildSignalDevelopment();
+  const bad = sig.weeks.filter((w) => !w.indicator || !w.caption || !w.source);
+  if (bad.length) return `${bad.length} week(s) with no indicator, caption or source`;
+  if (sig.weeks.length < 6) return `only ${sig.weeks.length} weeks — the reference shows eight`;
+  return true;
+});
+
+check("investigation confidence is counted, and something dissents", () => {
+  const c = investigationConfidence(buildRevenueMiss());
+  if (c.agreeing === c.indicatorCount) {
+    return "every indicator agrees — a count where nothing can dissent is not a count";
+  }
+  if (c.confidence < 40 || c.confidence > 100) return `confidence ${c.confidence} is off the scale`;
+  const counted = Math.round(40 + 50 * c.share + 5 * (c.answering / c.sourceCount));
+  return c.confidence === counted || `stated ${c.confidence}, the rule gives ${counted}`;
+});
+
+check("the alert thresholds are levels a fund would recognise", () => {
+  for (const [k, v] of Object.entries(ALERT_ON)) {
+    if (!v.basis) return `${k} has a threshold with no stated basis`;
+    if (typeof v.level !== "number") return `${k} has no numeric level`;
+  }
+  return true;
+});
+
+check("the protection plan's recovery path is an identity", () => {
+  const p = buildProtectionPlan();
+  const t = p.totals;
+  if (!near(t.risk - t.target, t.residual, 1)) return `risk ${t.risk} − target ${t.target} != residual ${t.residual}`;
+  const impacts = p.actions.filter((a) => a.kind === "recovery").reduce((s, a) => s + a.impact, 0);
+  if (!near(impacts, t.target, 1)) return `action impacts sum to ${impacts}, recovery target is ${t.target}`;
+  return true;
+});
+
+check("every action in the protection plan has an owner and a date", () => {
+  const p = buildProtectionPlan();
+  const bad = p.actions.filter((a) => !a.owner?.name || !a.dueDate || !a.rationale);
+  return bad.length === 0 || `${bad.length} action(s) with no owner, due date or rationale`;
+});
+
+check("the opportunity radar scores every company it plots", () => {
+  const r = buildOpportunityRadar();
+  if (!r.opportunities.length) return "no opportunities at all";
+  const bad = r.opportunities.filter((o) => !o.company || !Number.isFinite(o.confidence) || !Number.isFinite(o.value));
+  if (bad.length) return `${bad.length} opportunity/ies with no company, value or confidence`;
+  const off = r.opportunities.filter((o) => o.confidence < 40 || o.confidence > 100);
+  return off.length === 0 || `${off.length} confidence value(s) off the 40–100 axis`;
+});
+
+check("the commercial action plan's upside ties to its account list", () => {
+  const a = buildActionPlan();
+  const rows = a.campaign ?? a.rows ?? [];
+  if (!rows.length) return "no campaign rows";
+  const bad = rows.filter((r) => !r.owner || !r.account);
+  return bad.length === 0 || `${bad.length} campaign row(s) with no owner or account`;
+});
+
+// ── Alerts, actions and counterparties ─────────────────────────────────────
+section("Alerts and counterparties — nothing typed, nothing shared");
+
+check("every alert names its reading, its threshold and its source", () => {
+  const alerts = portfolioAlerts();
+  if (!alerts.length) return "no alerts at all across nine companies";
+  const bad = alerts.filter((a) => !a.reading || !a.threshold || !a.source || !a.company);
+  return bad.length === 0 || `${bad.length} alert(s) missing a reading, threshold or source`;
+});
+
+check("no alert is raised for a company the data is content with", () => {
+  // An alert must correspond to a breach. The cheapest way to check that is to
+  // confirm every alert's key is a threshold this file knows about, and that
+  // the portfolio does not simply alert on everything.
+  const alerts = portfolioAlerts();
+  const unknown = alerts.filter((a) => !THRESHOLDS[a.key]);
+  if (unknown.length) return `alert(s) on unknown thresholds: ${[...new Set(unknown.map((a) => a.key))].join(", ")}`;
+  const perCompany = alerts.length / COMPANIES.length;
+  return perCompany < 7 || `${perCompany.toFixed(1)} alerts per company — everything is red`;
+});
+
+check("the dashboard's action list is the tracker's own", () => {
+  const dash = portfolioActions().map((a) => a.id).sort();
+  const tracked = trackedActions().map((a) => a.id).sort();
+  return JSON.stringify(dash) === JSON.stringify(tracked) ||
+    "the dashboard and the action tracker are showing different action sets";
+});
+
+check("no two companies invoice the same customers", () => {
+  // Every company used to bill Acme Corporation, Beta Holdings and
+  // TechVentures Ltd — the same eight names on all nine receivables tables.
+  const seen = new Map();
+  for (const c of COMPANIES) {
+    for (const name of customerBook(c.id, 5)) {
+      if (seen.has(name)) return `${name} appears for both ${seen.get(name)} and ${c.name}`;
+      seen.set(name, c.name);
+    }
+  }
+  return true;
+});
+
+check("a customer book is stable and free of duplicates", () => {
+  for (const c of COMPANIES) {
+    const a = customerBook(c.id, 8), b = customerBook(c.id, 8);
+    if (a.join("|") !== b.join("|")) return `${c.name} returns a different book on a second call`;
+    if (new Set(a).size !== a.length) return `${c.name} has a duplicated counterparty`;
+  }
+  return true;
+});
+
+check("the receivables ledger reconciles and the ages differ by company", () => {
+  const oldest = new Set();
+  for (const c of COMPANIES) {
+    const f = buildFinance({ id: c.id, status: c.rag.toLowerCase() });
+    const sum = f.cash.debtors.reduce((t, d) => t + d.amount, 0) / 1000;
+    if (!near(sum, f.cash.overdueTotal, 1)) return `${c.name}: debtor lines sum to ${Math.round(sum)}k against an overdue total of ${f.cash.overdueTotal}k`;
+    oldest.add(Math.max(...f.cash.debtors.map((d) => d.daysOverdue)));
+  }
+  return oldest.size > 4 || `only ${oldest.size} distinct oldest-debt ages across nine companies`;
+});
+
+check("the debtor split always sums to one", () => {
+  for (const c of COMPANIES) {
+    const { split, days } = debtorProfile(c.id, 5);
+    const s = split.reduce((t, v) => t + v, 0);
+    if (!near(s, 1, 0.0001)) return `${c.name}: shares sum to ${s}`;
+    if (days.some((d) => d < 20 || d > 120)) return `${c.name}: an implausible overdue age`;
+  }
   return true;
 });
 

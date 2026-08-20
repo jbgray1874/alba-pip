@@ -1,224 +1,283 @@
 // ════════════════════════════════════════════════════════════════════════════
-//  Alba PIP — Scenario 1 screen: revenue miss before the board pack
+//  Alba PIP — Screen 5: Revenue Risk Investigation  (INTELLIGENCE)
 //  ----------------------------------------------------------------------------
-//  Stage 3 of the demo specification: company drill-down, pipeline trends,
-//  forecast miss, driver bridge, recommended actions and report.
+//  The company is still reporting growth. Revenue is barely under plan and
+//  nothing in the monthly pack asks for attention — and next quarter misses.
+//  This screen has to make that case to somebody paid to disbelieve it, so it
+//  is built as three arguments in order:
 //
-//  The bridge is the load-bearing element. Plan, less each driver, arrives at
-//  the forecast — and because the forecast is defined that way rather than
-//  modelled separately, the bars cannot fail to add up to the gap. The running
-//  total is drawn so a viewer can check it rather than take it on trust.
+//    the bridge      — plan less four quantified drivers IS the forecast, so
+//                      the waterfall cannot fail to add up to the gap
+//    the evidence    — each driver traced to the system it was read from
+//    the timeline    — when each indicator moved, and how far ahead of the
+//                      board pack the alert landed
+//
+//  Nothing on the page is typed, including the confidence: it is counted from
+//  how many independent indicators agree, and the count is on the screen.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C } from "../lib/theme.js";
 import { useMemo, useState } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, ReferenceLine } from "recharts";
-import { buildRevenueMiss } from "../lib/scenarioRevenueMiss.js";
+import { C, F, S, label as labelStyle, metric as metricStyle } from "../lib/theme.js";
+import { Page, PageHeader, Chip, Button, MetricRow, Panel, TwoColumn, ProvenanceBar } from "../components/Shell.jsx";
+import { buildRevenueMiss, PARAMS } from "../lib/scenarioRevenueMiss.js";
+import { buildSignalDevelopment } from "../lib/signalDevelopment.js";
 import { buildExceptionReport } from "../lib/reports.js";
 import { fmtMoney } from "../lib/fx.js";
-import InsightCard from "../components/InsightCard.jsx";
+import SignalTimeline from "../components/SignalTimeline.jsx";
 import ReportPanel from "../components/ReportPanel.jsx";
+import InsightCard from "../components/InsightCard.jsx";
 
-// Palette from the shared design tokens. Every view used to carry its own
-// copy of this object, seventeen of them, each a shade adrift of the next.
-const T = {
-  bg: C.bg,
-  card: C.surface,
-  border: C.border,
-  accent: C.surfaceUp,
-  blue: C.blue,
-  green: C.green,
-  amber: C.amber,
-  red: C.red,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+// ── The bridge ──────────────────────────────────────────────────────────────
 
-function Panel({ title, sub, right, children }) {
-  return (
-    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, marginBottom: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
-                    padding: "10px 14px", borderBottom: `1px solid ${T.border}`, flexWrap: "wrap" }}>
-        <div>
-          <div style={{ color: T.txt1, fontSize: 12, fontWeight: 600 }}>{title}</div>
-          {sub && <div style={{ color: T.txt3, fontSize: 9, marginTop: 2 }}>{sub}</div>}
-        </div>
-        {right}
-      </div>
-      <div style={{ padding: 14 }}>{children}</div>
-    </div>
-  );
-}
+const PLOT_H = 200;
 
-/** Waterfall: plan on the left, each driver taking a bite, forecast on the right. */
-function DriverBridge({ plan, gap, bridge, ccy }) {
-  const money = (v) => fmtMoney(v, ccy, { k: true });
-  const max = plan;
+/**
+ * A waterfall: gold columns at both ends, red floating bars between, dashed
+ * connectors joining the close of one column to the open of the next.
+ *
+ * The connector level is the *end* level of each step, which for a total is its
+ * top and for a deduction is its bottom. Drawn rather than implied, because a
+ * waterfall whose steps do not visibly join is a chart nobody checks.
+ */
+function RevenueBridge({ plan, gap, bridge, money }) {
+  const forecast = plan - gap;
   let running = plan;
+
   const steps = [
-    { label: "Plan", value: plan, kind: "total", from: 0, to: plan },
+    { label: "Plan", value: plan, kind: "total", from: 0, to: plan, end: plan },
     ...bridge.map((b) => {
       const to = running;
       running -= b.value;
-      return { label: b.driver, value: b.value, kind: "neg", from: running, to, workings: b.workings };
+      return { label: b.driver, value: b.value, kind: "neg", from: running, to, end: running, workings: b.workings };
     }),
-    { label: "Forecast", value: plan - gap, kind: "total", from: 0, to: plan - gap },
+    { label: "Forecast", value: forecast, kind: "total", from: 0, to: forecast, end: null },
   ];
 
+  const max = plan * 1.02;
+  const pct = (v) => (v / max) * 100;
+
   return (
-    <div>
-      {steps.map((s, i) => {
-        const left = (s.from / max) * 100;
-        const width = Math.max(((s.to - s.from) / max) * 100, 0.4);
-        const tone = s.kind === "total" ? (i === 0 ? T.blue : T.amber) : T.red;
-        return (
-          <div key={s.label} style={{ marginBottom: 9 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 3, flexWrap: "wrap" }}>
-              <span style={{ color: s.kind === "total" ? T.txt1 : T.txt2, fontSize: 11,
-                             fontWeight: s.kind === "total" ? 600 : 400 }}>{s.label}</span>
-              <span style={{ color: tone, fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                {s.kind === "neg" ? "−" : ""}{money(s.value)}
-              </span>
+    <div style={{ overflowX: "auto" }}>
+      <div style={{ minWidth: 520 }}>
+        <div style={{ display: "flex", gap: 12, height: PLOT_H, alignItems: "stretch" }}>
+          {steps.map((s, i) => {
+            const tone = s.kind === "total" ? C.gold : C.red;
+            return (
+              <div key={s.label} style={{ position: "relative", flex: 1, minWidth: 0 }}>
+                {/* the bar */}
+                <div style={{
+                  position: "absolute", left: 0, right: 0,
+                  bottom: `${pct(s.from)}%`, height: `${Math.max(pct(s.to - s.from), 0.6)}%`,
+                  background: s.kind === "total" ? `${tone}D9` : `${tone}B3`,
+                  borderTop: `2px solid ${tone}`, borderRadius: "2px 2px 0 0",
+                }} />
+                {/* the value, above the bar */}
+                <div style={{
+                  position: "absolute", left: 0, right: 0, bottom: `calc(${pct(s.to)}% + 5px)`,
+                  textAlign: "center", color: tone, fontSize: S.small, fontWeight: 600,
+                  fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap",
+                }}>
+                  {s.kind === "neg" ? "−" : ""}{money(s.value)}
+                </div>
+                {/* the dashed connector into the next column */}
+                {s.end !== null && i < steps.length - 1 && (
+                  <div style={{
+                    position: "absolute", left: "100%", width: 12, bottom: `${pct(s.end)}%`,
+                    borderTop: `1px dashed ${C.borderLt}`,
+                  }} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* categories beneath */}
+        <div style={{ display: "flex", gap: 12, marginTop: 7, borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
+          {steps.map((s) => (
+            <div key={s.label} style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
+              <div style={{ color: s.kind === "total" ? C.txt1 : C.txt2, fontSize: S.micro,
+                            fontWeight: s.kind === "total" ? 600 : 400, lineHeight: 1.4 }}>
+                {s.label}
+              </div>
             </div>
-            <div style={{ position: "relative", height: 16, background: T.bg, borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ position: "absolute", left: `${left}%`, width: `${width}%`, top: 0, bottom: 0,
-                            background: tone, opacity: s.kind === "total" ? 0.85 : 0.7 }} />
-            </div>
-            {s.workings && <div style={{ color: T.txt3, fontSize: 8.5, marginTop: 3 }}>{s.workings}</div>}
-          </div>
-        );
-      })}
-      <div style={{ marginTop: 10, paddingTop: 9, borderTop: `1px solid ${T.accent}`,
-                    display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-        <span style={{ color: T.txt2, fontSize: 10 }}>Plan less the four drivers</span>
-        <span style={{ color: T.txt1, fontSize: 10, fontWeight: 600 }}>
-          {money(plan)} − {money(gap)} = {money(plan - gap)}
-        </span>
+          ))}
+        </div>
+
+        <div style={{ marginTop: 10, paddingTop: 9, borderTop: `1px dashed ${C.borderLt}`,
+                      display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ color: C.txt3, fontSize: S.micro }}>
+            Plan less the {bridge.length} drivers — the forecast is defined this way, so the bars cannot fail to add up
+          </span>
+          <span style={{ color: C.txt2, fontSize: S.micro, fontFamily: F.mono, fontVariantNumeric: "tabular-nums" }}>
+            {money(plan)} − {money(gap)} = {money(forecast)}
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
-export default function ScenarioRevenueMiss() {
-  const s = useMemo(() => buildRevenueMiss(), []);
-  const [tab, setTab] = useState("evidence");
-  const ccy = s.currency;
-  const money = (v) => fmtMoney(v, ccy, { k: true });
-  const report = useMemo(() => buildExceptionReport(s), [s]);
-  const [showReport, setShowReport] = useState(false);
+// ── Root cause evidence ─────────────────────────────────────────────────────
 
-  const trend = s.fin.sales.history.map((m, i) => ({
-    month: m.month.slice(2),
-    coverage: m.pipelineCoverage,
-    winRate: m.winRatePct,
-    revenue: s.insight.drillDown.series[i]?.actual,
-    plan: s.insight.drillDown.series[i]?.budget,
-  }));
+/**
+ * Which system each driver was read from, and which way the underlying metric
+ * moved. Keyed on the driver text so a change in scenarioRevenueMiss.js that
+ * this map has not caught falls back to the Alba calculation rather than
+ * silently attributing the figure to the wrong system.
+ */
+const DRIVER_META = [
+  { match: "conversion", glyph: "↓", tone: "red",   source: "HubSpot",
+    detail: (s) => `Win rate ${PARAMS.winRateNow}% against a plan of ${PARAMS.winRatePlan}% across the open book` },
+  { match: "later quarter", glyph: "→", tone: "amber", source: "HubSpot",
+    detail: () => `${PARAMS.slippedDeals.map((d) => d.account).join(" and ")} re-dated out of the quarter` },
+  { match: "churn", glyph: "↑", tone: "red",   source: "Stripe",
+    detail: () => `Quarterly churn ${PARAMS.churnActualPct}% against a plan of ${PARAMS.churnPlanPct}%` },
+  { match: "capacity", glyph: "−", tone: "amber", source: "BambooHR",
+    detail: () => `${PARAMS.salesHires.plan - PARAMS.salesHires.inSeat} of ${PARAMS.salesHires.plan} quota-carrying roles not in seat` },
+];
+
+const TONE = { red: C.red, amber: C.amber, green: C.green, blue: C.blue };
+
+function CauseRow({ driver, value, workings, money, share }) {
+  const meta = DRIVER_META.find((m) => driver.toLowerCase().includes(m.match));
+  const glyph = meta?.glyph ?? "·";
+  const tone = TONE[meta?.tone] ?? C.txt2;
+  const source = meta?.source ?? "Alba calculation";
+  const detail = meta ? meta.detail() : workings;
 
   return (
-    <div style={{ height: "100%", overflowY: "auto", padding: "18px 22px", background: T.bg }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div>
-          <h1 style={{ color: T.txt1, fontSize: 20, fontWeight: 700, margin: 0 }}>{s.company.name}</h1>
-          <div style={{ color: T.txt3, fontSize: 10, marginTop: 3 }}>
-            {s.company.sectorLong} · {s.company.geo} · reports {ccy} · as of {s.fin.asOf}
-          </div>
-        </div>
-        <button onClick={() => setShowReport(true)}
-                style={{ padding: "7px 14px", background: T.blue, border: "none", borderRadius: 6,
-                         color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-          Generate exception report
-        </button>
+    <div style={{ display: "flex", gap: 11, alignItems: "flex-start", padding: "11px 0",
+                  borderBottom: `1px solid ${C.border}` }}>
+      <span style={{
+        width: 22, height: 22, borderRadius: "50%", flexShrink: 0, marginTop: 1,
+        border: `1px solid ${tone}55`, background: `${tone}18`, color: tone,
+        display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700,
+      }}>{glyph}</span>
+
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ color: C.txt1, fontSize: S.body, fontWeight: 500 }}>{driver}</div>
+        <div style={{ color: C.txt2, fontSize: S.small, marginTop: 3, lineHeight: 1.5 }}>{detail}</div>
+        <div style={{ color: C.txt3, fontSize: S.micro, marginTop: 4, lineHeight: 1.5 }}>{workings}</div>
       </div>
 
-      {/* Headline numbers */}
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-        {[
-          { l: "QUARTER TO DATE", v: money(s.currentQuarter.revenue), s: `plan ${money(s.currentQuarter.plan)} · ${s.currentQuarter.variancePct.toFixed(1)}%`, t: T.txt1 },
-          { l: "NEXT QUARTER PLAN", v: money(s.forecast.planRevenue), s: "board-approved", t: T.txt1 },
-          { l: "FORECAST", v: money(s.forecast.forecastRevenue), s: "plan less drivers", t: T.amber },
-          { l: "GAP", v: money(s.forecast.forecastGap), s: `${((s.forecast.forecastGap / s.forecast.planRevenue) * 100).toFixed(1)}% of plan`, t: T.red },
-        ].map((x) => (
-          <div key={x.l} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, padding: "11px 13px", flex: 1, minWidth: 150 }}>
-            <div style={{ color: T.txt3, fontSize: 9, letterSpacing: 0.5, marginBottom: 5 }}>{x.l}</div>
-            <div style={{ color: x.t, fontSize: 20, fontWeight: 700, fontFamily: "Georgia,serif", lineHeight: 1 }}>{x.v}</div>
-            <div style={{ color: T.txt3, fontSize: 9, marginTop: 4 }}>{x.s}</div>
-          </div>
-        ))}
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <div style={{ color: C.red, fontSize: S.small, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+                      whiteSpace: "nowrap" }}>
+          Impact −{money(value)}
+        </div>
+        <div style={{ color: C.txt3, fontSize: S.micro, marginTop: 2 }}>{share}% of the gap</div>
+        <span style={{
+          display: "inline-block", marginTop: 5, padding: "1px 7px", borderRadius: 3,
+          border: `1px solid ${C.borderLt}`, color: C.txt3,
+          fontSize: S.micro, fontWeight: 600, letterSpacing: "0.09em", textTransform: "uppercase",
+        }}>{source}</span>
       </div>
-
-      <InsightCard insight={s.insight} defaultOpen={false} />
-
-      <Panel title="Driver bridge"
-             sub="The forecast is plan less the sum of these drivers, so the bars cannot fail to add up">
-        <DriverBridge plan={s.forecast.planRevenue} gap={s.forecast.forecastGap} bridge={s.bridge} ccy={ccy} />
-      </Panel>
-
-      <Panel title="Forward indicators"
-             sub={`Pipeline coverage and win rate over ${trend.length} months · ${s.fin.sales.source.label}`}>
-        <div style={{ height: 190 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trend} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
-              <CartesianGrid stroke={T.accent} strokeDasharray="2 4" vertical={false} />
-              <XAxis dataKey="month" stroke={T.txt3} tick={{ fontSize: 9 }} />
-              <YAxis stroke={T.txt3} tick={{ fontSize: 9 }} />
-              <Tooltip contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, fontSize: 11 }} />
-              <ReferenceLine y={3} stroke={T.txt3} strokeDasharray="3 3" label={{ value: "3x coverage", fill: T.txt3, fontSize: 8, position: "insideTopRight" }} />
-              <Line type="monotone" dataKey="coverage" name="Pipeline coverage (x)" stroke={T.amber} strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="winRate" name="Win rate (%)" stroke={T.blue} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Panel>
-
-      <Panel title="Open pipeline" sub={`${s.deals.length} opportunities · ${money(s.forecast.openPipelineAcv)} ACV · coverage ${s.forecast.coverage}x against a ${money(s.forecast.bookingsQuota)} quota`}
-             right={<div style={{ display: "flex", gap: 5 }}>
-               {["evidence", "slipped"].map((t) => (
-                 <button key={t} onClick={() => setTab(t)}
-                         style={{ padding: "4px 9px", background: tab === t ? T.blue : "transparent",
-                                  border: `1px solid ${tab === t ? T.blue : T.border}`, borderRadius: 4,
-                                  color: tab === t ? "#fff" : T.txt3, fontSize: 9, cursor: "pointer" }}>
-                   {t === "evidence" ? "Open deals" : "Re-dated"}
-                 </button>))}
-             </div>}>
-        <div style={{ overflowX: "auto" }}>
-          {tab === "evidence" ? (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 520 }}>
-              <thead><tr style={{ color: T.txt3, fontSize: 9, textAlign: "left" }}>
-                {["Account", "Stage", "Probability", "ACV", "In-quarter revenue"].map((h) =>
-                  <th key={h} style={{ padding: "6px 10px", fontWeight: 400, borderBottom: `1px solid ${T.border}` }}>{h}</th>)}
-              </tr></thead>
-              <tbody>{s.deals.map((d) => (
-                <tr key={d.account} style={{ borderBottom: `1px solid ${T.accent}` }}>
-                  <td style={{ padding: "7px 10px", color: T.txt1 }}>{d.account}</td>
-                  <td style={{ padding: "7px 10px", color: T.txt2 }}>{d.stage}</td>
-                  <td style={{ padding: "7px 10px", color: T.txt2 }}>{d.probability}%</td>
-                  <td style={{ padding: "7px 10px", color: T.txt2 }}>{money(d.acv)}</td>
-                  <td style={{ padding: "7px 10px", color: T.txt2 }}>{money(d.quarterRevenue)}</td>
-                </tr>))}
-              </tbody>
-            </table>
-          ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, minWidth: 520 }}>
-              <thead><tr style={{ color: T.txt3, fontSize: 9, textAlign: "left" }}>
-                {["Account", "Opportunity", "ACV", "Was due", "Now due"].map((h) =>
-                  <th key={h} style={{ padding: "6px 10px", fontWeight: 400, borderBottom: `1px solid ${T.border}` }}>{h}</th>)}
-              </tr></thead>
-              <tbody>{s.insight.evidence.find((e) => e.detail?.deals)?.detail.deals.map((d) => (
-                <tr key={d.account} style={{ borderBottom: `1px solid ${T.accent}` }}>
-                  <td style={{ padding: "7px 10px", color: T.txt1 }}>{d.account}</td>
-                  <td style={{ padding: "7px 10px", color: T.txt2 }}>{d.detail}</td>
-                  <td style={{ padding: "7px 10px", color: T.red }}>{money(d.acv)}</td>
-                  <td style={{ padding: "7px 10px", color: T.txt3 }}>{d.wasDue}</td>
-                  <td style={{ padding: "7px 10px", color: T.amber }}>{d.nowDue}</td>
-                </tr>))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </Panel>
-      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)}/>}
     </div>
+  );
+}
+
+// ── The screen ──────────────────────────────────────────────────────────────
+
+export default function ScenarioRevenueMiss({ onOpenPlan }) {
+  const s = useMemo(() => buildRevenueMiss(), []);
+  const signal = useMemo(() => buildSignalDevelopment({ scenario: s }), [s]);
+  const report = useMemo(() => buildExceptionReport(s), [s]);
+  const [showReport, setShowReport] = useState(false);
+  const [showRaw, setShowRaw] = useState(false);
+
+  const ccy = s.currency;
+  const money = (v) => fmtMoney(v, ccy, { k: true });
+  const gap = s.forecast.forecastGap;
+  const conf = signal.confidence;
+
+  return (
+    <Page>
+      <PageHeader
+        crumbs={["Intelligence", s.company.name, "Revenue Risk Investigation"]}
+        title="Revenue Risk Investigation"
+        chips={<>
+          <Chip tone="red">High priority</Chip>
+          <Chip tone="gold">{conf.confidence}% confidence</Chip>
+        </>}
+        purpose={`Why next quarter misses plan by ${money(gap)} while the monthly pack still reads as growth`}
+        meta={`${s.company.sectorLong} · ${s.company.geo} · reports ${ccy} · as of ${s.fin.asOf} · HubSpot + Stripe + BambooHR + Xero`}
+        actions={<>
+          <Button variant="primary" onClick={() => onOpenPlan && onOpenPlan()}>Create action plan</Button>
+          <Button variant="outline" onClick={() => setShowRaw((v) => !v)}>
+            {showRaw ? "Hide raw evidence" : "View raw evidence"}
+          </Button>
+        </>}
+      />
+
+      <MetricRow items={[
+        { label: "Plan",             value: money(s.forecast.planRevenue), tone: C.txt1,
+          sub: `Board-approved · ${((PARAMS.planStepUp - 1) * 100).toFixed(0)}% on the current quarter` },
+        { label: "Current forecast", value: money(s.forecast.forecastRevenue), tone: C.gold,
+          sub: `Plan less ${s.bridge.length} quantified drivers` },
+        { label: "Forecast gap",     value: `−${money(gap)}`, tone: C.red,
+          sub: `${((gap / s.forecast.planRevenue) * 100).toFixed(1)}% of plan` },
+        { label: "Lead time",        value: `${signal.leadTimeWeeks} weeks`, tone: C.green,
+          sub: `Ahead of the board review in week ${signal.boardWeek}` },
+      ]} />
+
+      <TwoColumn
+        left={
+          <Panel title="Revenue bridge"
+                 sub={`${money(s.forecast.planRevenue)} plan, less each driver, arrives at the ${money(s.forecast.forecastRevenue)} forecast`}>
+            <RevenueBridge plan={s.forecast.planRevenue} gap={gap} bridge={s.bridge} money={money} />
+          </Panel>
+        }
+        right={
+          <Panel title="Root cause evidence"
+                 sub={`${s.bridge.length} drivers, each read from a source system`}
+                 right={<span style={{ color: C.txt3, fontSize: S.micro }}>
+                   {conf.agreeing} of {conf.indicatorCount} indicators agree
+                 </span>}>
+            {s.bridge.map((b) => (
+              <CauseRow key={b.driver} driver={b.driver} value={b.value} workings={b.workings} money={money}
+                        share={((b.value / gap) * 100).toFixed(0)} />
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, paddingTop: 11 }}>
+              <span style={{ color: C.txt2, fontSize: S.small }}>Total forecast gap</span>
+              <span style={{ color: C.red, fontSize: S.small, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                −{money(gap)}
+              </span>
+            </div>
+            <div style={{ color: C.txt3, fontSize: S.micro, marginTop: 9, lineHeight: 1.6 }}>
+              {conf.basis}
+            </div>
+          </Panel>
+        }
+      />
+
+      <Panel title="Signal development"
+             sub={`How the miss became visible, week by week, ahead of the board review`}
+             right={<Chip tone="green">{signal.leadTimeWeeks} weeks early</Chip>}>
+        <SignalTimeline
+          weeks={signal.weeks}
+          alertWeek={signal.alertWeek}
+          leadTimeWeeks={signal.leadTimeWeeks}
+          reconciliation={signal.reconciliation}
+          money={money}
+        />
+      </Panel>
+
+      {showRaw && (
+        <Panel title="Raw evidence"
+               sub="Every reading behind the investigation, with its source and refresh date">
+          <InsightCard insight={s.insight} defaultOpen />
+        </Panel>
+      )}
+
+      <ProvenanceBar items={[
+        "Calculation: transparent driver bridge",
+        `Evidence: ${s.insight.evidence.length} metrics`,
+        `Sources: ${conf.sourceCount} systems`,
+        "Human review: pending",
+        <Button key="rep" variant="ghost" onClick={() => setShowReport(true)}>Generate exception report</Button>,
+      ]} />
+
+      {showReport && <ReportPanel report={report} onClose={() => setShowReport(false)} />}
+    </Page>
   );
 }

@@ -5,6 +5,9 @@ import ScenarioExpansion   from './views/ScenarioExpansion.jsx'
 import ScenarioCash        from './views/ScenarioCash.jsx'
 import ScenarioMargin      from './views/ScenarioMargin.jsx'
 import ScenarioProcurement from './views/ScenarioProcurement.jsx'
+import OpportunityRadar    from './views/OpportunityRadar.jsx'
+import ActionPlan          from './views/ActionPlan.jsx'
+import ProtectionPlan      from './views/ProtectionPlan.jsx'
 import GPDashboard    from './views/GPDashboard.jsx'
 import ClientPortal   from './views/ClientPortal.jsx'
 import RealTime       from './views/RealTime.jsx'
@@ -18,6 +21,8 @@ import UserGuide      from './views/UserGuide.jsx'
 import { HOMES, SCALES, loadPrefs, savePrefs } from './lib/prefs.js'
 import { C, F, S } from './lib/theme.js'
 import { Wordmark } from './components/Shell.jsx'
+import { COMPANIES, FUNDS } from './lib/companies.js'
+import { attentionActions } from './lib/investigation.js'
 
 // Grouped as the reference screens group them. The top bar carries the four
 // sections; the rail below carries every view within the active section.
@@ -27,14 +32,17 @@ const VIEWS = [
   { id:'client',       group:'Portfolio',    label:'Company Portal',     icon:'◈', sub:'Role-based views for the portfolio company' },
   { id:'realtime',     group:'Portfolio',    label:'Live Data',          icon:'◉', sub:'Continuous readings · Market data · Activity' },
 
-  { id:'revenuemiss',  group:'Intelligence', label:'Revenue Risk',       icon:'▽', sub:'Straits Analytics · Forecast miss · Driver bridge' },
-  { id:'expansion',    group:'Intelligence', label:'Opportunity Radar',  icon:'△', sub:'Zafira Systems · Cross-sell · Account scoring' },
+  { id:'revenuemiss',  group:'Intelligence', label:'Revenue Risk',       icon:'▽', sub:'NovaTech Solutions · Forecast miss · Driver bridge' },
+  { id:'radar',        group:'Intelligence', label:'Opportunity Radar',  icon:'◎', sub:'Portfolio-wide value creation · Ranked upside · 9 companies' },
+  { id:'expansion',    group:'Intelligence', label:'Customer Expansion', icon:'△', sub:'BrightWave Digital · Cross-sell · Account scoring' },
   { id:'cash',         group:'Intelligence', label:'Cash & Runway',      icon:'◷', sub:'Nusantara Foods · 13-week model · Three bases' },
-  { id:'margin',       group:'Intelligence', label:'Margin Erosion',     icon:'◱', sub:'ForgeTech · Green everywhere · 8 points lost' },
+  { id:'margin',       group:'Intelligence', label:'Margin Erosion',     icon:'◱', sub:'Apex Manufacturing · Green everywhere · 8 points lost' },
   { id:'procurement',  group:'Intelligence', label:'Procurement',        icon:'⬢', sub:'Cross-portfolio · Supplier consolidation' },
   { id:'analytics',    group:'Intelligence', label:'Analytics',          icon:'▦', sub:'Heatmap · Scenario · Returns · IRR' },
   { id:'news',         group:'Intelligence', label:'News & Sentiment',   icon:'◫', sub:'Per-company news · Materiality · Sentiment' },
 
+  { id:'protection',   group:'Actions',      label:'Protection Plan',    icon:'⛨', sub:'NovaTech Solutions · Forecast risk into owned interventions' },
+  { id:'actionplan',   group:'Actions',      label:'Commercial Plan',    icon:'◇', sub:'BrightWave Digital · Campaign · Owners and dates' },
   { id:'agents',       group:'Actions',      label:'AI Agents',          icon:'◐', sub:'Investigation · Portfolio Q&A · Board pack' },
   { id:'improvements', group:'Actions',      label:'Improvement Stack',  icon:'✦', sub:'28 improvements · Priority order' },
   { id:'gantt',        group:'Actions',      label:'Delivery Plan',      icon:'▤', sub:'Prototype and production timeline' },
@@ -46,14 +54,20 @@ const VIEWS = [
 const GROUPS = ['Portfolio', 'Intelligence', 'Actions', 'Reports']
 
 // ── TOAST SYSTEM ────────────────────────────────────────────────────────────
-const TOAST_POOL = [
-  { type:'alert',  icon:'▲', color:'#F4525F', title:'Threshold breached', msg:'CareOS cash runway fell below 3 months' },
-  { type:'sync',   icon:'✓',  color:'#3FCF6E', title:'Data synced',         msg:'Xero · Meridian SaaS · P&L updated' },
-  { type:'news',   icon:'◫', color:'#5B8DEF', title:'News flagged',        msg:'PayFlo secured new enterprise contract' },
-  { type:'agent',  icon:'◐', color:'#9B7BEF', title:'Agent action',        msg:'Investigation Agent completed — CareOS revenue' },
-  { type:'sync',   icon:'✓',  color:'#3FCF6E', title:'Live feed',           msg:'Market data refreshed · GBP/USD updated' },
-  { type:'alert',  icon:'◷', color:'#E5A83C', title:'Action due',          msg:'SwiftLogix — SLA review due today' },
-]
+// Derived from the registry and the finance model rather than typed, so the
+// activity ticker names the companies the rest of the platform names.
+const TOAST_POOL = (() => {
+  const worst = attentionActions(3)
+  const co = (i) => worst[i]?.company ?? COMPANIES[i]?.name ?? 'a portfolio company'
+  return [
+    { type:'alert', icon:'▲', color:C.red,    title:'Threshold breached', msg:`${co(0)} — ${worst[0]?.rationale ?? 'runway below threshold'}` },
+    { type:'sync',  icon:'✓', color:C.green,  title:'Data synced',        msg:`Xero · ${COMPANIES[0].name} · management accounts updated` },
+    { type:'news',  icon:'◫', color:C.blue,   title:'News flagged',       msg:`${COMPANIES[1].name} secured a new enterprise contract` },
+    { type:'agent', icon:'◐', color:C.purple, title:'Agent action',       msg:`Investigation complete — ${co(1)}` },
+    { type:'sync',  icon:'✓', color:C.green,  title:'Live feed',          msg:'Market data refreshed · GBP/USD updated' },
+    { type:'alert', icon:'◷', color:C.amber,  title:'Action due',         msg:`${co(2)} — review due today` },
+  ]
+})()
 
 function Toasts({ toasts, dismiss }) {
   return (
@@ -90,6 +104,7 @@ export default function App() {
   // Which company Portfolio Health handed over, if any. Cleared when the GP
   // Dashboard is opened from the sidebar so it lands on the portfolio list.
   const [openCompany, setOpenCompany] = useState(null)
+  const [fundId, setFundId] = useState(FUNDS[0].id)
   const active = VIEWS.find(v => v.id === view)
 
   const setHome  = (id)    => { setPrefs(savePrefs({ home: id })); setView(id) }
@@ -202,7 +217,13 @@ export default function App() {
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8, paddingLeft:8, borderLeft:`1px solid ${C.border}` }}>
-            <span style={{ color:C.txt2, fontSize:S.label, letterSpacing:'0.09em', textTransform:'uppercase' }}>Alba Growth I</span>
+            <select value={fundId} onChange={(e) => setFundId(e.target.value)}
+                    title="The fund in view"
+                    style={{ background:'transparent', border:`1px solid ${C.border}`, borderRadius:4,
+                             padding:'4px 7px', color:C.txt2, fontFamily:'inherit', fontSize:S.label,
+                             letterSpacing:'0.09em', textTransform:'uppercase', cursor:'pointer' }}>
+              {FUNDS.map(f => <option key={f.id} value={f.id} style={{ background:C.surface }}>{f.name}</option>)}
+            </select>
             <span style={{ width:26, height:26, borderRadius:'50%', border:`1px solid ${C.goldLine}`,
                            background:C.goldSoft, color:C.gold, display:'flex', alignItems:'center',
                            justifyContent:'center', fontSize:9.5, fontWeight:700 }}>GM</span>
@@ -244,11 +265,14 @@ export default function App() {
 
           <div key={view} className="view-enter" style={{ flex:1, overflow:'hidden', minWidth:0 }}>
           {view==='command'      && <CommandCentre onOpenCompany={(id)=>{setOpenCompany(id);setView('gp')}} onGuide={()=>setView('guide')}/>}
-      {view==='revenuemiss'  && <ScenarioRevenueMiss/>}
-      {view==='expansion'    && <ScenarioExpansion/>}
+          {view==='revenuemiss'  && <ScenarioRevenueMiss onOpenPlan={()=>setView('protection')}/>}
+          {view==='radar'        && <OpportunityRadar/>}
+          {view==='expansion'    && <ScenarioExpansion/>}
           {view==='cash'         && <ScenarioCash/>}
           {view==='margin'       && <ScenarioMargin/>}
           {view==='procurement'  && <ScenarioProcurement/>}
+          {view==='protection'   && <ProtectionPlan/>}
+          {view==='actionplan'   && <ActionPlan/>}
       {view==='gp'           && <GPDashboard onGuide={()=>setView('guide')} openCompany={openCompany}/>}
           {view==='client'       && <ClientPortal/>}
           {view==='realtime'     && <RealTime/>}

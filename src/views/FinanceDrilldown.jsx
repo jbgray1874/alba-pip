@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { C } from "../lib/theme.js";
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import { buildFinance, fmtGBP, MONTHS } from "../lib/financeData.js";
+import { CONNECTED_COMPANY_ID } from "../lib/kpiDefinitions.js";
 
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
@@ -81,10 +82,10 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
   const push = (step) => setPath((p) => [...p, step]);
   const goTo = (idx) => setPath((p) => p.slice(0, idx + 1));
 
-  // ── Live Xero overlay (Meridian = the connected company) ──
+  // ── Live Xero overlay (one company carries the live accounting connection) ──
   const [xero, setXero] = useState(null);
   useEffect(() => {
-    if (company.id !== "meridian") return;
+    if (company.id !== CONNECTED_COMPANY_ID) return;
     fetch("/api/xero/data")
       .then((r) => r.json())
       .then((d) => { if (d && d.connected && !d.error) setXero(d); })

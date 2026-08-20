@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 //  Alba PIP — Scenario 1: revenue miss identified before the board pack
 //  ----------------------------------------------------------------------------
-//  Straits Analytics is still reporting growth. Revenue is a shade under plan,
+//  NovaTech Solutions is still reporting growth. Revenue is a shade under plan,
 //  which nobody would escalate. But pipeline coverage, win rate, deal timing
 //  and churn have all moved the same way at once, and together they say the
 //  next quarter misses.

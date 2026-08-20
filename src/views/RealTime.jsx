@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { C } from "../lib/theme.js";
 import { COMPANIES, companyById } from "../lib/companies.js";
+import { CONNECTED_COMPANY_ID } from "../lib/kpiDefinitions.js";
 import { buildFinance } from "../lib/financeData.js";
 import { modulesFor } from "../lib/companyModules.js";
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -520,6 +521,9 @@ export default function RealTime() {
   // Xero connection status
   const [xeroConnected, setXeroConnected] = useState(false);
   const [xeroName, setXeroName] = useState(null);
+  // Looked up, not spelled out: this banner named "Meridian SaaS" for four
+  // commits after the registry renamed the company.
+  const connectedCompanyName = companyById(CONNECTED_COMPANY_ID)?.name ?? "the connected company";
   useEffect(() => {
     fetch("/api/xero/status").then(r=>r.json()).then(d=>{
       if(d?.connected){ setXeroConnected(true); setXeroName(d.tenantName); }
@@ -545,7 +549,7 @@ export default function RealTime() {
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <span style={{ width:8, height:8, borderRadius:"50%", background: xeroConnected ? T.green : T.amber, boxShadow: xeroConnected ? `0 0 8px ${T.green}` : "none" }}/>
           <span style={{ fontSize:11, color: xeroConnected ? T.green : T.amber, fontWeight:600 }}>
-            {xeroConnected ? `Xero connected · ${xeroName || "Demo Company"} · live accounting data feeding Meridian SaaS` : "Xero accounting — not connected"}
+            {xeroConnected ? `Xero connected · ${xeroName || "Demo Company"} · live accounting data feeding ${connectedCompanyName}` : "Xero accounting — not connected"}
           </span>
         </div>
         {!xeroConnected && (

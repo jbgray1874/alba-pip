@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 //  Alba PIP — Scenario 4: sales acceleration and expansion opportunity
 //  ----------------------------------------------------------------------------
-//  Zafira Systems is performing in line with plan, so nothing in conventional
+//  BrightWave Digital is performing in line with plan, so nothing in conventional
 //  reporting draws attention to it. Alba finds a cross-sell cohort by scoring
 //  every customer against the profile of the accounts that previously bought
 //  the second product.
