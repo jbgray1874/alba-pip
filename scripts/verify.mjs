@@ -19,6 +19,9 @@ import { buildSeries } from "../src/lib/portfolioSeries.js";
 import { COMPANIES, FUNDS, forDashboard, forAnalytics } from "../src/lib/companies.js";
 import { buildRevenueMiss } from "../src/lib/scenarioRevenueMiss.js";
 import { buildExpansion } from "../src/lib/scenarioExpansion.js";
+import { buildCash, buildCashScenario } from "../src/lib/scenarioCash.js";
+import { buildMargin } from "../src/lib/scenarioMargin.js";
+import { buildProcurement } from "../src/lib/scenarioProcurement.js";
 import { buildExceptionReport, buildGrowthBrief, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
 import { portfolioContext } from "../api/ai/_context.js";
@@ -212,6 +215,120 @@ check("two builds produce identical output", () => {
   const a = JSON.stringify(buildRevenueMiss().bridge) + JSON.stringify(buildExpansion().qualified);
   const b = JSON.stringify(buildRevenueMiss().bridge) + JSON.stringify(buildExpansion().qualified);
   return a === b || "output changed between builds";
+});
+
+// ── 8b. Scenarios 2, 3 and 5 ────────────────────────────────────────────────
+section("Scenario 2 — cash");
+
+const s2 = buildCash();
+check("the weekly statement adds up on every line", () => {
+  const bad = s2.trajectory.weeks.filter(
+    (w) => w.opening + w.receipts - w.payroll - w.suppliers - w.debtService !== w.closing);
+  return bad.length === 0 || `${bad.length} weeks do not add up, first is week ${bad[0].week}`;
+});
+check("the model is anchored to reported burn, not rebuilt bottom-up", () => {
+  const b = s2.baseline;
+  // receipts − outflow = reported burn, and the composition sums to outflow.
+  if (Math.abs((b.monthlyOutflow - b.monthlyReceipts) - b.reportedBurn) > 1e-6)
+    return `identity broken: outflow ${b.monthlyOutflow} − receipts ${b.monthlyReceipts} ≠ burn ${b.reportedBurn}`;
+  const parts = b.composition.reduce((t, c) => t + c.value, 0);
+  return Math.abs(parts - b.monthlyOutflow) < 1e-6 || `composition ${parts} ≠ outflow ${b.monthlyOutflow}`;
+});
+check("the cash screen agrees with the portfolio table on runway", () =>
+  s2.bases[0].months === s2.fin.runway || `${s2.bases[0].months} vs ${s2.fin.runway}`);
+check("the burn trend is measured from the ledger, not assumed", () => {
+  const t = s2.burnTrend;
+  if (!(t.months >= 12)) return `only ${t.months} months of history`;
+  if (!(t.monthlyGrowth > 0)) return "no burn growth measured";
+  const implied = t.from * Math.pow(1 + t.monthlyGrowth, t.months);
+  return Math.abs(implied - t.to) < 1 || `compounding ${t.from} at the stated rate gives ${implied.toFixed(0)}, not ${t.to}`;
+});
+check("no cash-floor breach is asserted where the data has none", () => {
+  const claims = /falls below|breach/i.test(s2.insight.headline);
+  const has = s2.trajectory.weeks.some((w) => w.belowMinimum);
+  return claims === has || (claims ? "headline claims a breach the weeks do not show" : true);
+});
+check("each lever moves the forecast", () => {
+  const a = buildCashScenario({}, { baseline: s2.baseline }).runwayMonths;
+  const dso = buildCashScenario({ collectionsDaysImprovement: 17 }, { baseline: s2.baseline }).runwayMonths;
+  const pause = buildCashScenario({ hiringPause: true }, { baseline: s2.baseline }).runwayMonths;
+  const cut = buildCashScenario({ discretionaryCutPct: 0.2 }, { baseline: s2.baseline }).runwayMonths;
+  const stuck = [["collections", dso], ["hiring pause", pause], ["supplier cut", cut]].filter(([, v]) => v === a);
+  return stuck.length === 0 || `${stuck.map(([n]) => n).join(", ")} changed nothing`;
+});
+
+section("Scenario 3 — margin");
+
+const s3 = buildMargin();
+check("the margin bridge sums to the observed movement", () => {
+  const sum = s3.bridge.reduce((t, b) => t + b.value, 0);
+  return Math.abs(sum - s3.marginMove) < 0.11 || `drivers ${sum.toFixed(1)} vs observed ${s3.marginMove}`;
+});
+check("the margin movement is the ledger's, not a parameter", () => {
+  const fin = buildFinance({ id: "forgetech", status: "green" });
+  const move = fin.ebitda.grossMargin - fin.history.ebitda[0].grossMarginPct;
+  return Math.abs(move - s3.marginMove) < 0.05 || `screen says ${s3.marginMove}, ledger says ${move.toFixed(1)}`;
+});
+check("the residual is labelled rather than spread across the other drivers", () => {
+  const residual = s3.bridge.filter((b) => b.residual);
+  if (residual.length !== 1) return `${residual.length} lines marked residual`;
+  const share = Math.abs(residual[0].value / s3.marginMove);
+  return share < 0.35 || `the residual is ${(share * 100).toFixed(0)}% of the movement — the drivers explain too little`;
+});
+check("the scenario only fires on a company that reads green", () => {
+  if (s3.company.rag !== "GREEN") return `${s3.company.name} is ${s3.company.rag} — there is no masking to reveal`;
+  return s3.varPct > 0 || `revenue is ${s3.varPct.toFixed(1)}% against plan, so nothing is being masked`;
+});
+check("the margin loss outweighs the revenue beat it hides behind", () =>
+  s3.annualGrossProfitLost > s3.revenueOutperformance ||
+  `margin ${Math.round(s3.annualGrossProfitLost)} vs revenue ${Math.round(s3.revenueOutperformance)} — the scenario has no punchline`);
+
+section("Scenario 5 — procurement");
+
+const s5 = buildProcurement();
+check("categories sum to the confirmed addressable spend", () => {
+  const sum = s5.byCategory.reduce((t, c) => t + c.spend, 0);
+  return sum === s5.totals.confirmedSpend || `categories ${sum} vs confirmed ${s5.totals.confirmedSpend}`;
+});
+check("unconfirmed spend is excluded from the headline saving", () => {
+  const inHeadline = s5.byCategory.reduce((t, c) => t + c.saving, 0);
+  if (inHeadline !== s5.totals.saving) return "category savings do not sum to the headline";
+  // Every queued record's spend must be outside the confirmed base.
+  const queued = s5.reviewQueue.reduce((t, r) => t + r.annualSpend, 0);
+  return queued === s5.totals.pendingSpend || `queue holds ${queued}, pending reports ${s5.totals.pendingSpend}`;
+});
+check("only suppliers used by enough companies are counted", () => {
+  const wrong = s5.addressable.filter((v) => v.companies < 3).map((v) => v.canonical);
+  return wrong.length === 0 || `below threshold but counted: ${wrong.join(", ")}`;
+});
+check("name normalisation actually collapses the variants", () => {
+  const spread = s5.vendors.filter((v) => v.ledgerVariants.length > 1);
+  if (spread.length < 5) return `only ${spread.length} suppliers have differing ledger names — the problem is not demonstrated`;
+  const auto = s5.vendors.reduce((t, v) => t + v.autoMatched, 0);
+  const total = s5.vendors.reduce((t, v) => t + v.companies, 0);
+  return auto / total > 0.8 || `only ${((auto / total) * 100).toFixed(0)}% matched automatically`;
+});
+check("every vendor spend traces to a company's own figures", () => {
+  for (const v of s5.vendors) {
+    for (const c of v.contracts) {
+      if (!(c.annualSpend > 0)) return `${v.canonical} at ${c.companyName} has no spend`;
+      if (!COMPANIES.some((x) => x.id === c.company)) return `${v.canonical} references unknown company ${c.company}`;
+    }
+  }
+  return true;
+});
+
+check("all five scenarios carry sourced, dated evidence and dated actions", () => {
+  for (const [name, sc] of [["cash", s2], ["margin", s3], ["procurement", s5]]) {
+    const i = sc.insight;
+    if (!i.evidence.length) return `${name}: no evidence`;
+    const bad = i.evidence.filter((e) => !e.source || !e.asOf);
+    if (bad.length) return `${name}: "${bad[0].label}" has no source or date`;
+    if (!i.actions.length) return `${name}: no actions`;
+    const undated = i.actions.filter((a) => !a.due || !a.owner);
+    if (undated.length) return `${name}: an action has no owner or due date`;
+  }
+  return true;
 });
 
 // ── 9. Serverless imports ───────────────────────────────────────────────────

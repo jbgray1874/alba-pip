@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import CommandCentre  from './views/CommandCentre.jsx'
 import ScenarioRevenueMiss from './views/ScenarioRevenueMiss.jsx'
 import ScenarioExpansion   from './views/ScenarioExpansion.jsx'
+import ScenarioCash        from './views/ScenarioCash.jsx'
+import ScenarioMargin      from './views/ScenarioMargin.jsx'
+import ScenarioProcurement from './views/ScenarioProcurement.jsx'
 import GPDashboard    from './views/GPDashboard.jsx'
 import ClientPortal   from './views/ClientPortal.jsx'
 import RealTime       from './views/RealTime.jsx'
@@ -18,6 +21,9 @@ const VIEWS = [
   { id:'command',      label:'Portfolio Health',  icon:' ◎ ', sub:'Command centre · Risks vs opportunities · 9 companies' },
   { id:'revenuemiss',  label:'Revenue Risk',      icon:' ▽ ', sub:'Straits Analytics · Forecast miss · Driver bridge' },
   { id:'expansion',    label:'Growth Opportunity',icon:' △ ', sub:'Zafira Systems · Cross-sell radar · Account scoring' },
+  { id:'cash',         label:'Cash & Runway',     icon:' ◷ ', sub:'Nusantara Foods · 13-week model · Three runway bases' },
+  { id:'margin',       label:'Margin Erosion',    icon:' ◱ ', sub:'ForgeTech · Green everywhere · 8 points of gross margin' },
+  { id:'procurement',  label:'Procurement',       icon:' ⬢ ', sub:'Cross-portfolio · Supplier consolidation · Savings' },
   { id:'gp',           label:'GP Dashboard',      icon:'⬡', sub:'Fund manager · All companies · 9 modules' },
   { id:'client',       label:'Client Portal',      icon:'◈', sub:'Portfolio company · Role-based · Configurable' },
   { id:'realtime',     label:'Live Data',          icon:'◉', sub:'Real-time feeds · Market data · Activity stream' },
@@ -76,6 +82,28 @@ export default function App() {
 
   const setHome  = (id)    => { setPrefs(savePrefs({ home: id })); setView(id) }
   const setScale = (value) => setPrefs(savePrefs({ scale: value }))
+
+  // ── Ctrl/Cmd +, − and 0 drive the same setting as the top-bar control ──
+  //
+  // The browser's own zoom still works and stacks on top of this. Binding the
+  // keys here as well means the keyboard and the SIZE control cannot disagree,
+  // and the choice persists with the rest of the preferences rather than living
+  // in browser state the next machine will not have.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return
+      const step = e.key === '+' || e.key === '=' ? 1 : e.key === '-' || e.key === '_' ? -1 : e.key === '0' ? 0 : null
+      if (step === null) return
+      e.preventDefault()
+      setPrefs(p => {
+        const i = SCALES.findIndex(x => x.id === p.scale)
+        const next = step === 0 ? 0 : Math.min(SCALES.length - 1, Math.max(0, i + step))
+        return savePrefs({ scale: SCALES[next].id })
+      })
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   // ── Toast system: demo emitter fires realistic events periodically ──
   const [toasts, setToasts] = useState([])
@@ -253,6 +281,9 @@ export default function App() {
           {view==='command'      && <CommandCentre onOpenCompany={()=>setView('gp')} onGuide={()=>setView('guide')}/>}
       {view==='revenuemiss'  && <ScenarioRevenueMiss/>}
       {view==='expansion'    && <ScenarioExpansion/>}
+          {view==='cash'         && <ScenarioCash/>}
+          {view==='margin'       && <ScenarioMargin/>}
+          {view==='procurement'  && <ScenarioProcurement/>}
       {view==='gp'           && <GPDashboard onGuide={()=>setView('guide')}/>}
           {view==='client'       && <ClientPortal/>}
           {view==='realtime'     && <RealTime/>}

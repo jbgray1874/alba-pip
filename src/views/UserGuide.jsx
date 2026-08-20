@@ -155,15 +155,32 @@ export default function UserGuide({ onNavigate }) {
 
         <Card>
           <div style={{ color: T.green, fontSize: 11.5, fontWeight: 700, marginBottom: 5 }}>
-            Aggregation with a conclusion — <Link to="revenuemiss">Revenue Risk</Link> and <Link to="expansion">Growth Opportunity</Link>
+            Cross-portfolio, and only possible with a platform — <Link to="procurement">Procurement</Link>
           </div>
           <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6 }}>
-            Not roll-ups of the portfolio but roll-ups of a problem. Revenue Risk decomposes a
-            forecast gap into named drivers that sum exactly to it. Growth Opportunity scores
-            every customer account against six weighted factors and shows the points each one
-            contributed. Both end in a downloadable report.
+            Supplier spend aggregated across all {COMPANIES.length} companies, after normalising the
+            ledger names that differ company to company. The same supplier appears under as many as
+            five trading names, which is why no single company has ever seen the total. Spend whose
+            identity is only a candidate match is held out of the headline saving and shown
+            separately.
           </div>
-          <Route steps={["Revenue Risk", "any driver row"]} note="The bridge is an identity — the drivers cannot fail to add up to the gap." />
+          <Route steps={["Procurement", "any supplier", "the ledger names it matched"]} />
+        </Card>
+
+        <Card>
+          <div style={{ color: T.green, fontSize: 11.5, fontWeight: 700, marginBottom: 5 }}>
+            Aggregations of a problem — the five scenario screens
+          </div>
+          <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6 }}>
+            Not roll-ups of the portfolio but roll-ups of a question.
+            {" "}<Link to="revenuemiss">Revenue Risk</Link> decomposes a forecast gap into named drivers
+            that sum exactly to it. <Link to="cash">Cash &amp; Runway</Link> shows the same company on
+            three runway bases and lets you move the levers.
+            {" "}<Link to="margin">Margin Erosion</Link> takes eight points of gross margin apart on a
+            company that reads green on every headline. <Link to="expansion">Growth Opportunity</Link>
+            {" "}scores every customer account against six weighted factors.
+          </div>
+          <Route steps={["Revenue Risk", "any driver row"]} note="Each bridge is an identity — the drivers cannot fail to add up to the total." />
         </Card>
       </Section>
 
@@ -212,8 +229,9 @@ export default function UserGuide({ onNavigate }) {
             ["1 min", <>The <Link to="agents">AI Agents</Link> screen: run the investigation on {worst[0]?.company}. Show the ranking, not just the conclusion.</>],
             ["1 min", <><Link to="revenuemiss">Revenue Risk</Link> — reported revenue looks close to plan; the forecast gap is not. Generate the exception report.</>],
             ["1 min", <><Link to="expansion">Growth Opportunity</Link> — open one account and show why it scored. Generate the growth brief.</>],
+            ["+2 min", <>If there is time: <Link to="margin">Margin Erosion</Link> for the company that reads green everywhere, and <Link to="procurement">Procurement</Link> for the number no single company can see.</>],
           ].map(([t, body], i) => (
-            <div key={i} style={{ display: "flex", gap: 12, padding: "7px 0", borderBottom: i < 5 ? `1px solid ${T.accent}` : "none" }}>
+            <div key={i} style={{ display: "flex", gap: 12, padding: "7px 0", borderBottom: i < 6 ? `1px solid ${T.accent}` : "none" }}>
               <div style={{ width: 46, flexShrink: 0, color: T.blue, fontSize: 10, fontWeight: 700, paddingTop: 1 }}>{t}</div>
               <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.6 }}>{body}</div>
             </div>
@@ -245,7 +263,7 @@ export default function UserGuide({ onNavigate }) {
       {/* ── 6 · Reading the screen ──────────────────────────────────────── */}
       <Section n="6" title="Reading the screen">
         <Card>
-          <Row k="Text too small?" v="Use the size control in the top bar — 100% to 150%. It scales the whole interface together, so no column, chart or table row is dropped at any setting. The choice is remembered." />
+          <Row k="Text too small?" v="Ctrl and + or − (Cmd on a Mac), or the SIZE control in the top bar — 100% to 150%, Ctrl+0 to reset. It scales the whole interface together, so no column, chart or table row is dropped at any setting. The browser's own zoom still works and stacks on top. The choice is remembered." />
           <Row k="Which page opens first?" v="Set it with the home switch in the top bar. Portfolio Health or GP Dashboard; the other stays one click away in the sidebar." />
           <Row k="Status pips" v="Five per company on Portfolio Health — revenue, EBITDA, cash, people, sales. Hover any pip for the figure behind it." />
           <Row k="Currency" v={`Companies hold their own currency (${[...new Set(COMPANIES.map((c) => c.currency))].join(", ")}). Fund-level figures are restated into ${FUNDS[0].reportingCurrency}.`} />
