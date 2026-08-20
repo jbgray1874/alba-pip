@@ -25,6 +25,7 @@ import { buildExpansion } from "../lib/scenarioExpansion.js";
 import { fmtMoney } from "../lib/fx.js";
 import { useLiveRates } from "../lib/liveData.js";
 import LiveBadge from "../components/LiveBadge.jsx";
+import LiveStrip from "../components/LiveStrip.jsx";
 import InsightCard from "../components/InsightCard.jsx";
 
 const T = {
@@ -123,6 +124,10 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
       cash,
       avgRunway: burning.length ? burning.reduce((t, c) => t + c.runway, 0) / burning.length : Infinity,
       moved: rows.filter((c) => Math.abs(c.revenueMoM) > 2).length,
+      burn: rows.reduce((t, c) => t + c.fin.cash.burn, 0),
+      revenue: rows.reduce((t, c) => t + c.fin.revenue.total, 0),
+      headcount: rows.reduce((t, c) => t + c.fin.people.headcount, 0),
+      pipeline: rows.reduce((t, c) => t + c.fin.revenue.budget * 3 * c.fin.sales.pipelineCoverage, 0),
     };
   }, [rows]);
 
@@ -182,6 +187,19 @@ export default function CommandCentre({ onOpenCompany, onGuide }) {
           ))}
         </div>
       </div>
+
+      {/* ── Live readings — never empty, never frozen ── */}
+      <LiveStrip
+        specs={[
+          { key: "fund-cash",   label: "Portfolio cash",      base: roll.cash,      amplitude: 0.0025, integration: "bankfeed", fmt: (v) => fmtMoney(v, REPORTING, { k: true }) },
+          { key: "fund-burn",   label: "Monthly net burn",    base: roll.burn,      amplitude: 0.004,  integration: "bankfeed", fmt: (v) => fmtMoney(v, REPORTING, { k: true }) },
+          { key: "fund-rev",    label: "Monthly revenue",     base: roll.revenue,   amplitude: 0.003,  integration: "xero",     fmt: (v) => fmtMoney(v, REPORTING, { k: true }) },
+          { key: "fund-pipe",   label: "Open pipeline",       base: roll.pipeline,  amplitude: 0.005,  integration: "hubspot",  fmt: (v) => fmtMoney(v, REPORTING, { k: true }) },
+          { key: "fund-heads",  label: "Portfolio headcount", base: roll.headcount, amplitude: 0.0012, integration: "bamboo",   fmt: (v) => Math.round(v).toLocaleString() },
+          { key: "fund-gbpusd", label: "GBP / USD",           base: 1.2712,         amplitude: 0.0011, integration: "fx",       fmt: (v) => v.toFixed(4) },
+        ]}
+        note="Live readings across the fund, moving around the reported figures below. A lapsed credential keeps its reading moving and drops the badge to SIMULATED rather than blanking the tile."
+      />
 
       {/* ── Fund KPI banner ── */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>

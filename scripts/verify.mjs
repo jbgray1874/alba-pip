@@ -25,6 +25,7 @@ import { buildProcurement } from "../src/lib/scenarioProcurement.js";
 import { modulesFor, MODELLED_DISCIPLINES, benchmarksFor } from "../src/lib/companyModules.js";
 import { trackedActions, actionSummary } from "../src/lib/actionTracker.js";
 import { TIERS } from "../src/lib/liveData.js";
+import { INTEGRATIONS, licenceStatus, integrationHealth, readingAt } from "../src/lib/liveFeed.js";
 import { buildExceptionReport, buildGrowthBrief, buildCashReport, buildMarginReport, buildProcurementReport, reportToHtml } from "../src/lib/reports.js";
 import { buildInvestigation } from "../src/lib/investigation.js";
 import { portfolioContext } from "../api/ai/_context.js";
@@ -558,6 +559,69 @@ check("the pinned rates still reproduce the demo figures", () => {
     || `Straits restates to ${fin.revenue.total.toFixed(0)}, pinned rates say ${expected.toFixed(0)}`;
 });
 
+section("Continuity — no gaps, no frozen tiles, no stale claims");
+
+check("no live reading ever stops moving", () => {
+  // A tile marked LIVE whose number never moves teaches a viewer that the label
+  // is decoration, and then they disbelieve every other one on the screen.
+  for (const key of ["fund-cash", "fund-burn", "fund-rev", "fund-pipe", "meridian-ar", "cp-zafira-heads"]) {
+    const vals = Array.from({ length: 60 }, (_, t) => readingAt(key, 1000, 0.004, t));
+    for (let i = 1; i < vals.length; i++) {
+      if (vals[i] === vals[i - 1]) return `${key} repeats its value at tick ${i}`;
+    }
+  }
+  return true;
+});
+
+check("a reading never wanders away from the figure it reports", () => {
+  // The tile and the drill-down must be the same number with a live reading
+  // around it, not two different claims.
+  for (const key of ["fund-cash", "meridian-rev", "khaleej-burn"]) {
+    const vals = Array.from({ length: 200 }, (_, t) => readingAt(key, 1000, 0.004, t));
+    const min = Math.min(...vals), max = Math.max(...vals);
+    if (min < 990 || max > 1010) return `${key} ranges ${min.toFixed(1)}–${max.toFixed(1)} on a base of 1000`;
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    if (Math.abs(mean - 1000) > 2) return `${key} has a mean of ${mean.toFixed(1)}, not the reported 1000`;
+  }
+  return true;
+});
+
+check("two tiles never move in lockstep", () => {
+  const a = Array.from({ length: 40 }, (_, t) => readingAt("fund-cash", 1000, 0.004, t));
+  const b = Array.from({ length: 40 }, (_, t) => readingAt("fund-burn", 1000, 0.004, t));
+  return a.some((v, i) => Math.abs(v - b[i]) > 0.5) || "every tile is drawing the same curve";
+});
+
+check("licence state is derived from the expiry date, not typed", () => {
+  const asOf = "2026-05-31";
+  for (const i of INTEGRATIONS) {
+    const st = licenceStatus(i, asOf);
+    if (!i.expires) { if (st.id !== "keyless") return `${i.name}: no expiry but status ${st.id}`; continue; }
+    const past = Date.parse(i.expires) < Date.parse(asOf);
+    if (past && st.id !== "expired") return `${i.name} expired ${i.expires} but reads ${st.id}`;
+    if (!past && st.id === "expired") return `${i.name} is valid until ${i.expires} but reads expired`;
+    if (!st.note || st.note.length < 20) return `${i.name}: no explanation of what its state means`;
+  }
+  return true;
+});
+
+check("the estate contains something lapsed and something expiring, or it proves nothing", () => {
+  const h = integrationHealth("2026-05-31");
+  if (!h.expired.length) return "no integration is lapsed — the degradation path is never exercised";
+  if (!h.expiring.length) return "nothing is close to expiry — the warning path is never exercised";
+  if (!h.connected.length) return "nothing is connected";
+  return true;
+});
+
+check("a lapsed credential degrades its feed rather than blanking it", () => {
+  const h = integrationHealth("2026-05-31");
+  for (const r of h.expired) {
+    if (!/continu/i.test(r.licence.note)) return `${r.name}: its expiry note does not say the figures continue`;
+    if (!r.feeds?.length) return `${r.name}: nothing records what it feeds, so nothing knows what to continue`;
+  }
+  return true;
+});
+
 // ── 9. Serverless imports ───────────────────────────────────────────────────
 section("Serverless — the API functions can reach the finance model");
 
@@ -754,6 +818,15 @@ check("both landing pages are real views", () => {
 const commandSrc = await codeOf("../src/views/CommandCentre.jsx");
 const gpSrc = await codeOf("../src/views/GPDashboard.jsx");
 const guideSrc = await codeOf("../src/views/UserGuide.jsx");
+
+check("the live strip is on the screens a partner actually uses", () => {
+  const missing = [];
+  for (const [file, src] of [["CommandCentre.jsx", commandSrcLive], ["GPDashboard.jsx", gpSrc], ["ClientPortal.jsx", clientSrc]]) {
+    if (!src.includes("LiveStrip")) missing.push(file);
+  }
+  return missing.length === 0 || `no continuous readings on ${missing.join(", ")}`;
+});
+
 
 check("clicking a company in Portfolio Health opens that company", () => {
   // CommandCentre passes the id; App discarded it, so the route from the fund

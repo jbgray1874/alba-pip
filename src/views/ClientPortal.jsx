@@ -2,6 +2,7 @@ import { useState, useMemo, createContext, useContext } from "react";
 import { COMPANIES, companyById } from "../lib/companies.js";
 import { buildFinance } from "../lib/financeData.js";
 import { modulesFor } from "../lib/companyModules.js";
+import LiveStrip from "../components/LiveStrip.jsx";
 import { AreaChart, Area, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 
 // ── TOKENS ────────────────────────────────────────────────────────────────────
@@ -462,6 +463,12 @@ function renderWidget(id, actions, setActions, COMPANY, DATA) {
 function Dashboard({role}) {
   const COMPANY = useCompany();
   const DATA = useData();
+  const liveSpecs = useMemo(() => ([
+    { key: `cp-${COMPANY.id}-cash`,  label: "Cash balance",    base: COMPANY.cash,        amplitude: 0.0025, integration: "bankfeed", fmt: (v) => `${Math.round(v).toLocaleString()}` },
+    { key: `cp-${COMPANY.id}-rev`,   label: "Monthly revenue", base: COMPANY.revenue,     amplitude: 0.003,  integration: "xero",     fmt: (v) => `${Math.round(v).toLocaleString()}` },
+    { key: `cp-${COMPANY.id}-pipe`,  label: "Pipeline cover",  base: COMPANY.pipeline,    amplitude: 0.006,  integration: "hubspot",  fmt: (v) => `${v.toFixed(2)}x` },
+    { key: `cp-${COMPANY.id}-heads`, label: "Headcount",       base: COMPANY.headcount,   amplitude: 0.001,  integration: "bamboo",   fmt: (v) => Math.round(v).toLocaleString() },
+  ]), [COMPANY]);
   const [editMode, setEditMode] = useState(false);
   const [actions, setActions] = useState(MY_ACTIONS);
   const defaultOn = WIDGET_REGISTRY.filter(w=>w.roles.includes(role)).map(w=>w.id);
@@ -488,6 +495,7 @@ function Dashboard({role}) {
           {editMode?"✓ Save Layout":"⊞ Customise Dashboard"}
         </button>
       </div>
+      <LiveStrip specs={liveSpecs} note={`Live readings for ${COMPANY.name}, in ${COMPANY.currency}. Each moves around the reported figure; a lapsed credential keeps the reading moving and relabels it.`}/>
 
       {/* Widget picker (edit mode) */}
       {editMode && (

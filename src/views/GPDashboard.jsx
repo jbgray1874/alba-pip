@@ -4,6 +4,9 @@ import FinanceDrilldown from "./FinanceDrilldown.jsx";
 import { forDashboard } from "../lib/companies.js";
 import { modulesFor, benchmarksFor } from "../lib/companyModules.js";
 import { trackedActions, actionSummary } from "../lib/actionTracker.js";
+import LiveStrip from "../components/LiveStrip.jsx";
+import { fmtMoney } from "../lib/fx.js";
+import { buildFinance } from "../lib/financeData.js";
 import { buildInvestigation } from "../lib/investigation.js";
 
 const T = {
@@ -172,6 +175,24 @@ function BenchmarkModule({co}){
 // The specification's component 2 asks every company page to carry a
 // data-source and refresh strip. Modelled disciplines are named as such here
 // rather than being allowed to pass as connected feeds.
+// Continuously moving readings for one company. Anchored to the same figures
+// the tabs below report, so the tile and the drill-down never disagree.
+function CompanyLiveStrip({co}){
+  const fin=useMemo(()=>buildFinance({id:co.id,status:co.status}),[co.id,co.status]);
+  const ccy=fin.native.currency;
+  const money=(v)=>fmtMoney(v,ccy,{k:true});
+  const n=fin.native;
+  const specs=useMemo(()=>([
+    { key:`${co.id}-cash`,  label:"Cash balance",     base:n.cash,    amplitude:0.0025, integration:"bankfeed", fmt:money },
+    { key:`${co.id}-burn`,  label:"Net burn",         base:n.burn,    amplitude:0.005,  integration:"bankfeed", fmt:money },
+    { key:`${co.id}-rev`,   label:"Monthly revenue",  base:n.revenue, amplitude:0.003,  integration:"xero",     fmt:money },
+    { key:`${co.id}-pipe`,  label:"Open pipeline",    base:n.budget*3*fin.sales.pipelineCoverage, amplitude:0.006, integration:"hubspot", fmt:money },
+    { key:`${co.id}-heads`, label:"Headcount",        base:fin.people.headcount, amplitude:0.001, integration:"bamboo", fmt:(v)=>Math.round(v).toLocaleString() },
+    { key:`${co.id}-ar`,    label:"Overdue AR",       base:fin.cash.overdueTotal, amplitude:0.007, integration:"xero", fmt:money },
+  ]),[co.id]);
+  return <LiveStrip specs={specs} note={`Live readings for ${co.name}, moving around the reported figures in the tabs below.`}/>;
+}
+
 function SourceStrip({co,d}){
   if(!d) return null;
   const measured=[["Finance",d.finance],["Sales",d.sales],["People",d.hr],["Cross-functional",d.crossFunctional]];
@@ -269,7 +290,7 @@ function CompanyView({co,onBack}){
   const d=MODULES[co.id];
   const ic=co.status==="red"?T.red:T.amber;
   const TABS=[{id:"overview",l:"Overview"},{id:"finance",l:"Finance"},{id:"sales",l:"Sales"},{id:"hr",l:"People"},{id:"ops",l:"Operations"},{id:"procurement",l:"Procurement"},{id:"technology",l:"Technology"},{id:"compliance",l:"Compliance"},{id:"crossfunctional",l:"Cross-Functional"},{id:"benchmarks",l:"Benchmarks"},{id:"ai",l:"🤖 AI"}];
-  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><button onClick={onBack} style={{background:"transparent",border:"none",color:T.txt3,cursor:"pointer",fontSize:11,marginBottom:12,padding:0}}>← Portfolio Overview</button><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,paddingBottom:16,borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:14}}><HealthRing score={co.score} size={62}/><div><h1 style={{color:T.txt1,fontSize:19,fontWeight:700,margin:0}}>{co.name}</h1><div style={{color:T.txt3,fontSize:11,marginTop:3}}>{co.sector} · {co.stage} · {co.own}% ownership · {co.geo}</div><div style={{display:"flex",gap:7,alignItems:"center",marginTop:7,flexWrap:"wrap"}}><RagBadge status={co.status}/><span style={{color:T.txt3,fontSize:9}}>Updated {co.upd}</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.freshness>90?T.green:co.freshness>70?T.amber:T.red,fontSize:9,fontFamily:"monospace"}}>Data {co.freshness}% fresh</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.actions>0?T.amber:T.green,fontSize:9}}>{co.actions} actions</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.alerts>0?T.red:T.green,fontSize:9}}>{co.alerts} alerts</span></div></div></div><div style={{background:`${ic}10`,border:`1px solid ${ic}25`,borderRadius:8,padding:"10px 14px",maxWidth:280}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:4}}>PRIMARY ISSUE</div><div style={{color:ic,fontSize:11,lineHeight:1.5}}>{co.issue}</div></div></div><div style={{display:"flex",gap:3,marginBottom:14,flexWrap:"wrap"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 12px",background:tab===t.id?T.blue:"transparent",border:`1px solid ${tab===t.id?T.blue:T.border}`,borderRadius:5,color:tab===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10,fontWeight:tab===t.id?600:400}}>{t.l}</button>)}</div><SourceStrip co={co} d={d}/>{tab==="overview"&&<CockpitView co={co}/>}{tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}{tab==="sales"&&d&&<SalesModule d={d.sales}/>}{tab==="hr"&&d&&<HRModule d={d.hr}/>}{tab==="ops"&&d&&<GenericModule d={d.ops}/>}{tab==="procurement"&&d&&<GenericModule d={d.procurement}/>}{tab==="technology"&&d&&<GenericModule d={d.technology}/>}{tab==="compliance"&&d&&<GenericModule d={d.compliance}/>}{tab==="crossfunctional"&&d&&<CrossFunctionalModule d={d.crossFunctional}/>}{tab==="benchmarks"&&<BenchmarkModule co={co}/>}{tab==="ai"&&<AIPanel co={co}/>}{drill&&<FinanceDrilldown company={co} metric={drill} onClose={()=>setDrill(null)}/>}</div>);
+  return(<div style={{height:"100%",overflowY:"auto",padding:"20px 24px"}}><button onClick={onBack} style={{background:"transparent",border:"none",color:T.txt3,cursor:"pointer",fontSize:11,marginBottom:12,padding:0}}>← Portfolio Overview</button><div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:18,paddingBottom:16,borderBottom:`1px solid ${T.border}`}}><div style={{display:"flex",alignItems:"center",gap:14}}><HealthRing score={co.score} size={62}/><div><h1 style={{color:T.txt1,fontSize:19,fontWeight:700,margin:0}}>{co.name}</h1><div style={{color:T.txt3,fontSize:11,marginTop:3}}>{co.sector} · {co.stage} · {co.own}% ownership · {co.geo}</div><div style={{display:"flex",gap:7,alignItems:"center",marginTop:7,flexWrap:"wrap"}}><RagBadge status={co.status}/><span style={{color:T.txt3,fontSize:9}}>Updated {co.upd}</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.freshness>90?T.green:co.freshness>70?T.amber:T.red,fontSize:9,fontFamily:"monospace"}}>Data {co.freshness}% fresh</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.actions>0?T.amber:T.green,fontSize:9}}>{co.actions} actions</span><span style={{color:T.txt3,fontSize:9}}>·</span><span style={{color:co.alerts>0?T.red:T.green,fontSize:9}}>{co.alerts} alerts</span></div></div></div><div style={{background:`${ic}10`,border:`1px solid ${ic}25`,borderRadius:8,padding:"10px 14px",maxWidth:280}}><div style={{color:T.txt3,fontSize:9,letterSpacing:"0.1em",marginBottom:4}}>PRIMARY ISSUE</div><div style={{color:ic,fontSize:11,lineHeight:1.5}}>{co.issue}</div></div></div><div style={{display:"flex",gap:3,marginBottom:14,flexWrap:"wrap"}}>{TABS.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"6px 12px",background:tab===t.id?T.blue:"transparent",border:`1px solid ${tab===t.id?T.blue:T.border}`,borderRadius:5,color:tab===t.id?"#fff":T.txt3,cursor:"pointer",fontSize:10,fontWeight:tab===t.id?600:400}}>{t.l}</button>)}</div><SourceStrip co={co} d={d}/>{d&&<CompanyLiveStrip co={co}/>}{tab==="overview"&&<CockpitView co={co}/>}{tab==="finance"&&d&&<FinanceModule d={d.finance} co={co} onDrill={setDrill}/>}{tab==="sales"&&d&&<SalesModule d={d.sales}/>}{tab==="hr"&&d&&<HRModule d={d.hr}/>}{tab==="ops"&&d&&<GenericModule d={d.ops}/>}{tab==="procurement"&&d&&<GenericModule d={d.procurement}/>}{tab==="technology"&&d&&<GenericModule d={d.technology}/>}{tab==="compliance"&&d&&<GenericModule d={d.compliance}/>}{tab==="crossfunctional"&&d&&<CrossFunctionalModule d={d.crossFunctional}/>}{tab==="benchmarks"&&<BenchmarkModule co={co}/>}{tab==="ai"&&<AIPanel co={co}/>}{drill&&<FinanceDrilldown company={co} metric={drill} onClose={()=>setDrill(null)}/>}</div>);
 }
 
 // ── PORTFOLIO VIEW ────────────────────────────────────────────────────────────

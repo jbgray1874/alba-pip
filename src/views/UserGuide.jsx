@@ -18,6 +18,7 @@ import { modulesFor, MODELLED_DISCIPLINES } from "../lib/companyModules.js";
 import { actionSummary } from "../lib/actionTracker.js";
 import { buildProcurement } from "../lib/scenarioProcurement.js";
 import { TIERS } from "../lib/liveData.js";
+import { integrationHealth, AS_OF_DATE } from "../lib/liveFeed.js";
 
 const T = {
   bg: "#020817", card: "#0f1525", border: "#1e2740", accent: "#172035",
@@ -79,6 +80,7 @@ export default function UserGuide({ onNavigate }) {
   const actions = useMemo(() => actionSummary(), []);
   const procurement = useMemo(() => buildProcurement().totals, []);
   const sampleModules = useMemo(() => modulesFor(COMPANIES[0].id), []);
+  const estate = useMemo(() => integrationHealth(), []);
   const measuredCount = Object.keys(sampleModules).filter((k) => k !== "meta").length - MODELLED_DISCIPLINES.length;
   const red = portfolio.filter((x) => x.c.rag === "RED").length;
   const amber = portfolio.filter((x) => x.c.rag === "AMBER").length;
@@ -373,6 +375,20 @@ export default function UserGuide({ onNavigate }) {
               <span style={{ color: T.txt3, fontSize: 10.5, lineHeight: 1.55 }}>{t.definition}</span>
             </div>
           ))}
+          <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>
+            <strong>Nothing is ever empty and nothing ever stops.</strong> Every screen a partner works on carries a
+            strip of continuously moving readings. Each moves around the figure reported below it, so the tile and
+            the drill-down are the same number with a live reading around it. When a credential lapses the reading
+            carries on from the last good value and the badge drops from LIVE to SIMULATED with the reason on hover —
+            it never blanks, never freezes, and never keeps claiming to be live.
+          </div>
+          <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>
+            <strong>The credential estate</strong> is on <Link to="integrations">Integration Plan</Link>. As at{" "}
+            {AS_OF_DATE}: {estate.connected.length} connected, {estate.expiring.length} renewing within 45 days, and{" "}
+            {estate.expired.length} lapsed
+            {estate.expired.length ? ` (${estate.expired.map((r) => r.name).join(", ")})` : ""}. Every row states what
+            it feeds and what happens to those figures when it expires.
+          </div>
           <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>
             <strong>Foreign exchange is the one genuinely live source.</strong> Four of the {COMPANIES.length} companies
             report in USD, SGD or AED, so the rate is not a footnote — it sets what they are worth in the fund's
