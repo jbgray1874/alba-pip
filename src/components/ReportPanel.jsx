@@ -179,7 +179,7 @@ export default function ReportPanel({ report, onClose }) {
             </div>
           </div>
           <div style={{ display: "flex", gap: 7, flexShrink: 0, alignItems: "center", flexWrap: "wrap" }}>
-            <Button variant="primary" onClick={() => downloadReport(report)}>Download</Button>
+            <Button variant="outline" onClick={() => downloadReport(report)}>Download</Button>
             <Button variant="outline" onClick={print}>Print</Button>
             <Button variant="ghost" onClick={onClose}>Close</Button>
           </div>
@@ -305,8 +305,11 @@ export default function ReportPanel({ report, onClose }) {
             <div style={{ borderTop: `1px solid ${C.border}`, marginTop: 14, paddingTop: 11,
                           color: C.txt3, fontSize: S.micro, lineHeight: 1.6 }}>
               Assembled from {meta.metrics} calculated metrics
-              {meta.sources.length ? ` across ${meta.sources.length} source systems` : ""}. Download saves a
-              self-contained file; some embedded viewers block saving, in which case use Print.
+              {meta.sources.length ? ` across ${meta.sources.length} source systems` : ""}.
+              <br /><br />
+              The sheet beside this is the whole report — nothing is held back for the download. Download saves it
+              as a self-contained file and Print opens it for a printer, but a shared link runs inside a sandbox
+              that blocks both, which is why the report opens here rather than going straight to a file.
             </div>
           </div>
         </div>
