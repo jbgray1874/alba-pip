@@ -1594,6 +1594,24 @@ check("no screen names a system that is not in the connected estate", async () =
   return offenders.length === 0 || offenders.join("; ");
 });
 
+check("every integration declares how far it is built", async () => {
+  // The user guide describes the connected estate to a client. It builds that
+  // description from CONNECTOR, so an integration added without a stage would
+  // vanish from the page silently rather than fail — the worst kind of wrong,
+  // because the omission looks like a shorter list rather than a bug.
+  const { INTEGRATIONS: rows, CONNECTOR, connectorEstate } = await import("../src/lib/liveFeed.js");
+  const missing = rows.filter((i) => !CONNECTOR[i.connector]);
+  if (missing.length) return `${missing.map((i) => i.name).join(", ")} declare no connector stage`;
+
+  const listed = connectorEstate().flatMap((s) => s.systems.length);
+  const total = listed.reduce((t, n) => t + n, 0);
+  if (total !== rows.length) return `the estate lists ${total} of ${rows.length} systems`;
+
+  // Every stage needs its own sentence, or the guide prints a bare chip.
+  const mute = Object.values(CONNECTOR).filter((s) => !s.note || !s.label);
+  return mute.length === 0 || `${mute.map((s) => s.id).join(", ")} carry no description`;
+});
+
 check("the finance drill-down states the calculation and the source", async () => {
   // The specification requires both on every figure. This file used to name
   // TrueLayer — not a connected system — and quote "synced 4h ago" on every

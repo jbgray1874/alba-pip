@@ -20,7 +20,7 @@ import { modulesFor, MODELLED_DISCIPLINES } from "../lib/companyModules.js";
 import { actionSummary } from "../lib/actionTracker.js";
 import { buildProcurement } from "../lib/scenarioProcurement.js";
 import { TIERS } from "../lib/liveData.js";
-import { integrationHealth } from "../lib/liveFeed.js";
+import { integrationHealth, connectorEstate } from "../lib/liveFeed.js";
 
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
@@ -518,6 +518,90 @@ export default function UserGuide({ onNavigate }) {
           <Row k="Status pips" v="Five per company on Portfolio Health — revenue, EBITDA, cash, people, sales. Hover any pip for the figure behind it." />
           <Row k="Currency" v={`Companies hold their own currency (${[...new Set(COMPANIES.map((c) => c.currency))].join(", ")}). Fund-level figures are restated into ${FUNDS[0].reportingCurrency}.`} />
           <Row k="“● CALCULATED” badges" v="On the AI panels: green means a language model wrote the prose over calculated figures; grey means no API key is set and you are seeing the calculation alone. Neither invents a number." />
+        </Card>
+      </Section>
+
+      {/* ── 11 · How it is built ────────────────────────────────────────── */}
+      <Section n="11" title="How it is built"
+               sub="The stack, and how far each integration actually goes. Read from the same registry the screens read, so it cannot describe an estate that no longer exists.">
+
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>The application</div>
+          <Row k="Interface" v="React 18 — function components and hooks. No state library and no router; the route is held in state. Built and bundled with Vite 5." />
+          <Row k="Charts" v="Recharts, on every screen that draws one." />
+          <Row k="Documents" v="jsPDF with its table plugin, loaded only when a report is asked for, so a viewer who never generates one never downloads it." />
+          <Row k="Styling" v="No CSS framework. Every colour, size and typeface comes from one file of design tokens, which is why twenty screens look like one product." />
+          <Row k="Dependencies" v="Four at runtime, in total." />
+        </Card>
+
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>The calculation layer</div>
+          <div style={{ color: T.txt3, fontSize: 10.5, lineHeight: 1.65 }}>
+            Twenty-eight modules of plain JavaScript with no interface code in them: the finance model, the scenario
+            engines, the investigation agent, the currency restatement and the report builders. Around two thirds of
+            the project by volume, and the part that would survive a rewrite of everything else.
+            <br /><br />
+            It is <b style={{ color: T.txt2 }}>deterministic throughout</b> — a seeded generator, no random values,
+            no reading of the clock. The same company shows the same figures on every screen, on every machine,
+            permanently. That is what stops a number drifting between a dashboard tile, a drill-down, a report
+            preview and the PDF: they are all calling the same function rather than each holding a copy.
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700, marginBottom: 4 }}>The integrations</div>
+          <div style={{ color: T.txt3, fontSize: 10, marginBottom: 10 }}>
+            {integrationHealth().rows.length} systems, at three different stages of build.
+          </div>
+
+          {connectorEstate().filter((s) => s.systems.length > 0).map((stage) => (
+            <div key={stage.id} style={{ marginBottom: 13 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
+                <span style={{ padding: "1px 7px", borderRadius: 3, border: `1px solid ${stage.colour}44`,
+                               background: `${stage.colour}14`, color: stage.colour, fontSize: 8.5,
+                               fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {stage.label}
+                </span>
+                <span style={{ color: T.txt3, fontSize: 10, lineHeight: 1.5 }}>{stage.note}</span>
+              </div>
+              {stage.systems.map((sys) => (
+                <div key={sys.id} style={{ display: "flex", gap: 12, padding: "5px 0",
+                                           borderBottom: `1px solid ${T.accent}` }}>
+                  <div style={{ width: 128, flexShrink: 0, color: T.txt2, fontSize: 10.5 }}>{sys.name}</div>
+                  <div style={{ width: 74, flexShrink: 0, color: T.txt3, fontSize: 10 }}>{sys.kind}</div>
+                  <div style={{ color: T.txt3, fontSize: 10, lineHeight: 1.5 }}>{sys.feeds.join(" · ")}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          <div style={{ color: T.txt3, fontSize: 10, lineHeight: 1.6, marginTop: 4 }}>
+            Xero is a complete OAuth 2.0 flow — connect, callback, token refresh with rotation — reading real
+            invoices and contacts and mapping them into the shape the finance drill-down already uses. Each
+            connector degrades to the calculated model when its key is absent, rather than failing, which is why
+            no screen breaks without one.
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>The analytical layer</div>
+          <div style={{ color: T.txt3, fontSize: 10.5, lineHeight: 1.65 }}>
+            A language model writes the commentary on the agent screens, called from the server rather than the
+            browser. <b style={{ color: T.txt2 }}>The figures are never accepted from the page.</b> The endpoint
+            takes a company identifier, checks it against the registry and recomputes every number from the finance
+            model before it builds the prompt — so the analysis cannot contradict the screen it is describing, and a
+            malformed request cannot be answered as the wrong company.
+            <br /><br />
+            With no key set, every agent falls back to the calculated answer. The prose disappears; not one figure
+            moves.
+          </div>
+        </Card>
+
+        <Card>
+          <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>Build and release</div>
+          <Row k="Publishing" v="Every push rebuilds and republishes the site automatically. No manual deployment step." />
+          <Row k="The gate" v="Around 160 assertions over the arithmetic and the interface run before anything is published, and a failure stops the release. They check the identities — that a forecast still equals the plan less its drivers, that percentage columns sum to 100, that no tile is frozen, that the top bar cannot clip." />
+          <Row k="Connectors in this build" v="The four server-side connectors need a host that runs functions. The published demo is a static site, so Connect Xero is inert there and every screen falls back to the model — by design, not by fault." />
         </Card>
       </Section>
 

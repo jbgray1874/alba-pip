@@ -45,15 +45,47 @@ export const AS_OF_DATE = `${AS_OF_MONTH}-31`;
  * a lapsed credential.
  */
 export const INTEGRATIONS = [
-  { id: "xero",     name: "Xero",             kind: "Accounting", feeds: ["Revenue", "Margin", "Cost of sales"] },
-  { id: "bankfeed", name: "Xero bank feed",   kind: "Banking",    feeds: ["Cash balance", "Net burn"] },
-  { id: "stripe",   name: "Stripe",           kind: "Billing",    feeds: ["MRR", "Churn", "Collections"] },
-  { id: "hubspot",  name: "HubSpot",          kind: "CRM",        feeds: ["Pipeline coverage", "Win rate", "Deal timing"] },
-  { id: "fx",       name: "ExchangeRate-API", kind: "Market",     feeds: ["GBP/USD", "GBP/EUR", "Portfolio restatement"] },
-  { id: "bamboo",   name: "BambooHR",         kind: "HRIS",       feeds: ["Headcount", "Attrition"] },
-  { id: "alphav",   name: "Alpha Vantage",    kind: "Market",     feeds: ["FX fallback", "Indices"] },
-  { id: "newsapi",  name: "NewsAPI",          kind: "News",       feeds: ["Company news", "Sentiment"] },
+  { id: "xero",     name: "Xero",             kind: "Accounting", connector: "server",  feeds: ["Revenue", "Margin", "Cost of sales"] },
+  { id: "bankfeed", name: "Xero bank feed",   kind: "Banking",    connector: "server",  feeds: ["Cash balance", "Net burn"] },
+  { id: "stripe",   name: "Stripe",           kind: "Billing",    connector: "server",  feeds: ["MRR", "Churn", "Collections"] },
+  { id: "hubspot",  name: "HubSpot",          kind: "CRM",        connector: "server",  feeds: ["Pipeline coverage", "Win rate", "Deal timing"] },
+  { id: "fx",       name: "ExchangeRate-API", kind: "Market",     connector: "browser", feeds: ["GBP/USD", "GBP/EUR", "Portfolio restatement"] },
+  { id: "bamboo",   name: "BambooHR",         kind: "HRIS",       connector: "model",   feeds: ["Headcount", "Attrition"] },
+  { id: "alphav",   name: "Alpha Vantage",    kind: "Market",     connector: "browser", feeds: ["FX fallback", "Indices"] },
+  { id: "newsapi",  name: "NewsAPI",          kind: "News",       connector: "browser", feeds: ["Company news", "Sentiment"] },
 ];
+
+/**
+ * How far each integration is actually built.
+ *
+ * This is here rather than written out in the user guide for the same reason
+ * every other list in this project is derived: a page that describes the estate
+ * from memory is wrong the first time the estate changes, and the person it is
+ * wrong in front of is a client. Adding a connector means editing the row above
+ * and nothing else.
+ */
+export const CONNECTOR = {
+  server: {
+    id: "server", label: "Built · server-side", colour: "#00c97a",
+    note: "A serverless function holds the credential and calls the provider's API. The key never reaches the browser.",
+  },
+  browser: {
+    id: "browser", label: "Built · direct", colour: "#3d8bff",
+    note: "Called from the page itself. Free tier or a publishable key, and nothing confidential passes through it.",
+  },
+  model: {
+    id: "model", label: "Registered · connector to build", colour: "#f5a524",
+    note: "The screens read this feed exactly as they would a live one, so connecting it changes nothing above the data layer.",
+  },
+};
+
+/** Integrations grouped by how far they are built, in that order. */
+export function connectorEstate() {
+  return Object.values(CONNECTOR).map((stage) => ({
+    ...stage,
+    systems: INTEGRATIONS.filter((i) => i.connector === stage.id),
+  }));
+}
 
 export const LICENCE = {
   connected: { id: "connected", label: "Connected", colour: "#00c97a" },
