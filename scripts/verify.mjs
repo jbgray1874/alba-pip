@@ -1594,6 +1594,54 @@ check("no screen names a system that is not in the connected estate", async () =
   return offenders.length === 0 || offenders.join("; ");
 });
 
+check("the asset prefix follows the custom domain", async () => {
+  // A project site on github.io serves from /alba-pip/ and its assets must
+  // carry that prefix; a custom domain serves from the root and the same prefix
+  // 404s every asset, which presents as a blank white page with no error on it.
+  // The two are switched by the presence of public/CNAME, so the danger is the
+  // pair drifting apart — a domain attached with the prefix still on, or the
+  // file removed with the prefix off.
+  const cfg = await codeOf("../vite.config.js");
+  if (!/public\/CNAME/.test(cfg)) return "the base path no longer reads public/CNAME";
+  if (!/'\/alba-pip\/'/.test(cfg)) return "the project-site prefix has gone";
+
+  const { existsSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const cname = fileURLToPath(new URL("../public/CNAME", import.meta.url));
+  if (!existsSync(cname)) return true;              // project site, prefix on
+
+  // A CNAME is present, so this build is for a custom domain. It must hold one
+  // hostname and nothing else — Pages reads the file literally, and a stray
+  // blank line or a protocol takes the site off the air rather than erroring.
+  const { readFileSync } = await import("node:fs");
+  const raw = readFileSync(cname, "utf8").trim();
+  if (/^https?:/.test(raw)) return `CNAME carries a URL, not a hostname: ${raw}`;
+  if (raw.split(/\s+/).length !== 1) return `CNAME must hold one hostname, found: ${JSON.stringify(raw)}`;
+  return /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(raw) || `CNAME is not a hostname: ${raw}`;
+});
+
+check("the hosted configuration keeps every route behind a role", async () => {
+  // Static Web Apps authenticates anyone holding an account with a built-in
+  // provider — its `authenticated` role includes any Microsoft or GitHub
+  // account, not only ours. Requiring a named role is the whole of the access
+  // control, so a route that asks for `authenticated` instead is open.
+  const { readFileSync } = await import("node:fs");
+  const { fileURLToPath } = await import("node:url");
+  const cfg = JSON.parse(readFileSync(fileURLToPath(new URL("../staticwebapp.config.json", import.meta.url)), "utf8"));
+
+  const catchAll = cfg.routes?.find((r) => r.route === "/*");
+  if (!catchAll) return "no catch-all route, so unlisted paths are anonymous";
+  for (const r of cfg.routes) {
+    if (!r.allowedRoles) continue;
+    if (r.allowedRoles.includes("anonymous")) return `${r.route} is open to anonymous`;
+    if (r.allowedRoles.includes("authenticated")) return `${r.route} accepts any account, not only invited ones`;
+  }
+  if (!cfg.routes.some((r) => r.route === "/api/*" && r.allowedRoles?.length)) {
+    return "the connectors are not behind a role";
+  }
+  return true;
+});
+
 check("every integration declares how far it is built", async () => {
   // The user guide describes the connected estate to a client. It builds that
   // description from CONNECTOR, so an integration added without a stage would
