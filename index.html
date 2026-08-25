@@ -3,24 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Alba PIP – Portfolio Intelligence Platform</title>
+    <title>Alba PIP – Portfolio intelligence for private capital</title>
+    <meta name="description" content="Alba PIP reads the systems your portfolio companies already run, tells you which one needs attention, and shows its working — every figure traceable to the ledger it came from." />
+
+    <!--
+      The public page. The application itself is app.html; this is the only
+      document served to somebody who has not signed in, which is why the two
+      are separate files rather than one bundle deciding for itself. A host can
+      enforce a rule about a file. It cannot enforce one about a component.
+    -->
+    <meta property="og:title" content="Alba PIP — Portfolio intelligence for private capital" />
+    <meta property="og:description" content="Know before the board pack does." />
+    <meta property="og:type" content="website" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <!--
-      The tab icon is the supplied artwork at public/favicon.png.
-
-      It was an inline SVG data URI four times before this, the mark redrawn by
-      hand on each attempt, and every replacement left the tail of the one
-      before it loose in the head. A browser will not keep stray element content
-      in <head>: it moved all four fragments to the top of the body, so every
-      page in the application opened with a row of `" />` above the title.
-      One line, one file, nothing left behind.
-    -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
   </head>
   <body style="margin:0;padding:0;background:#0A0A0B;">
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/landing.jsx"></script>
   </body>
 </html>

@@ -50,7 +50,19 @@ export const SCALES = [
  * open by default and collapses to the rail for anyone who wants the width
  * back, and the choice persists.
  */
-const DEFAULTS = { home: "command", scale: 1, navOpen: true };
+/**
+ * 130% rather than 100%.
+ *
+ * 100% is the density the screens were laid out at, and it is the right default
+ * for the person who drew them on a large monitor. It is the wrong one for
+ * everybody else: this is shown on a laptop, over a call, or on a meeting-room
+ * screen from the back of the room, and at that distance a 10px label is a grey
+ * smudge that the viewer does not mention and does not read either.
+ *
+ * A default is a claim about who is most likely to be looking. That is not the
+ * author.
+ */
+const DEFAULTS = { home: "command", scale: 1.3, navOpen: true };
 
 function read() {
   try {

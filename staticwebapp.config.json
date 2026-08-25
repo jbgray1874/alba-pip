@@ -2,12 +2,20 @@
   "$schema": "https://json.schemastore.org/staticwebapp.config.json",
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*", "/*.{png,jpg,jpeg,svg,ico,webp,pdf,txt,xml}"]
+    "exclude": ["/assets/*", "/api/*", "/*.{png,jpg,jpeg,svg,ico,webp,pdf,txt,xml,html}"]
   },
   "routes": [
     { "route": "/.auth/login/github", "statusCode": 404 },
     { "route": "/.auth/login/twitter", "statusCode": 404 },
+
+    { "route": "/", "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/index.html", "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/assets/*", "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/favicon.png", "allowedRoles": ["anonymous", "authenticated"] },
+    { "route": "/logo.png", "allowedRoles": ["anonymous", "authenticated"] },
+
     { "route": "/api/*", "allowedRoles": ["viewer"] },
+    { "route": "/app.html", "allowedRoles": ["viewer"] },
     { "route": "/*", "allowedRoles": ["viewer"] }
   ],
   "responseOverrides": {

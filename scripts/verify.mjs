@@ -1024,7 +1024,10 @@ check("no view or endpoint hardcodes a company name", () => {
 section("Brand — one design system, not seventeen");
 
 const themeSrc = await codeOfEarly("../src/lib/theme.js");
-const indexSrc = await readFile(new URL("../index.html", import.meta.url), "utf8");
+// The application document. index.html is the public page and carries its own
+//, narrower, set of faces — see the landing check below.
+const indexSrc = await readFile(new URL("../app.html", import.meta.url), "utf8");
+const landingHtml = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const cssSrc = await readFile(new URL("../src/index.css", import.meta.url), "utf8");
 
 check("no view declares a colour outside the token file", () => {
@@ -1179,6 +1182,9 @@ check("no view sets its own viewport height inside the scaled shell", async () =
   // overflowing at any scale above 100% and neither was covered.
   const offenders = [];
   for (const f of viewFiles) {
+    // Landing.jsx is not inside the shell — it is its own document, served to
+    // people who have not signed in, and a full-height public page is right.
+    if (f === "Landing.jsx") continue;
     const src = await codeOf(`../src/views/${f}`);
     if (/100vh/.test(src)) offenders.push(f);
   }
@@ -1190,7 +1196,10 @@ check("every screen is built from the shared page primitives", async () => {
   // header is a view that drifts. The exceptions are the two that are not
   // pages: FinanceDrilldown is a modal over a page, and RealTime carries a
   // fixed ticker above a scrolling body.
-  const exempt = new Set(["FinanceDrilldown.jsx"]);
+  // Landing.jsx is exempt for a different reason from the others: it is not a
+  // screen in the application at all, and dressing a marketing page in the
+  // dashboard's page furniture would be the wrong kind of consistency.
+  const exempt = new Set(["FinanceDrilldown.jsx", "Landing.jsx"]);
   const missing = [];
   for (const f of viewFiles) {
     if (exempt.has(f)) continue;
@@ -1620,26 +1629,76 @@ check("the asset prefix follows the custom domain", async () => {
   return /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(raw) || `CNAME is not a hostname: ${raw}`;
 });
 
-check("the hosted configuration keeps every route behind a role", async () => {
-  // Static Web Apps authenticates anyone holding an account with a built-in
-  // provider — its `authenticated` role includes any Microsoft or GitHub
-  // account, not only ours. Requiring a named role is the whole of the access
-  // control, so a route that asks for `authenticated` instead is open.
+check("the hosted configuration keeps the app and the connectors behind a role", async () => {
+  // Static Web Apps admits anyone holding an account with a built-in provider —
+  // its `authenticated` role includes any Microsoft or GitHub account, not only
+  // ours. Requiring an *invited* role is the whole of the access control, so a
+  // protected route asking for `authenticated` is open while reading as shut.
+  //
+  // The public page is the deliberate exception, and it is enumerated here
+  // rather than inferred: anything that becomes anonymous without being on this
+  // list is a mistake, and the mistake looks exactly like the intention.
   const { readFileSync } = await import("node:fs");
   const { fileURLToPath } = await import("node:url");
   const cfg = JSON.parse(readFileSync(fileURLToPath(new URL("../staticwebapp.config.json", import.meta.url)), "utf8"));
 
-  const catchAll = cfg.routes?.find((r) => r.route === "/*");
-  if (!catchAll) return "no catch-all route, so unlisted paths are anonymous";
-  for (const r of cfg.routes) {
-    if (!r.allowedRoles) continue;
-    if (r.allowedRoles.includes("anonymous")) return `${r.route} is open to anonymous`;
-    if (r.allowedRoles.includes("authenticated")) return `${r.route} accepts any account, not only invited ones`;
+  const PUBLIC = new Set(["/", "/index.html", "/assets/*", "/favicon.png", "/logo.png"]);
+  const MUST_GUARD = ["/api/*", "/app.html", "/*"];
+
+  for (const route of MUST_GUARD) {
+    const r = cfg.routes?.find((x) => x.route === route);
+    if (!r) return `${route} carries no rule at all`;
+    if (!r.allowedRoles?.length) return `${route} allows every role`;
+    for (const role of r.allowedRoles) {
+      if (role === "anonymous") return `${route} is open to anonymous`;
+      if (role === "authenticated") return `${route} accepts any account, not only invited ones`;
+    }
   }
-  if (!cfg.routes.some((r) => r.route === "/api/*" && r.allowedRoles?.length)) {
-    return "the connectors are not behind a role";
+
+  const leaked = (cfg.routes ?? [])
+    .filter((r) => r.allowedRoles?.includes("anonymous") && !PUBLIC.has(r.route))
+    .map((r) => r.route);
+  return leaked.length === 0 || `${leaked.join(", ")} made anonymous without being declared public`;
+});
+
+check("the public document stands up on its own", async () => {
+  // index.html is the first thing anybody sees — including a search engine and
+  // a pasted-link preview. It is also the one document no other check covered,
+  // because every one of them was pointed at the application.
+  if (!/src\/landing\.jsx/.test(landingHtml)) return "index.html does not mount the public page";
+  if (/src\/main\.jsx/.test(landingHtml)) return "index.html still mounts the application";
+  if (!/<title>/.test(landingHtml)) return "no title";
+  if (!/name="description"/.test(landingHtml)) return "no description for a link preview";
+
+  // It loads Inter and the mono and deliberately not the serif, which belongs
+  // to the printed report — 40KB spent on a face this page never sets. The rule
+  // is therefore that what it loads and what it uses agree, in both directions.
+  const page = await codeOf("../src/views/Landing.jsx");
+  for (const face of ["Inter", "IBM+Plex+Mono"]) {
+    if (!landingHtml.includes(face)) return `index.html does not load ${face.replace(/\+/g, " ")}`;
+  }
+  if (/F\.serif/.test(page) !== landingHtml.includes("Source+Serif")) {
+    return /F\.serif/.test(page)
+      ? "the public page sets the serif but index.html does not load it"
+      : "index.html loads the serif that the public page never sets";
   }
   return true;
+});
+
+check("the public page cannot reach into the application", async () => {
+  // The landing is the one document outside the login. It is a separate entry
+  // point for that reason, and the separation is only real while it stays
+  // independent — an import that pulled App.jsx in would put the whole
+  // application into the public bundle, and the file-level rule above would be
+  // protecting a door beside an open window.
+  const src = await codeOf("../src/views/Landing.jsx");
+  const entry = await codeOf("../src/landing.jsx");
+  for (const [name, code] of [["Landing.jsx", src], ["landing.jsx", entry]]) {
+    if (/from\s+["'][^"']*App\.jsx["']/.test(code)) return `${name} imports the application`;
+    if (/from\s+["'][^"']*\/views\/(?!Landing)/.test(code)) return `${name} imports an application screen`;
+  }
+  // And it has to actually offer the way in, or it is a page with no door.
+  return /app\.html/.test(src) || "the public page does not link to the application";
 });
 
 check("every integration declares how far it is built", async () => {

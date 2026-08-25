@@ -49,9 +49,13 @@ jobs:
         env:
           GITHUB_PAGES: "1"
 
-      # Pages serves 404.html for any unknown path. This app holds its whole
-      # route in state rather than the URL, so a refresh on a deep link would
-      # otherwise land on GitHub's 404 instead of the application.
+      # Pages serves 404.html for any unknown path, and the application holds its
+      # whole route in state rather than in the URL, so without this a refresh or
+      # a mistyped path lands on GitHub's own 404 page.
+      #
+      # It is the public page that is copied, not the application. Somebody who
+      # arrives at a path that does not exist has not been let in yet, and the
+      # right thing to show them is the front door.
       - run: cp dist/index.html dist/404.html
 
       - uses: actions/configure-pages@v5

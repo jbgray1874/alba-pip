@@ -23,7 +23,19 @@ const customDomain = existsSync(cname)
 
 const base = customDomain ? '/' : process.env.GITHUB_PAGES ? '/alba-pip/' : '/'
 
+// Two documents, not one.
+//
+// index.html is the public page and app.html is the application. They are
+// separate files because the login has to sit between them, and a host can only
+// enforce access on a file — a single bundle that decided for itself would be
+// deciding in code the visitor has already downloaded.
+const input = {
+  landing: fileURLToPath(new URL('./index.html', import.meta.url)),
+  app: fileURLToPath(new URL('./app.html', import.meta.url)),
+}
+
 export default defineConfig({
   base,
   plugins: [react()],
+  build: { rollupOptions: { input } },
 })
