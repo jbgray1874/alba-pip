@@ -26,6 +26,23 @@ const APP = `${import.meta.env.BASE_URL}app.html`;
 
 const MEASURE = 1080;
 
+/**
+ * Somebody signed in successfully and is not on the access list.
+ *
+ * Signing in and being let in are two different things here — the host admits
+ * any Microsoft account and the invited role is what actually grants entry.
+ * Without this the host answers that case with a bare 403, which reads as a
+ * broken site rather than as a closed door, and the person it happens to is by
+ * definition somebody who was interested enough to try.
+ *
+ * The host redirects them here instead. Read once, on load, from the query the
+ * redirect carries.
+ */
+function wasDenied() {
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).has("denied");
+}
+
 // ── Parts ───────────────────────────────────────────────────────────────────
 
 function Shell({ children, pad = "0 28px" }) {
@@ -77,6 +94,7 @@ function Figure({ value, of }) {
 // ── The page ────────────────────────────────────────────────────────────────
 
 export default function Landing() {
+  const denied = wasDenied();
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: F.sans,
                   WebkitFontSmoothing: "antialiased" }}>
@@ -110,6 +128,29 @@ export default function Landing() {
           </div>
         </Shell>
       </header>
+
+      {/* ── Signed in, but not on the list ── */}
+      {denied && (
+        <div style={{ background: C.amberSoft, borderBottom: `1px solid ${C.gold}55` }}>
+          <Shell pad="14px 28px">
+            <div style={{ display: "flex", gap: 11, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <span style={{ color: C.gold, fontSize: 13, lineHeight: 1.4, flexShrink: 0 }}>▲</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: C.txt1, fontSize: 13, fontWeight: 500 }}>
+                  That account is not on the access list
+                </div>
+                <div style={{ color: C.txt2, fontSize: S.small, lineHeight: 1.6, marginTop: 4,
+                              maxWidth: 660 }}>
+                  You signed in, which worked — the platform is by invitation, and your account has
+                  not been added to it yet. Ask your Caledonia Alba contact to invite you, or{" "}
+                  <a href="/.auth/logout" style={{ color: C.gold }}>sign out</a> and try a different
+                  account.
+                </div>
+              </div>
+            </div>
+          </Shell>
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <section>

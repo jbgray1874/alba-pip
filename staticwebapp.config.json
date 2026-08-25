@@ -19,7 +19,8 @@
     { "route": "/*", "allowedRoles": ["viewer"] }
   ],
   "responseOverrides": {
-    "401": { "statusCode": 302, "redirect": "/.auth/login/aad" }
+    "401": { "statusCode": 302, "redirect": "/.auth/login/aad" },
+    "403": { "statusCode": 302, "redirect": "/?denied=1" }
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",

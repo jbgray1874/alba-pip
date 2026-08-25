@@ -1658,7 +1658,22 @@ check("the hosted configuration keeps the app and the connectors behind a role",
   const leaked = (cfg.routes ?? [])
     .filter((r) => r.allowedRoles?.includes("anonymous") && !PUBLIC.has(r.route))
     .map((r) => r.route);
-  return leaked.length === 0 || `${leaked.join(", ")} made anonymous without being declared public`;
+  if (leaked.length) return `${leaked.join(", ")} made anonymous without being declared public`;
+
+  // Both refusals have to land somewhere a person can read. 401 is "we do not
+  // know you" and belongs at the sign-in; 403 is "we know you and you are not
+  // on the list", and the host's own answer to that is a bare status page —
+  // which reads as a broken site rather than a closed door, to somebody who by
+  // definition was interested enough to try.
+  const over = cfg.responseOverrides ?? {};
+  if (!over["401"]?.redirect?.includes("/.auth/login/")) return "401 does not lead to a sign-in";
+  if (!over["403"]?.redirect) return "403 is answered with a bare status page";
+
+  const page = await codeOf("../src/views/Landing.jsx");
+  const target = over["403"].redirect;
+  const flag = target.includes("?") ? target.split("?")[1].split("=")[0] : null;
+  if (!flag) return "the 403 redirect carries nothing the page can read";
+  return page.includes(flag) || `the public page does not read "${flag}" and will greet a refused visitor as a new one`;
 });
 
 check("the top bar shows the viewer, not a hard-coded person", async () => {
