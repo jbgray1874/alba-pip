@@ -1661,6 +1661,25 @@ check("the hosted configuration keeps the app and the connectors behind a role",
   return leaked.length === 0 || `${leaked.join(", ")} made anonymous without being declared public`;
 });
 
+check("the top bar shows the viewer, not a hard-coded person", async () => {
+  // It read "GM" from the first commit — the approver's initials, which was
+  // honest on a prototype with no login and becomes a lie the moment there is
+  // one, because then it is showing one person's initials to a different
+  // person. The fallback is still the approver, and still named as such.
+  if (/>GM</.test(appSrc)) return "the top bar still hard-codes initials";
+  if (!/useIdentity/.test(appSrc)) return "the top bar does not read the signed-in user";
+  if (!/SIGN_OUT/.test(appSrc)) return "no way to sign out";
+
+  // And the read has to fail softly. Every build without a host in front of it
+  // — local dev, Pages, a file:// copy — has no /.auth/me, so an unhandled
+  // rejection here would be an error on every page load in the normal case.
+  const src = await codeOf("../src/lib/identity.js");
+  if (!/\.catch\(/.test(src)) return "a missing auth endpoint is not caught";
+  if (!/AbortController/.test(src)) return "the fetch is not abortable";
+  if (!/clientPrincipal/.test(src)) return "it does not read the host's identity shape";
+  return true;
+});
+
 check("the public document stands up on its own", async () => {
   // index.html is the first thing anybody sees — including a search engine and
   // a pasted-link preview. It is also the one document no other check covered,

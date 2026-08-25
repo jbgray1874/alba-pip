@@ -23,6 +23,8 @@ import { C, F, S, label as labelStyle } from './lib/theme.js'
 import { Wordmark } from './components/Shell.jsx'
 import { COMPANIES, FUNDS } from './lib/companies.js'
 import { attentionActions } from './lib/investigation.js'
+import { useIdentity, SIGN_OUT } from './lib/identity.js'
+import { APPROVER } from './lib/approval.js'
 
 // Grouped as the reference screens group them. The top bar carries the four
 // sections; the rail below carries every view within the active section.
@@ -105,6 +107,10 @@ export default function App() {
   // Dashboard is opened from the sidebar so it lands on the portfolio list.
   const [openCompany, setOpenCompany] = useState(null)
   const [fundId, setFundId] = useState(FUNDS[0].id)
+  // The signed-in user where the host provides one, and null everywhere else —
+  // which is every build without a login in front of it, including this one
+  // until it moves. Nothing on the screen depends on it resolving.
+  const me = useIdentity()
   const active = VIEWS.find(v => v.id === view)
 
   const setHome  = (id)    => { setPrefs(savePrefs({ home: id })); setView(id) }
@@ -246,9 +252,22 @@ export default function App() {
                              letterSpacing:'0.09em', textTransform:'uppercase', cursor:'pointer' }}>
               {FUNDS.map(f => <option key={f.id} value={f.id} style={{ background:C.surface }}>{f.name}</option>)}
             </select>
-            <span style={{ width:26, height:26, borderRadius:'50%', border:`1px solid ${C.goldLine}`,
+            {/* The signed-in person where there is a sign-in, and the approver's
+                initials where there is not. Showing one person's initials to a
+                different person is the one thing this must not do. */}
+            <span title={me ? `${me.name} — signed in with ${me.provider}` : `${APPROVER.name}, ${APPROVER.role}`}
+                  style={{ width:26, height:26, borderRadius:'50%', border:`1px solid ${C.goldLine}`,
                            background:C.goldSoft, color:C.gold, display:'flex', alignItems:'center',
-                           justifyContent:'center', fontSize:9.5, fontWeight:700 }}>GM</span>
+                           justifyContent:'center', fontSize:9.5, fontWeight:700, flexShrink:0 }}>
+              {me ? me.initials : APPROVER.initials}
+            </span>
+            {me && (
+              <a href={SIGN_OUT} title={`Sign out of ${me.name}`}
+                 style={{ color:C.txt3, fontSize:S.micro, letterSpacing:'0.1em',
+                          textTransform:'uppercase', textDecoration:'none', whiteSpace:'nowrap' }}>
+                Sign out
+              </a>
+            )}
           </div>
         </div>
       </div>
