@@ -1673,7 +1673,28 @@ check("the hosted configuration keeps the app and the connectors behind a role",
   const target = over["403"].redirect;
   const flag = target.includes("?") ? target.split("?")[1].split("=")[0] : null;
   if (!flag) return "the 403 redirect carries nothing the page can read";
-  return page.includes(flag) || `the public page does not read "${flag}" and will greet a refused visitor as a new one`;
+  if (!page.includes(flag)) return `the public page does not read "${flag}" and will greet a refused visitor as a new one`;
+
+  const h = cfg.globalHeaders ?? {};
+  for (const name of ["X-Content-Type-Options", "Referrer-Policy", "Strict-Transport-Security"]) {
+    if (!h[name]) return `${name} is not set`;
+  }
+
+  // The policy names every origin the page may reach. If the code starts
+  // calling somewhere the policy has not heard of, the request is reported
+  // today and blocked the day it starts enforcing — and it will break in
+  // production while passing every test here. So the two are checked against
+  // each other rather than left to be noticed later.
+  const csp = h["Content-Security-Policy"] ?? h["Content-Security-Policy-Report-Only"];
+  if (!csp) return "no content security policy at all";
+  const called = new Set();
+  for (const f of ["fx.js", "dataFeeds.js"]) {
+    const src = await codeOf(`../src/lib/${f}`);
+    for (const m of src.matchAll(/fetch\(\s*[`"'](https:\/\/[a-z0-9.-]+)/gi)) called.add(m[1]);
+  }
+  const unlisted = [...called].filter((origin) => !csp.includes(origin));
+  return unlisted.length === 0
+    || `${unlisted.join(", ")} is fetched but not in the policy — it will be blocked when the policy enforces`;
 });
 
 check("the top bar shows the viewer, not a hard-coded person", async () => {

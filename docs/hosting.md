@@ -92,6 +92,38 @@ provider against your own issuer URL and swap the `aad` redirect for it.
 5. Move the DNS CNAME from `jbgray1874.github.io` to the hostname Azure gives
    you.
 
+### The headers, and the one that is deliberately not enforced yet
+
+`globalHeaders` sets the usual four — no MIME sniffing, no framing by another
+site, referrer trimmed on cross-origin requests, and HSTS so a browser that has
+seen the site once refuses to talk to it over plain HTTP for a year afterwards.
+
+The Content Security Policy is set as **`Content-Security-Policy-Report-Only`**,
+and that is a decision rather than an oversight.
+
+A CSP is a list of the only places a page may load anything from. Get it right
+and script injection has nowhere to run. Get it slightly wrong and the page
+breaks in production, silently, in a way that looks like a bug in the
+application — a chart that does not draw, a font that falls back, a report that
+will not build. This policy was written from what the code actually reaches for
+(Google Fonts, the three market and news APIs, blob URLs for the PDF) but it has
+never been served by Azure, because Azure is not serving anything yet.
+
+Report-only means the browser checks every request against the policy, reports
+what would have been blocked to its own console, and blocks nothing. So:
+
+1. Deploy, open the app, and walk the eight-minute demo with the console open —
+   including generating a PDF and using live FX, which are the two paths that
+   touch the widest set of origins.
+2. Anything the policy would have blocked appears as a CSP report. Add the
+   origins that are genuinely needed.
+3. When the console stays clean, rename the header to `Content-Security-Policy`
+   and it starts enforcing.
+
+Doing it the other way round — enforcing first and finding out from a user —
+is how a security header becomes the thing everybody remembers as "the change
+that broke the site", and the next one is fought for a year.
+
 ### The connectors need adapting first
 
 The four handlers under `/api` are written to the Vercel signature:
