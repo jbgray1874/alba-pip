@@ -4,9 +4,10 @@
   ──────────────────────────────────────────────────────────────────────────
    Paste this whole block into a raw-HTML area on the website:
 
-     WordPress    add a "Custom HTML" block
-     Squarespace  add a "Code" block
-     Wix          Embed → Embed HTML → Code
+     WordPress    Edit the page → + → "Custom HTML" → paste
+     Squarespace  Edit → + → "Code" → paste, with Display Source turned OFF
+     Wix          Add → Embed Code → Embed HTML → Code → paste
+     Webflow      Add panel → Embed → paste
      Hand-built   paste it where the section should sit
 
    Everything is inline. No stylesheet, no script, no font request and no
@@ -14,16 +15,25 @@
    host page in return — which is the whole reason it is written this way
    rather than as a tidy set of classes.
 
-   Two things to change before it goes live:
+   ── The link ──────────────────────────────────────────────────────────────
 
-     1. HREF below — set it to the subdomain once the DNS is pointed.
-        It is app.alba-pip.com here; use whatever you settle on.
-     2. Nothing else. The copy is the same argument the landing page makes,
-        shortened to what fits on somebody else's home page.
+   It points at the published site:
 
-   It is set dark deliberately, whatever the site around it looks like. It is
-   a door into a different product, and it should read as one — and it shows
-   the visitor what is on the other side before they click.
+       https://jbgray1874.github.io/alba-pip/
+
+   That address is where the platform lives today. When it moves onto its own
+   domain, the ONLY thing that changes here is the href — in both places
+   below. Nothing else in this file is address-dependent.
+
+   The button lands on the public page, which carries its own sign-in through
+   to the application. That is deliberate: a visitor should meet something
+   that explains what this is before it asks them for anything.
+
+   ── It is set dark on purpose ─────────────────────────────────────────────
+
+   Whatever surrounds it. It is a door into a different product and should
+   read as one, and it shows the visitor what is on the other side before
+   they click rather than after.
   ══════════════════════════════════════════════════════════════════════════
 -->
 
@@ -46,9 +56,9 @@
     </div>
 
     <div style="flex:0 0 auto;">
-      <a href="https://app.alba-pip.com"
+      <a href="https://jbgray1874.github.io/alba-pip/"
          style="display:inline-block;background:#E5A83C;color:#141005;text-decoration:none;border-radius:5px;padding:14px 30px;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;">
-        Sign in
+        Open the platform
       </a>
       <div style="color:#5E5E66;font-size:11px;margin-top:11px;text-align:center;">
         Access is by invitation
@@ -57,3 +67,19 @@
 
   </div>
 </div>
+
+
+<!--
+  ══════════════════════════════════════════════════════════════════════════
+   Or, if the page only wants a button
+  ──────────────────────────────────────────────────────────────────────────
+   Everything above is one panel making the argument. If the home page
+   already says what Alba PIP is, and all that is missing is the way in, use
+   this on its own instead. Same link, same styling, no surrounding claim.
+  ══════════════════════════════════════════════════════════════════════════
+
+<a href="https://jbgray1874.github.io/alba-pip/"
+   style="display:inline-block;background:#E5A83C;color:#141005;text-decoration:none;border-radius:5px;padding:14px 30px;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">
+  Open the platform
+</a>
+-->
