@@ -59,6 +59,22 @@ export function companyContext(id, opts = {}) {
     "",
     "CASH (source: banking feed)",
     `  Balance ${k(cash.balance)} · net burn ${k(cash.burn)}/month · runway ${fin.runway} months`,
+    // The accounts, because "which account is it in" is the first question an
+    // operator asks and a single balance cannot answer it — and because the
+    // runway everyone quotes divides a figure that includes money the company
+    // is not allowed to spend.
+    `  Held across ${cash.accounts.length} accounts at ${cash.banks} bank${cash.banks > 1 ? "s" : ""}; ` +
+      `the total reads ${cash.reading === "live" ? "from a direct bank feed" : "from the ledger, not a single live feed"}`,
+    ...cash.accounts.map((a) =>
+      `    ${a.label} — ${a.bank} · ${a.ccy} · ${k(a.balance)}` +
+      (a.restricted > 0 ? ` · RESTRICTED ${k(a.restricted)} (${a.why})` : " · fully available") +
+      ` · reading ${a.feed}`),
+    cash.restricted > 0
+      ? `  ${k(cash.restricted)} of the balance is restricted and does not fund the burn. ` +
+        `Available cash ${k(cash.available)}; runway on available cash is ${cash.availableRunway} months, ` +
+        `against ${fin.runway} months on the reported balance. Quote the available figure when asked what the ` +
+        `company can actually spend, and say which it is.`
+      : `  No balance is restricted; all ${k(cash.balance)} funds the burn.`,
     `  Balance ${fin.history.months[0]}: ${k(firstCash.balance)} · burn then ${k(firstCash.burn)}/month`,
     `  Burn by category: ${cash.burnCats.map((b) => `${b.label} ${k(b.value)}`).join(" · ")}`,
     `  Overdue receivables ${k(cash.overdueTotal)} across ${cash.debtors.length} accounts` +
@@ -122,7 +138,11 @@ export function portfolioContext(opts = {}) {
       `GM ${fin.ebitda.grossMargin}% · EBITDA ${fin.ebitda.pct}% · ` +
       `headcount ${fin.people.headcount}/${fin.people.planHeadcount} · attrition ${fin.people.attritionPct}% · ` +
       `coverage ${fin.sales.pipelineCoverage}× · win rate ${fin.sales.winRatePct}% · ` +
-      `overdue AR ${m(fin.cash.overdueTotal)} · reports in ${co.currency}`),
+      `overdue AR ${m(fin.cash.overdueTotal)} · reports in ${co.currency}` +
+      (fin.cash.restricted > 0
+        ? ` · ${fin.cash.accounts.length} bank accounts, ${m(fin.cash.restricted)} restricted, `
+          + `available runway ${fin.cash.availableRunway}mo`
+        : ` · ${fin.cash.accounts.length} bank accounts, none restricted`)),
     "",
     `Average health score: ${Math.round(COMPANIES.reduce((t, c) => t + c.score, 0) / COMPANIES.length)}/100`,
   ];

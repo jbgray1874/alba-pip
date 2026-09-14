@@ -3,6 +3,7 @@ import { C, F, S, label as labelStyle } from "../lib/theme.js";
 import { Chip, Button, ProvenanceBar } from "../components/Shell.jsx";
 import { AreaChart, Area, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
 import { buildFinance, fmtGBP, MONTHS } from "../lib/financeData.js";
+import AccountRollup from "../components/AccountRollup.jsx";
 import { CONNECTED_COMPANY_ID, SOURCES, provenanceOf } from "../lib/kpiDefinitions.js";
 
 // Palette from the shared design tokens. Every view used to carry its own
@@ -137,9 +138,15 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
         <>
           <SectionTitle>Runway components</SectionTitle>
           <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
-            <DrillRow label="Opening Cash Balance" value={fmtGBP(fin.cash.balance*1000)} sub={`Bank position · ${bankSrc}`} color={T.green} />
+            <DrillRow label="Opening Cash Balance" value={fmtGBP(fin.cash.balance*1000)}
+              sub={`${fin.cash.accounts.length} accounts${fin.cash.banks > 1 ? ` at ${fin.cash.banks} banks` : ""} · click to open them · ${bankSrc}`}
+              color={T.green} onClick={()=>push({ level:1, key:"accounts", label:"Bank accounts" })} />
             <DrillRow label="Monthly Burn" value={fmtGBP(fin.cash.burn*1000)} sub={`${burnMoveLabel} · click to break down`} status="amber" onClick={()=>push({ level:1, key:"burn", label:"Burn breakdown" })} />
-            <DrillRow label="Runway" value={`${fin.cash.runway} months`} sub={`${fmtGBP(fin.cash.balance*1000)} ÷ ${fmtGBP(fin.cash.burn*1000)}/mo`} status="red" />
+            <DrillRow label="Runway" value={`${fin.cash.runway} months`}
+              sub={fin.cash.restricted > 0
+                ? `${fmtGBP(fin.cash.balance*1000)} ÷ ${fmtGBP(fin.cash.burn*1000)}/mo — ${fin.cash.availableRunway} months on cash the company can actually spend`
+                : `${fmtGBP(fin.cash.balance*1000)} ÷ ${fmtGBP(fin.cash.burn*1000)}/mo`}
+              status="red" />
           </div>
           <Card>
             <ChartHead title="CASH PROJECTION (£)" src={bankSrc} />
@@ -154,6 +161,17 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
               </AreaChart>
             </ResponsiveContainer>
           </Card>
+        </>
+      );
+    }
+    if (depth === 1 && path[1]?.key === "accounts") {
+      // L2 — the accounts behind the balance. The roll-up component carries the
+      // reconciling line, so the drill cannot state a total the rows disagree
+      // with.
+      return (
+        <>
+          <SectionTitle>The accounts behind {fmtGBP(fin.cash.balance*1000)}</SectionTitle>
+          <AccountRollup cash={fin.cash} money={(v)=>fmtGBP(v*1000)} open />
         </>
       );
     }

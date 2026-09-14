@@ -116,6 +116,21 @@ export function buildInvestigation(id, opts = {}) {
     `Cash ${m(cash.balance)} against net burn ${m(cash.burn)} per month. Runway ${fin.runway} months. ` +
     `Cash has moved ${cashMove >= 0 ? "up" : "down"} ${m(Math.abs(cashMove))} since ${fin.history.months[0]}.`);
 
+  // Where the cash actually is, and how much of it the company may spend. The
+  // line above is the figure every board pack quotes; this is the one that
+  // decides whether the runway in it means anything.
+  if (cash.restricted > 0) {
+    say("🏦", "finding",
+      `Held across ${cash.accounts.length} accounts at ${cash.banks} bank${cash.banks > 1 ? "s" : ""}. ` +
+      `${m(cash.restricted)} is restricted — ` +
+      cash.accounts.filter((a) => a.restricted > 0).map((a) => `${a.label} ${m(a.restricted)}`).join(", ") +
+      `. Available cash ${m(cash.available)}, which is ${cash.availableRunway} months of runway rather than ${fin.runway}.`);
+  } else {
+    say("🏦", "finding",
+      `Held across ${cash.accounts.length} accounts at ${cash.banks} bank${cash.banks > 1 ? "s" : ""}. ` +
+      `None of the balance is restricted, so the reported runway of ${fin.runway} months stands.`);
+  }
+
   say("📈", "finding",
     `Revenue ${m(revenue.total)} against plan ${m(revenue.budget)} — ${varPct >= 0 ? "+" : ""}${varPct.toFixed(1)}% ` +
     `(${varPct < 0 ? `a shortfall of ${m(revenueGap)}` : `ahead by ${m(-revenueGap)}`} per month).`);

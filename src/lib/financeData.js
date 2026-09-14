@@ -36,6 +36,7 @@ import { buildSeries, seriesOf, MONTH_KEYS } from "./portfolioSeries.js";
 import { convert, conversionNote } from "./fx.js";
 import { SOURCES, KPIS, provenanceOf } from "./kpiDefinitions.js";
 import { customerBook, debtorProfile } from "./customers.js";
+import { accountBook } from "./bankAccounts.js";
 
 const MONTHS = ["Dec","Jan","Feb","Mar","Apr","May"];
 const k = (n) => `£${Math.round(n).toLocaleString()}k`;
@@ -160,6 +161,11 @@ export function buildFinance(co, opts = {}) {
     ebitda: ledger.map((m) => ({ month: m.month, value: +m.ebitda.toFixed(1), marginPct: +m.ebitdaMarginPct.toFixed(1), grossMarginPct: +m.grossMarginPct.toFixed(1) })),
   };
 
+  // The accounts behind the reported cash. Built from the figure rather than
+  // summing to it by luck: the book allocates the reported balance, so the
+  // rows on screen can never disagree with the headline above them.
+  const cashBook = accountBook(co.id, s.cash, reportingCurrency, asOf, s.burn);
+
   return {
     seed: s, runway, status: cs, asOf, history,
     currency: reportingCurrency,
@@ -171,6 +177,22 @@ export function buildFinance(co, opts = {}) {
     },
     cash: {
       balance: s.cash, burn: s.burn, runway, burnCats, debtors, arAging, overdueTotal, cashProj,
+      // The accounts behind the balance. `balance` is unchanged and every
+      // existing consumer keeps reading it; what is new is everything a single
+      // figure could not carry — how much is actually spendable, what currency
+      // it is held in, and where each part was read from.
+      //
+      // `availableRunway` is the figure this exists for. Runway divides cash by
+      // burn, and a tax reserve, client money or a covenanted minimum does not
+      // fund burn. Dividing the whole balance by it overstates the answer, on
+      // exactly the companies where being wrong costs the most.
+      ccy: reportingCurrency,
+      accounts: cashBook.accounts,
+      banks: cashBook.banks,
+      restricted: cashBook.restricted,
+      available: cashBook.available,
+      availableRunway: cashBook.availableRunway,
+      reading: cashBook.reading,
       source: SOURCES.banking, asOf,
       methodology: {
         balance: provenanceOf("cash", asOf),

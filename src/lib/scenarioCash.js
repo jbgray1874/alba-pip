@@ -27,6 +27,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { buildFinance } from "./financeData.js";
+import { accountBook } from "./bankAccounts.js";
 import { companyById } from "./companies.js";
 import { makeInsight, evidence, CONFIDENCE } from "./insight.js";
 import { SOURCES } from "./kpiDefinitions.js";
@@ -80,8 +81,14 @@ export function cashBaseline(opts = {}) {
   const monthlyDebtService = PARAMS.debtServicePerMonth;
   const monthlySuppliers = monthlyOutflow - monthlyPayroll - monthlyDebtService;
 
+  // The accounts behind the opening cash, in the company's own currency —
+  // which is the unit this whole screen is printed in. buildFinance holds the
+  // same book restated into the fund's reporting currency; each reconciles to
+  // the headline above it, and neither is the other one relabelled.
+  const cashBook = accountBook(COMPANY_ID, s.cash, ccy, fin.asOf, reportedBurn);
+
   return {
-    company: co, fin, currency: ccy,
+    company: co, fin, currency: ccy, cashBook,
     headcount: fin.people.headcount,
     planHeadcount: fin.people.planHeadcount,
     openingCash: s.cash,
@@ -340,6 +347,8 @@ export function buildCash(opts = {}) {
 
   return {
     company: co, fin, currency: ccy,
+    // The accounts behind the opening cash, in this screen's currency.
+    cashBook: base.cashBook,
     baseline: base, cases, trajectory, remedy, bases,
     forwardVsReported, firstBreach, burnTrend: t,
     insight,

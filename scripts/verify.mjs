@@ -1796,6 +1796,110 @@ check("the debtor split always sums to one", () => {
   return true;
 });
 
+check("the bank accounts reconcile to the reported cash", async () => {
+  // The whole claim of the roll-up is that the rows ARE the headline broken
+  // out — not a second account of the cash position assembled alongside it. A
+  // table adding to a pound either side of the figure above it is the first
+  // thing a finance director notices and the last thing you want them noticing.
+  const { buildFinance } = await import("../src/lib/financeData.js");
+  for (const c of COMPANIES) {
+    const { cash } = buildFinance(c);
+    if (!cash.accounts?.length) return `${c.name}: no accounts behind the balance`;
+
+    const sum = cash.accounts.reduce((t, a) => t + a.balance, 0);
+    if (!near(sum, cash.balance, 0.005)) {
+      return `${c.name}: accounts sum to ${sum}, balance is ${cash.balance}`;
+    }
+    if (!near(cash.available + cash.restricted, cash.balance, 0.005)) {
+      return `${c.name}: available plus restricted is not the balance`;
+    }
+    for (const a of cash.accounts) {
+      if (a.restricted > a.balance) return `${c.name}: ${a.label} restricts more than it holds`;
+      if (a.available < 0) return `${c.name}: ${a.label} has negative available cash`;
+      if (a.restricted > 0 && !a.why) return `${c.name}: ${a.label} restricts cash without saying why`;
+    }
+  }
+  return true;
+});
+
+check("restricted cash never counts toward available runway", async () => {
+  // The reason the accounts exist at all. Runway divides cash by burn, and a
+  // tax reserve or a covenanted minimum does not fund burn — so a company
+  // holding restricted cash must show a SHORTER available runway than its
+  // reported one. Equal would mean the restriction was collected and then
+  // ignored, which is worse than not collecting it: the screen would be showing
+  // its working and still quoting the wrong answer.
+  const { buildFinance } = await import("../src/lib/financeData.js");
+  for (const c of COMPANIES) {
+    const { cash, runway } = buildFinance(c);
+    if (cash.restricted > 0 && !(cash.availableRunway < runway)) {
+      return `${c.name}: restricts ${cash.restricted} yet available runway is ${cash.availableRunway} against ${runway}`;
+    }
+    if (cash.restricted === 0 && !near(cash.availableRunway, runway, 0.05)) {
+      return `${c.name}: nothing restricted, but the two runways differ`;
+    }
+  }
+  return true;
+});
+
+check("a total never reads better than the worst account behind it", async () => {
+  // A headline badged LIVE over a row last seen on a ledger is exactly the
+  // claim this application exists not to make. The aggregate takes the worst
+  // reading of its parts, so a company banking in more than one place cannot
+  // badge its cash LIVE.
+  const { buildFinance } = await import("../src/lib/financeData.js");
+  const rank = { live: 0, derived: 1, simulated: 2, unavailable: 3 };
+  for (const c of COMPANIES) {
+    const { cash } = buildFinance(c);
+    const worst = cash.accounts.reduce((w, a) => Math.max(w, rank[a.feed] ?? 0), 0);
+    if ((rank[cash.reading] ?? 0) !== worst) {
+      return `${c.name}: total reads ${cash.reading} over accounts whose worst is rank ${worst}`;
+    }
+    if (cash.banks > 1 && cash.reading === "live") {
+      return `${c.name}: banks in ${cash.banks} places and still claims a single live feed`;
+    }
+  }
+  return true;
+});
+
+check("the cash screen and the portfolio do not mix currencies", async () => {
+  // The Cash scenario prints the company's own currency; the portfolio restates
+  // into the fund's. Feeding one screen the other's book put S$5,000k at the top
+  // of a page and S$2,924k on the table below it — both correct, one mislabelled.
+  const { buildCash } = await import("../src/lib/scenarioCash.js");
+  const s = buildCash();
+  if (!s.cashBook) return "the cash screen has no account book";
+  if (s.cashBook.ccy !== s.currency) {
+    return `screen prints ${s.currency}, accounts are stated in ${s.cashBook.ccy}`;
+  }
+  if (!near(s.cashBook.balance, s.baseline.openingCash, 0.005)) {
+    return `accounts sum to ${s.cashBook.balance}, the screen's opening cash is ${s.baseline.openingCash}`;
+  }
+  return true;
+});
+
+check("the agents are told where the cash is", async () => {
+  // An investigation reporting a runway without saying how much of the cash is
+  // spendable is answering a narrower question than it was asked, and the
+  // analytical layer can only quote what it is handed.
+  const { companyContext } = await import("../api/ai/_context.js");
+  const { buildInvestigation } = await import("../src/lib/investigation.js");
+  for (const c of COMPANIES) {
+    // `.text` by name, not the first string on the object — that found
+    // `currency` ("GBP") and quietly passed a check that was testing nothing.
+    const { text } = companyContext(c.id);
+    if (typeof text !== "string") return `${c.name}: the context carries no text block`;
+    if (!/accounts at \d+ bank/.test(text)) return `${c.name}: the context does not name the accounts`;
+    if (!/restricted/i.test(text)) return `${c.name}: the context never mentions restricted cash`;
+
+    const inv = buildInvestigation(c.id);
+    if (!inv.steps.some((s) => s.kind === "finding" && /Held across \d+ accounts/.test(s.text))) {
+      return `${c.name}: the investigation never looks at the accounts`;
+    }
+  }
+  return true;
+});
+
 await Promise.all(pending);
 
 // ── Result ──────────────────────────────────────────────────────────────────

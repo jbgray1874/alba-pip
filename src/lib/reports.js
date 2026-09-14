@@ -130,8 +130,18 @@ export function buildInvestigationReport(inv, opt = {}) {
         title: "Position",
         rows: [
           ["Cash", money(fin.cash.balance, ccy)],
+          ["Held in", `${fin.cash.accounts.length} accounts at ${fin.cash.banks} bank${fin.cash.banks > 1 ? "s" : ""} — ` +
+            fin.cash.accounts.map((a) => `${a.label} ${money(a.balance, ccy)}`).join(", ")],
+          ...(fin.cash.restricted > 0 ? [
+            ["Restricted", `${money(fin.cash.restricted, ccy)} — ` +
+              fin.cash.accounts.filter((a) => a.restricted > 0)
+                .map((a) => `${a.label} (${a.why})`).join("; ")],
+            ["Available cash", money(fin.cash.available, ccy)],
+          ] : [["Restricted", "None — the whole balance funds the burn"]]),
           ["Net burn, monthly", money(fin.cash.burn, ccy)],
-          ["Runway", `${fin.runway} months`],
+          ["Runway", fin.cash.restricted > 0
+            ? `${fin.runway} months on the reported balance, ${fin.cash.availableRunway} months on available cash`
+            : `${fin.runway} months`],
           ["Revenue against plan", `${money(fin.revenue.total, ccy)} of ${money(fin.revenue.budget, ccy)}`],
           ["Gross margin", `${fin.ebitda.grossMargin}%, from ${fin.history.ebitda[0].grossMarginPct}% ${fin.history.months.length} months ago`],
           ["Headcount", `${fin.people.headcount} against a plan of ${fin.people.planHeadcount}, attrition ${fin.people.attritionPct}%`],

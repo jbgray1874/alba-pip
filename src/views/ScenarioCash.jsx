@@ -16,6 +16,7 @@ import { fmtMoney } from "../lib/fx.js";
 import { buildCashReport } from "../lib/reports.js";
 import InsightCard from "../components/InsightCard.jsx";
 import ReportPanel from "../components/ReportPanel.jsx";
+import AccountRollup from "../components/AccountRollup.jsx";
 
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
@@ -73,7 +74,9 @@ export default function ScenarioCash() {
 
       <MetricRow items={[
         { label: "Cash on hand", value: money(s.baseline.openingCash), tone: C.txt1,
-          sub: `burn ${money(s.baseline.reportedBurn)} a month` },
+          sub: s.cashBook.restricted > 0
+            ? `${money(s.cashBook.available)} available across ${s.cashBook.accounts.length} accounts`
+            : `burn ${money(s.baseline.reportedBurn)} a month` },
         { label: "Runway as reported", value: `${s.fin.runway} months`, tone: C.gold,
           sub: "cash ÷ current burn, held flat" },
         { label: `Burn, ${t.months} months ago`, value: money(t.from), tone: C.red,
@@ -83,6 +86,10 @@ export default function ScenarioCash() {
       ]} />
 
       <InsightCard insight={s.insight} />
+
+      {/* The accounts behind the figure above. Opens in place — the roll-up is
+          what a partner reads, the rows are what anybody acting on it needs. */}
+      <AccountRollup cash={s.cashBook} money={money} />
 
       {/* ── Three runway bases ── */}
       <Panel title="Runway on three bases"

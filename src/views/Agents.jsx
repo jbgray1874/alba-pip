@@ -362,6 +362,7 @@ function PortfolioQADemo() {
   const [q,setQ]=useState("");const [ans,setAns]=useState(null);const [loading,setLoading]=useState(false);
   const QUICK = [
     "Which companies are most likely to need capital in the next 90 days?",
+    "Where is the cash actually held, and how much of it can be spent?",
     "Where is there hidden attrition risk across the portfolio?",
     "Which company has the best risk-adjusted growth profile?",
     "What are the top 3 risks to fund performance this quarter?",
