@@ -10,7 +10,7 @@
 //  route to every drill-down, and where the numbers come from.
 // ════════════════════════════════════════════════════════════════════════════
 
-import { C, F } from "../lib/theme.js";
+import { C, F, label as labelStyle } from "../lib/theme.js";
 import { Page, PageHeader, Chip, ProvenanceBar } from "../components/Shell.jsx";
 import { useMemo } from "react";
 import { COMPANIES, FUNDS, financeOf } from "../lib/companies.js";
@@ -21,6 +21,8 @@ import { actionSummary } from "../lib/actionTracker.js";
 import { buildProcurement } from "../lib/scenarioProcurement.js";
 import { TIERS } from "../lib/liveData.js";
 import { integrationHealth, connectorEstate } from "../lib/liveFeed.js";
+import { buildFinance } from "../lib/financeData.js";
+import { DISPLAY_CURRENCIES, RATES_PINNED_AT } from "../lib/fx.js";
 
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
@@ -89,6 +91,22 @@ function Row({ k, v }) {
 }
 
 export default function UserGuide({ onNavigate }) {
+  // The banking estate, read from the books rather than listed by hand — the
+  // same rule as every other list in this guide. A bank added to one company
+  // appears here without anyone remembering to edit this file.
+  const estate = useMemo(() => {
+    const banks = new Set(), ccys = new Set();
+    let accounts = 0, multiBank = 0, multiCcy = 0;
+    for (const c of COMPANIES) {
+      const { cash } = buildFinance(c);
+      accounts += cash.accounts.length;
+      if (cash.banks > 1) multiBank++;
+      if (cash.currencies > 1) multiCcy++;
+      cash.accounts.forEach((a) => { banks.add(a.bank); ccys.add(a.ccy); });
+    }
+    return { banks: [...banks].sort(), ccys: [...ccys].sort(), accounts, multiBank, multiCcy };
+  }, []);
+
   const portfolio = useMemo(() => COMPANIES.map((c) => ({ c, f: financeOf(c.id) })), []);
   const worst = useMemo(() => attentionActions(3), []);
   const actions = useMemo(() => actionSummary(), []);
@@ -473,8 +491,50 @@ export default function UserGuide({ onNavigate }) {
         </Card>
       </Section>
 
+      {/* ── 9 · Cash across banks and currencies ────────────────────────── */}
+      <Section n="9" title="Cash across banks and currencies"
+               sub="A company does not have a cash balance. It has bank accounts, and the difference decides whether the runway figure means anything.">
+        <Card>
+          <div style={{ color: T.txt3, fontSize: 10.5, lineHeight: 1.65 }}>
+            Every company holds several accounts, usually at more than one bank and always in more than one
+            currency. The cash figure on every screen is the roll-up. Click it and it opens into the accounts
+            it is the sum of — <b style={{ color: T.txt2 }}>not a second view of the position assembled
+            alongside it</b>, but the same figure broken out, with a line at the foot confirming the rows add
+            to the headline.
+          </div>
+          <Route steps={["Intelligence", "Cash & Runway", "Cash on hand"]}
+                 note="Also on the company page: Finance drill-down › Opening Cash Balance." />
+        </Card>
+
+        <Card>
+          <div style={{ ...labelStyle(T.txt2), marginBottom: 9 }}>What the single figure could not say</div>
+          <Row k="Restricted cash" v="A tax reserve, client money held on trust, a covenanted minimum under a facility. It is on the bank statement and it does not fund the burn, so it is struck out of the available column with the reason on the row." />
+          <Row k="Two runways" v="Runway divides cash by burn. Restricted cash does not fund burn, so the screen states both — the reported figure and the one on cash the company can actually spend. Orbit Commerce reports 4.8 months and has 3.6." />
+          <Row k="The currency it is held in" v="Each account is denominated in something. The Held column is what the bank statement says and never changes when the view does — switching the display restates the position rather than revaluing it." />
+          <Row k="Which bank" v={`${estate.accounts} accounts across the ${COMPANIES.length} companies, at ${estate.banks.length} banks — ${estate.banks.join(", ")}. ${estate.multiBank} of the ${COMPANIES.length} companies bank in more than one place; four accounts at one bank and two at another is the ordinary case rather than the exception.`} />
+          <Row k="Where each part was read" v="Every row carries its own provenance and the total takes the worst of them, so a company banking in two places cannot badge its cash LIVE. That rule is enforced by the release checks rather than left to habit." />
+        </Card>
+
+        <Card>
+          <div style={{ ...labelStyle(T.txt2), marginBottom: 9 }}>Reading it in another currency</div>
+          <div style={{ color: T.txt3, fontSize: 10.5, lineHeight: 1.65, marginBottom: 9 }}>
+            The <b style={{ color: T.txt2 }}>Read in</b> row above the table restates every account into any
+            of the G10 plus SGD — {DISPLAY_CURRENCIES.join(", ")} — at a rate named underneath the table. The
+            native amounts do not move; only the column beside them does.
+            <br /><br />
+            Rates come from Yahoo Finance where the platform is hosted somewhere that runs its connectors,
+            falling back to an open rates table callable from the page, and to a pinned set that always says
+            so. A partial answer from either source is refused rather than merged: half the portfolio at
+            today's rate and half at a rate from a fortnight ago is a total that is not a number in any
+            currency, and it would look entirely ordinary on screen.
+          </div>
+          <Row k="Held in" v={`${estate.ccys.join(", ")} across the portfolio. ${estate.multiCcy} of the ${COMPANIES.length} companies hold more than one currency.`} />
+          <Row k="Why pinned by default" v={`A demo that silently revalues itself between the rehearsal and the meeting is worse than one that is a fortnight stale. Pinned at ${RATES_PINNED_AT}; live is opt-in and labelled.`} />
+        </Card>
+      </Section>
+
       {/* ── 8b · What is live ───────────────────────────────────────────── */}
-      <Section n="9" title="What is live, and what is not"
+      <Section n="10" title="What is live, and what is not"
                sub="One vocabulary for provenance, used on every screen. The badge takes its state from the fetch, so it can be wrong.">
         <Card>
           {Object.values(TIERS).map((t) => (
@@ -509,7 +569,7 @@ export default function UserGuide({ onNavigate }) {
       </Section>
 
       {/* ── 10 · Reading the screen ─────────────────────────────────────── */}
-      <Section n="10" title="Reading the screen">
+      <Section n="11" title="Reading the screen">
         <Card>
           <Row k="Every screen, every company" v={`Client Portal and Live Data each carry a company selector, and the GP Dashboard's eleven tabs and benchmarks are populated for all ${COMPANIES.length}. Nothing is pinned to one company any more.`} />
           <Row k="Generating a report" v="Opens it on screen first, with Download PDF, Save as HTML and Print inside the panel. A download is silently blocked in some embedded viewers, so the report is shown rather than only offered as a file." />
@@ -522,7 +582,7 @@ export default function UserGuide({ onNavigate }) {
       </Section>
 
       {/* ── 11 · How it is built ────────────────────────────────────────── */}
-      <Section n="11" title="How it is built"
+      <Section n="12" title="How it is built"
                sub="The stack, and how far each integration actually goes. Read from the same registry the screens read, so it cannot describe an estate that no longer exists.">
 
         <Card>

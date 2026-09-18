@@ -49,6 +49,11 @@ export const INTEGRATIONS = [
   { id: "bankfeed", name: "Xero bank feed",   kind: "Banking",    connector: "server",  feeds: ["Cash balance", "Net burn"] },
   { id: "stripe",   name: "Stripe",           kind: "Billing",    connector: "server",  feeds: ["MRR", "Churn", "Collections"] },
   { id: "hubspot",  name: "HubSpot",          kind: "CRM",        connector: "server",  feeds: ["Pipeline coverage", "Win rate", "Deal timing"] },
+  // Three FX sources, tried in that order. Yahoo is the pair-by-pair quote a
+  // treasury desk would recognise and cannot be called from a page — it sends
+  // no CORS headers — so it goes through a function; the other two are there
+  // because a multi-currency roll-up must not stop when the first one does.
+  { id: "yahoo",    name: "Yahoo Finance",    kind: "Market",     connector: "server",  feeds: ["G10 and SGD rates", "Multi-currency roll-up"] },
   { id: "fx",       name: "ExchangeRate-API", kind: "Market",     connector: "browser", feeds: ["GBP/USD", "GBP/EUR", "Portfolio restatement"] },
   { id: "bamboo",   name: "BambooHR",         kind: "HRIS",       connector: "model",   feeds: ["Headcount", "Attrition"] },
   { id: "alphav",   name: "Alpha Vantage",    kind: "Market",     connector: "browser", feeds: ["FX fallback", "Indices"] },

@@ -187,6 +187,8 @@ export function buildFinance(co, opts = {}) {
       // fund burn. Dividing the whole balance by it overstates the answer, on
       // exactly the companies where being wrong costs the most.
       ccy: reportingCurrency,
+      base: cashBook.base,
+      currencies: cashBook.currencies,
       accounts: cashBook.accounts,
       banks: cashBook.banks,
       restricted: cashBook.restricted,

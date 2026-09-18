@@ -1900,6 +1900,112 @@ check("the agents are told where the cash is", async () => {
   return true;
 });
 
+check("a roll-up reconciles in every currency it can be read in", async () => {
+  // The switcher restates the position; it must not revalue it. Converting the
+  // TOTAL and converting each ACCOUNT are two different sums, and they agree
+  // only while every figure is derived from the same native amounts. Doing it
+  // the cheap way — converting the base total and leaving the rows alone —
+  // gives a column that no longer adds to the headline above it, in a currency
+  // nobody was looking at.
+  const { buildFinance } = await import("../src/lib/financeData.js");
+  const { viewIn } = await import("../src/lib/bankAccounts.js");
+  const { DISPLAY_CURRENCIES } = await import("../src/lib/fx.js");
+
+  for (const c of COMPANIES) {
+    const { cash } = buildFinance(c);
+    for (const to of DISPLAY_CURRENCIES) {
+      const v = viewIn(cash, to);
+      const sum = v.accounts.reduce((t, a) => t + a.balance, 0);
+      const tol = Math.max(0.01, Math.abs(v.balance) * 1e-9);
+      if (!near(sum, v.balance, tol)) {
+        return `${c.name} in ${to}: accounts sum to ${sum}, total says ${v.balance}`;
+      }
+      if (!near(v.available + v.restricted, v.balance, tol)) {
+        return `${c.name} in ${to}: available plus restricted is not the balance`;
+      }
+      // Runway is a ratio of two amounts in the same currency, so it cannot
+      // depend on which currency that is. If it moves, something is being
+      // converted once on one side of the division and twice on the other.
+      if (Math.abs(v.runway - cash.runway) > 0.15) {
+        return `${c.name}: runway is ${cash.runway} in ${cash.base} and ${v.runway} in ${to}`;
+      }
+    }
+  }
+  return true;
+});
+
+check("the native amounts never move when the view does", async () => {
+  // The Held column is the bank statement. It is the one thing on the screen
+  // that must be identical whatever currency the reader has chosen — if it
+  // shifts, the product is quietly claiming the company's holdings changed
+  // because somebody clicked a chip.
+  const { buildFinance } = await import("../src/lib/financeData.js");
+  const { viewIn } = await import("../src/lib/bankAccounts.js");
+
+  for (const c of COMPANIES) {
+    const { cash } = buildFinance(c);
+    for (const to of ["USD", "JPY", "SEK"]) {
+      const v = viewIn(cash, to);
+      for (let i = 0; i < cash.accounts.length; i++) {
+        const before = cash.accounts[i];
+        const after = v.accounts[i];
+        if (after.ccy !== before.ccy || !near(after.native, before.native, 1e-9)) {
+          return `${c.name}: ${before.label} reads ${after.native} ${after.ccy} when shown in ${to}, was ${before.native} ${before.ccy}`;
+        }
+      }
+    }
+  }
+  return true;
+});
+
+check("every account currency is one the rate table carries", async () => {
+  // An account denominated in something convert() has never heard of returns
+  // the amount unchanged rather than throwing — so it would appear on the table
+  // at its native figure under another currency's heading, and add up wrong by
+  // exactly the amount nobody would question.
+  const { buildFinance } = await import("../src/lib/financeData.js");
+  const { PINNED_RATES } = await import("../src/lib/fx.js");
+  for (const c of COMPANIES) {
+    const { cash } = buildFinance(c);
+    for (const a of cash.accounts) {
+      if (!PINNED_RATES[a.ccy]) return `${c.name}: ${a.label} is held in ${a.ccy}, which has no rate`;
+    }
+  }
+  return true;
+});
+
+check("every screen imports the design helpers it uses", async () => {
+  // A view that calls labelStyle() without importing it builds cleanly, passes
+  // every other check here, and throws the moment somebody opens it — the
+  // screen renders as a blank pane with a ReferenceError in a console nobody
+  // has open. That is exactly how the new user-guide section shipped broken.
+  //
+  // Bundlers cannot catch it because the name is only resolved at run time, and
+  // there is no type system here to object. So the imports are read and the
+  // usages are counted.
+  const HELPERS = ["labelStyle", "metricStyle", "ragColour", "fmtMoney", "fmtGBP"];
+  const offenders = [];
+
+  for (const f of [...viewFiles.map((v) => `views/${v}`),
+                   ...(await readdir(new URL("../src/components/", import.meta.url)))
+                     .filter((c) => c.endsWith(".jsx")).map((c) => `components/${c}`)]) {
+    const src = await codeOf(`../src/${f}`);
+    // Strip comments so a helper named only in prose does not count as a usage.
+    const body = src.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    const imports = body.match(/import[\s\S]*?from\s+["'][^"']+["'];/g)?.join("\n") ?? "";
+
+    for (const h of HELPERS) {
+      if (!new RegExp(`\\b${h}\\s*\\(`).test(body)) continue;
+      // Either imported under that name, or aliased to it.
+      if (new RegExp(`\\b${h}\\b`).test(imports)) continue;
+      // Or declared locally in the file.
+      if (new RegExp(`(function|const|let)\\s+${h}\\b`).test(body)) continue;
+      offenders.push(`${f} calls ${h}() without importing it`);
+    }
+  }
+  return offenders.length === 0 || offenders.join("; ");
+});
+
 await Promise.all(pending);
 
 // ── Result ──────────────────────────────────────────────────────────────────

@@ -23,26 +23,68 @@
 //  carrying the three things the total cannot: what is restricted, what
 //  currency it is held in, and where each part was read from.
 //
-//  The banks are invented, for the same reason the customers in customers.js
-//  are: this portfolio is a worked example, and a fictional company should not
-//  be shown holding an account with a real bank. They are shaped by region so
-//  they read as banks rather than as placeholders.
+//  The banks are the real ones — HSBC, DBS, Standard Chartered and the rest —
+//  chosen by where the company operates. That is a deliberate reversal of the
+//  rule applied to customers in customers.js, and the distinction is worth
+//  stating: naming an invented company as a CUSTOMER of a real business is a
+//  claim about that business, while naming the bank a company holds an account
+//  with is the same kind of statement as naming Xero as its ledger. It makes
+//  the estate legible to anyone who has run a treasury function, which an
+//  invented name never does.
+//
+//  Currency is the other half. An account is held IN a currency, and that is
+//  the truth of it: the native amount is what the bank statement says, and
+//  every figure in any other currency is derived from it at a rate that is
+//  named. A single portfolio company can therefore hold GBP with HSBC London,
+//  USD with HSBC Singapore and SGD with DBS, and the roll-up can be read in
+//  any of the G10 plus SGD without any of those three numbers changing.
 // ════════════════════════════════════════════════════════════════════════════
 
 import { companyById } from "./companies.js";
 import { regionOf } from "./customers.js";
+import { convert } from "./fx.js";
 
 // ── Banks ───────────────────────────────────────────────────────────────────
 
+/**
+ * Where a company of each shape actually banks, most likely first.
+ *
+ * `home` is the domestic relationship that carries the operating accounts;
+ * `overseas` is the second bank a company picks up when it opens somewhere
+ * else, which is why the two lists overlap — HSBC and Standard Chartered are
+ * on both sides in every region, because that is the point of them.
+ */
 const BANKS = {
-  UK:      ["Caldon & Bruce", "Northgate Commercial", "Strathmore Bank"],
-  UAE:     ["Gulf Meridian Bank", "Al Waha Commercial", "Khor Fakkan Bank"],
-  APAC:    ["Straits Union Bank", "Pacific Kestrel Bank", "Marina Commercial"],
-  default: ["Ashgrove Commercial", "Bridgemont Bank", "Fielding & Crane"],
+  UK: {
+    home: ["HSBC", "Barclays", "NatWest", "Lloyds Bank"],
+    overseas: ["HSBC", "Standard Chartered", "Citi"],
+  },
+  UAE: {
+    home: ["Emirates NBD", "Mashreq", "First Abu Dhabi Bank"],
+    overseas: ["HSBC", "Standard Chartered", "Citi"],
+  },
+  APAC: {
+    home: ["DBS", "OCBC", "United Overseas Bank"],
+    overseas: ["HSBC", "Standard Chartered", "Citi"],
+  },
+  default: {
+    home: ["HSBC", "Citi", "BNP Paribas"],
+    overseas: ["HSBC", "Standard Chartered", "Citi"],
+  },
 };
 
-/** A plausible second currency for a company that operates beyond its home market. */
-const SECOND_CURRENCY = { GBP: "EUR", USD: "EUR", SGD: "USD", AED: "USD" };
+/**
+ * The currency each kind of account is held in.
+ *
+ * Operating, payroll and tax sit in the currency the company reports and pays
+ * people in. The rest are where multi-currency actually shows up: a treasury
+ * deposit parked in the reserve currency, client money in whatever the
+ * customers pay in, an overseas account in the local unit.
+ */
+const REGION_CURRENCY = { UK: "GBP", UAE: "AED", APAC: "SGD", default: "EUR" };
+
+/** Where a company of this shape most plausibly opens its second market. */
+const OVERSEAS_CURRENCY = { GBP: "USD", AED: "USD", SGD: "USD", USD: "EUR", EUR: "USD" };
 
 // ── The shapes an account comes in ──────────────────────────────────────────
 
@@ -185,9 +227,20 @@ export function accountBook(id, balance, ccy = "GBP", asOf = "", burn = 0) {
   const region = regionOf(co?.geo);
   const rng = makeRng(seedFrom(`accounts:${id}`));
 
-  const banks = BANKS[region] ?? BANKS.default;
-  const primaryBank = banks[Math.floor(rng() * banks.length)];
-  const otherBank = banks.find((b) => b !== primaryBank) ?? primaryBank;
+  const pool = BANKS[region] ?? BANKS.default;
+  const homeBank = pool.home[Math.floor(rng() * pool.home.length)];
+  const overseasBank = pool.overseas[Math.floor(rng() * pool.overseas.length)];
+
+  // The two currencies this company deals in: the one it reports and pays
+  // people in, and the one its overseas arm operates in.
+  //
+  // Home comes from the COMPANY, not from `ccy`. `ccy` is only the unit the
+  // totals are stated in — the fund's reporting currency on the portfolio, the
+  // company's own on the cash screen — and taking the home currency from it
+  // put a Singapore company's payroll account in sterling and left Emirates NBD
+  // holding GBP for a UK business.
+  const homeCcy = co?.currency ?? REGION_CURRENCY[region] ?? ccy;
+  const awayCcy = OVERSEAS_CURRENCY[homeCcy] ?? "USD";
 
   const kinds = kindsFor(co, rng);
   const amounts = allocate(kinds.map((k) => KINDS[k].weight), balance);
@@ -195,39 +248,55 @@ export function accountBook(id, balance, ccy = "GBP", asOf = "", burn = 0) {
   const accounts = kinds.map((key, i) => {
     const kind = KINDS[key];
     const amount = amounts[i];
-    const restricted = Math.round(amount * kind.restricted);
+    const restricted = amount * kind.restricted;
 
-    // The primary bank has a direct feed; anything held elsewhere arrives
-    // through the ledger instead. That is the ordinary shape of it, and it is
-    // why a company banking in two places cannot honestly badge its total LIVE.
-    const atPrimary = kind.primary;
+    // Where a company banks more than once, only the home relationship has a
+    // direct feed; the rest arrives through the ledger. That is the ordinary
+    // shape of it and it is why a company banking in two places cannot
+    // honestly badge its total LIVE.
+    const atHome = kind.primary;
+
+    // What the account is actually denominated in. A treasury deposit is
+    // parked in the reserve currency whatever the company reports in, client
+    // money sits in whatever customers pay, and the overseas account is in the
+    // local unit. Everything operational stays home.
+    const accountCcy =
+      key === "foreign" ? awayCcy
+      : key === "deposit" ? (homeCcy === "USD" ? "EUR" : "USD")
+      : key === "escrow" ? awayCcy
+      : homeCcy;
 
     return {
       id: `${id}-${key}`,
       key,
       label: kind.label,
-      bank: atPrimary ? primaryBank : otherBank,
-      ccy: key === "foreign" ? (SECOND_CURRENCY[ccy] ?? "USD") : ccy,
+      bank: atHome ? homeBank : overseasBank,
+      ccy: accountCcy,
+      // The native amount is the truth — it is what the bank statement says.
+      // It is derived from the allocated share rather than the other way round,
+      // so converting the book back into `ccy` reproduces the reported balance
+      // exactly rather than approximately.
+      native: convert(amount, ccy, accountCcy),
+      nativeRestricted: convert(restricted, ccy, accountCcy),
+      // The same money in the book's base currency, for callers that want one
+      // number and no conversion of their own.
       balance: amount,
       restricted,
       available: amount - restricted,
       why: kind.why ?? null,
       note: kind.note,
-      // A direct bank feed reads live; everything else is read off the ledger
-      // and says so.
-      feed: atPrimary ? "live" : "derived",
+      feed: atHome ? "live" : "derived",
       asOf,
     };
   });
 
   const restricted = accounts.reduce((t, a) => t + a.restricted, 0);
-  const uniqueBanks = new Set(accounts.map((a) => a.bank)).size;
-
   const available = balance - restricted;
 
   return {
     accounts,
     ccy,
+    base: ccy,
     balance: accounts.reduce((t, a) => t + a.balance, 0),
     restricted,
     available,
@@ -235,13 +304,60 @@ export function accountBook(id, balance, ccy = "GBP", asOf = "", burn = 0) {
     // slightly different rounding from the one beside it.
     runway: burn ? +(balance / burn).toFixed(1) : null,
     availableRunway: burn ? +(available / burn).toFixed(1) : null,
-    banks: uniqueBanks,
+    burn,
+    banks: new Set(accounts.map((a) => a.bank)).size,
+    currencies: new Set(accounts.map((a) => a.ccy)).size,
     // The aggregate is only as good as its weakest part. A total that reads
     // LIVE while a fifth of it was last seen on a ledger is the exact claim
     // this application exists not to make.
     reading: accounts.some((a) => a.feed === "simulated") ? "simulated"
            : accounts.some((a) => a.feed === "derived") ? "derived"
            : "live",
+  };
+}
+
+/**
+ * The same accounts, read in another currency.
+ *
+ * Every figure is converted from each account's NATIVE amount rather than from
+ * the book's base, so the answer does not depend on the route taken to get
+ * there — reading a Singapore book in yen gives the same total whether the base
+ * was SGD or GBP. Converting the base total instead would be one rounding
+ * cheaper and would quietly disagree with the column beneath it.
+ *
+ * The native amounts never move. Switching the display currency restates what
+ * is held; it does not revalue it, and the table keeps saying what the bank
+ * statement says in the column beside the converted figure.
+ *
+ * @param {object} book from accountBook()
+ * @param {string} to   any currency in the FX table
+ */
+export function viewIn(book, to) {
+  if (!book || to === book.base) return book;
+
+  const accounts = book.accounts.map((a) => {
+    const balance = convert(a.native, a.ccy, to);
+    const restricted = convert(a.nativeRestricted, a.ccy, to);
+    return { ...a, balance, restricted, available: balance - restricted };
+  });
+
+  const balance = accounts.reduce((t, a) => t + a.balance, 0);
+  const restricted = accounts.reduce((t, a) => t + a.restricted, 0);
+  const available = balance - restricted;
+  // Burn is a flow in the base currency; it has to move with the total or the
+  // runway would change every time somebody switched the display.
+  const burn = book.burn ? convert(book.burn, book.base, to) : 0;
+
+  return {
+    ...book,
+    accounts,
+    ccy: to,
+    balance,
+    restricted,
+    available,
+    burn,
+    runway: burn ? +(balance / burn).toFixed(1) : book.runway,
+    availableRunway: burn ? +(available / burn).toFixed(1) : book.availableRunway,
   };
 }
 
