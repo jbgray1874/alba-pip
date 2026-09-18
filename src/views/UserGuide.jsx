@@ -559,9 +559,15 @@ export default function UserGuide({ onNavigate }) {
           
           <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.6, marginTop: 10 }}>
             <strong>Foreign exchange is the one genuinely live source.</strong> Four of the {COMPANIES.length} companies
-            report in USD, SGD or AED, so the rate is not a footnote — it sets what they are worth in the fund's
-            reporting currency. Pinned is the default, because a demo that silently revalues itself between the
-            rehearsal and the meeting is worse than one that is a fortnight stale.
+            report in USD, SGD or AED, and every company holds at least one account in a currency it does not
+            report in — so the rate is not a footnote. It sets what the portfolio is worth, and what any
+            individual roll-up says when read in something else.
+            <br /><br />
+            Three sources, tried in order: <strong>Yahoo Finance</strong> for the pair-by-pair quote, an open
+            rates table the page can call itself, and the pinned set. A partial answer from either live source
+            is refused rather than merged — half the portfolio at today's rate and half at a fortnight-old one
+            is a total that is not a number in any currency. Pinned is the default, because a demo that
+            silently revalues itself between the rehearsal and the meeting is worse than one that is stale.
           </div>
           <Route steps={["Portfolio Health", "Use live FX"]}
                  note="Fetches today's rates and revalues the four foreign-currency companies. The badge shows the provider and a last-updated that ticks; if the provider cannot be reached it flips to OFFLINE and says the pinned rates are being shown instead. Some embedded viewers block outbound requests, so a shared link will usually show OFFLINE — which is the labelling working, not failing." />
@@ -591,7 +597,7 @@ export default function UserGuide({ onNavigate }) {
           <Row k="Charts" v="Recharts, on every screen that draws one." />
           <Row k="Documents" v="jsPDF with its table plugin, loaded only when a report is asked for, so a viewer who never generates one never downloads it." />
           <Row k="Styling" v="No CSS framework. Every colour, size and typeface comes from one file of design tokens, which is why twenty screens look like one product." />
-          <Row k="Dependencies" v="Four at runtime, in total." />
+          <Row k="Dependencies" v="Five at runtime, in total — React, React DOM, Recharts, and jsPDF with its table plugin." />
         </Card>
 
         <Card>
