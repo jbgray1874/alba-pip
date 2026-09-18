@@ -660,7 +660,8 @@ export default function UserGuide({ onNavigate }) {
         <Card>
           <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700, marginBottom: 8 }}>Build and release</div>
           <Row k="Publishing" v="Every push rebuilds and republishes the site automatically. No manual deployment step." />
-          <Row k="The gate" v="Around 160 assertions over the arithmetic and the interface run before anything is published, and a failure stops the release. They check the identities — that a forecast still equals the plan less its drivers, that percentage columns sum to 100, that no tile is frozen, that the top bar cannot clip." />
+          <Row k="The gate" v="Nearly two hundred assertions over the arithmetic and the interface run before anything is published, and a failure stops the release. They check the identities — that a forecast still equals the plan less its drivers, that percentage columns sum to 100, that bank accounts add to the balance in every currency they can be read in, that no tile is frozen, that the top bar cannot clip." />
+          <Row k="And every screen is rendered" v="The assertions read the source as text, which cannot tell you whether a screen actually runs. So each one is also rendered start to finish before release. A view that throws — a helper called without being imported, a typo in a function name — builds cleanly, bundles cleanly, and shows a blank pane to whoever opens it. That is the failure this catches, and it caught it by shipping once." />
           <Row k="Connectors in this build" v="The four server-side connectors need a host that runs functions. The published demo is a static site, so Connect Xero is inert there and every screen falls back to the model — by design, not by fault." />
         </Card>
       </Section>

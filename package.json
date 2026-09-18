@@ -1,14 +1,15 @@
 {
   "name": "alba-pip",
   "version": "1.0.0",
-  "description": "Caledonia Alba – Portfolio Intelligence Platform",
+  "description": "Caledonia Alba \u2013 Portfolio Intelligence Platform",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "verify": "node scripts/verify.mjs",
-    "check": "npm run verify && npm run build"
+    "verify": "node scripts/verify.mjs && npm run smoke",
+    "check": "npm run verify && npm run build",
+    "smoke": "node --import ./scripts/register-jsx.mjs scripts/smoke.mjs"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
