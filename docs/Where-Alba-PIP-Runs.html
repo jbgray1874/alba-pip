@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where Alba PIP Runs</title>
+<meta name="description" content="Hosting recommendation for Alba PIP — where the website and the platform run, how the platform is secured, what it costs, and what is needed to proceed.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ── Tokens ────────────────────────────────────────────────────────────
+     Light is the platform's report stock — the cream and ink its circulated
+     documents are set on. Dark is the platform's own chrome. Both are real
+     Alba PIP surfaces rather than a theme invented for this page.        */
+  :root {
+    --paper:   #F5F2EA;
+    --raised:  #EFEBE0;
+    --rule:    #D6D0C2;
+    --ruleFirm:#B8B0A0;
+    --ink:     #1A1814;
+    --ink2:    #4A453C;
+    --ink3:    #8A8477;
+    --gold:    #A97A18;
+    --goldWash:#E5A83C1F;
+    --neg:     #9B2C2C;
+    --pos:     #1F6B45;
+    --shadow:  rgba(60, 50, 30, 0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #0A0A0B;
+      --raised:  #131315;
+      --rule:    #242428;
+      --ruleFirm:#33333A;
+      --ink:     #F2F2F0;
+      --ink2:    #9A9AA0;
+      --ink3:    #5E5E66;
+      --gold:    #E5A83C;
+      --goldWash:#E5A83C1A;
+      --neg:     #F4525F;
+      --pos:     #3FCF6E;
+      --shadow:  rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #0A0A0B;
+    --raised:  #131315;
+    --rule:    #242428;
+    --ruleFirm:#33333A;
+    --ink:     #F2F2F0;
+    --ink2:    #9A9AA0;
+    --ink3:    #5E5E66;
+    --gold:    #E5A83C;
+    --goldWash:#E5A83C1A;
+    --neg:     #F4525F;
+    --pos:     #3FCF6E;
+    --shadow:  rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size: 17px;
+    line-height: 1.68;
+    margin: 0;
+    padding: 0 20px 90px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet { max-width: 880px; margin: 0 auto; }
+  .measure { max-width: 660px; }
+
+  /* ── Masthead ── */
+  .masthead {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 18px; flex-wrap: wrap;
+    padding: 54px 0 12px;
+  }
+  .marque {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--ink2);
+  }
+  .filed {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 11px; letter-spacing: 0.08em; color: var(--ink3);
+  }
+  .rule-heavy { height: 2px; background: var(--ink); border: 0; margin: 0 0 34px; }
+
+  h1 {
+    font-size: clamp(30px, 5vw, 40px); font-weight: 600; line-height: 1.14;
+    letter-spacing: -0.02em; text-wrap: balance; margin: 0 0 14px;
+  }
+  .standfirst {
+    font-size: 19px; line-height: 1.6; color: var(--ink2); margin: 0;
+    max-width: 620px;
+  }
+
+  h2 {
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--gold);
+    margin: 0 0 18px; padding-bottom: 9px;
+    border-bottom: 1px solid var(--rule);
+  }
+  h3 {
+    font-size: 19px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 8px; text-wrap: balance;
+  }
+
+  section { margin-top: 52px; }
+  p { margin: 0 0 16px; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 600; }
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    font-size: 0.86em; background: var(--raised);
+    border: 1px solid var(--rule); border-radius: 3px;
+    padding: 1px 5px; white-space: nowrap;
+  }
+
+  /* ── The shape ── */
+  .shape { display: flex; flex-direction: column; gap: 0; margin: 0 0 22px; }
+  .tier {
+    display: grid; grid-template-columns: 210px 1fr; gap: 20px;
+    padding: 17px 20px; border: 1px solid var(--rule); background: var(--raised);
+    align-items: start;
+  }
+  .tier + .tier { border-top: 0; }
+  .tier--focus { border-left: 3px solid var(--gold); }
+  .tier-host {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13.5px; color: var(--ink); font-weight: 500; word-break: break-word;
+  }
+  .tier-what { font-size: 15px; color: var(--ink2); line-height: 1.55; }
+  .tier-what em { color: var(--gold); font-style: normal; font-weight: 600; }
+  .flowmark {
+    font-family: Inter, sans-serif; font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink3);
+    padding: 7px 0 7px 20px;
+  }
+
+  /* ── Layered security ── */
+  .layers { display: flex; flex-direction: column; gap: 1px; background: var(--rule);
+            border: 1px solid var(--rule); }
+  .layer {
+    background: var(--paper); padding: 16px 20px;
+    display: grid; grid-template-columns: 150px 1fr; gap: 20px; align-items: start;
+  }
+  .layer-name {
+    font-family: Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--ink); line-height: 1.4;
+  }
+  .layer-name span {
+    display: block; font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink3); margin-top: 4px;
+  }
+  .layer-body { font-size: 15px; line-height: 1.6; color: var(--ink2); }
+  .layer-body strong { color: var(--ink); }
+
+  /* ── Tables ── */
+  .scroll { overflow-x: auto; margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 420px; }
+  th, td { text-align: left; padding: 11px 14px 11px 0; vertical-align: top;
+           border-bottom: 1px solid var(--rule); }
+  thead th {
+    font-family: Inter, system-ui, sans-serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3);
+    border-bottom: 1px solid var(--ruleFirm); padding-bottom: 8px;
+  }
+  td { color: var(--ink2); }
+  td:first-child { color: var(--ink); }
+  .num { text-align: right; font-variant-numeric: tabular-nums;
+         font-family: Inter, system-ui, sans-serif; padding-right: 0; }
+
+  /* ── The ask ── */
+  .ask {
+    border: 1px solid var(--gold); background: var(--goldWash);
+    padding: 26px 28px; margin-top: 8px;
+  }
+  .ask h3 { margin-bottom: 14px; }
+  ol.asks { margin: 0; padding-left: 22px; }
+  ol.asks li { margin-bottom: 13px; font-size: 16px; line-height: 1.6; }
+  ol.asks li:last-child { margin-bottom: 0; }
+  ol.asks b { font-weight: 600; }
+
+  /* ── Sequence ── */
+  ol.steps { list-style: none; margin: 0; padding: 0;
+             counter-reset: step; }
+  ol.steps li {
+    counter-increment: step;
+    display: grid; grid-template-columns: 42px 1fr; gap: 16px;
+    padding: 15px 0; border-bottom: 1px solid var(--rule);
+  }
+  ol.steps li::before {
+    content: counter(step);
+    font-family: "IBM Plex Mono", monospace; font-size: 15px;
+    color: var(--gold); padding-top: 1px;
+  }
+  .step-when {
+    font-family: Inter, sans-serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.11em; text-transform: uppercase; color: var(--ink3);
+    display: block; margin-bottom: 4px;
+  }
+  .step-body { font-size: 16px; line-height: 1.6; color: var(--ink2); }
+  .step-body b { color: var(--ink); font-weight: 600; }
+
+  .note {
+    border-left: 2px solid var(--ruleFirm); padding: 4px 0 4px 20px;
+    color: var(--ink2); font-size: 16px; margin: 22px 0 0;
+  }
+
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-family: Inter, system-ui, sans-serif; font-size: 12px;
+    color: var(--ink3); line-height: 1.7;
+  }
+
+  @media (max-width: 620px) {
+    body { font-size: 16px; }
+    .tier, .layer { grid-template-columns: 1fr; gap: 7px; }
+    ol.steps li { grid-template-columns: 26px 1fr; gap: 12px; }
+  }
+
+  @media print {
+    body { background: #fff; color: #000; padding: 0; font-size: 11pt; }
+    section { break-inside: avoid-page; margin-top: 28px; }
+    .layer, .tier, ol.steps li { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="masthead">
+    <span class="marque">Alba PIP</span>
+    <span class="filed">Internal recommendation &middot; hosting</span>
+  </div>
+  <hr class="rule-heavy">
+
+  <h1>Where Alba PIP runs</h1>
+  <p class="standfirst">
+    The website stays exactly where it is. The platform goes on Azure, behind a
+    sign-in, at an address on our own domain. Nothing needs to move, and the running
+    cost is nil until there is real client data in it.
+  </p>
+
+  <!-- ── The shape ─────────────────────────────────────────────────── -->
+  <section>
+    <h2>The shape of it</h2>
+
+    <div class="shape">
+      <div class="tier">
+        <div class="tier-host">alba-pip.com</div>
+        <div class="tier-what">
+          The website, where it is today. <em>Unchanged.</em> One button added to the home page,
+          through to the platform.
+        </div>
+      </div>
+      <div class="flowmark">links through to</div>
+      <div class="tier tier--focus">
+        <div class="tier-host">app.alba-pip.com</div>
+        <div class="tier-what">
+          The platform, on Azure. Sign-in with work accounts, by invitation. Reads Xero,
+          Stripe and HubSpot.
+        </div>
+      </div>
+      <div class="flowmark">built and published from</div>
+      <div class="tier">
+        <div class="tier-host">github.com &middot; alba-pip</div>
+        <div class="tier-what">
+          The source. Stays where it is; Azure rebuilds and republishes on every change,
+          with the arithmetic checked before anything goes live.
+        </div>
+      </div>
+    </div>
+
+    <div class="measure">
+      <p>
+        Keeping the website and the platform apart is deliberate. The website is a brochure —
+        it works, it is paid for, and moving it would cost a weekend and buy nothing. The
+        platform needs a login, an API and a database it will eventually grow into, none of
+        which a brochure host provides.
+      </p>
+      <p>
+        The one thing needed from the website is a single DNS record pointing <code>app</code>
+        at Azure. <strong>Nothing else about the domain changes</strong> — and specifically not
+        the mail records, which is the one way this could go wrong and take email down with it.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Security ──────────────────────────────────────────────────── -->
+  <section>
+    <h2>How app.alba-pip.com is secured</h2>
+
+    <div class="measure">
+      <p>
+        Six layers, from the outside in. The first five are already written and committed;
+        they take effect the day the Azure resource exists.
+      </p>
+    </div>
+
+    <div class="layers">
+      <div class="layer">
+        <div class="layer-name">Encryption<span>In place</span></div>
+        <div class="layer-body">
+          HTTPS throughout, with the certificate issued and renewed by Azure at no cost. A
+          browser that has visited once <strong>refuses to connect over plain HTTP for a year
+          afterwards</strong>, so the connection cannot be downgraded on a hotel or airport
+          network.
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-name">Who you are<span>In place</span></div>
+        <div class="layer-body">
+          Sign-in with a Microsoft work account. No password is set, stored or reset by us —
+          Microsoft holds the credential and enforces whatever multi-factor rules the account
+          already has.
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-name">Whether you are on the list<span>In place</span></div>
+        <div class="layer-body">
+          <strong>This is the one that actually gates access.</strong> Signing in successfully
+          and being let in are separate things: Microsoft will authenticate anybody with an
+          account, so entry depends on having been invited by name. Someone who signs in without
+          an invitation is told so plainly rather than shown an error, and sees nothing of the
+          platform. Invitations are issued and revoked from the Azure portal in seconds.
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-name">The credentials<span>In place</span></div>
+        <div class="layer-body">
+          The keys to Xero, Stripe and HubSpot are held by the server and never sent to the
+          browser. They are not in the source code and never have been.
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-name">Browser hardening<span>In place</span></div>
+        <div class="layer-body">
+          The site cannot be framed inside another site, cannot be tricked into running a file
+          as the wrong type, and cannot ask for camera, microphone, location or payment — because
+          it never should, and saying so means a script that someday tries will fail.
+        </div>
+      </div>
+
+      <div class="layer">
+        <div class="layer-name">Injection defence<span>Watching first</span></div>
+        <div class="layer-body">
+          A policy naming the only places the page may load anything from — get it right and
+          injected code has nowhere to run. It is currently in <strong>report-only mode
+          deliberately</strong>: it watches and reports without blocking, so it can be confirmed
+          against a real browser before it starts enforcing. A policy switched on blind breaks
+          pages in ways that look like ordinary bugs, and it is worth one careful session to
+          avoid that.
+        </div>
+      </div>
+    </div>
+
+    <div class="measure">
+      <p class="note">
+        <strong>What this does not protect, stated plainly.</strong> As with every website in
+        existence, the page's own program code is delivered to the browser and can be read by
+        anyone who reaches the site. It contains no keys and no client data — every figure in
+        the current build is generated rather than real. When actual portfolio data arrives it
+        will sit behind the sign-in on the server side, which is the layer that matters.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Cost ──────────────────────────────────────────────────────── -->
+  <section>
+    <h2>What it costs</h2>
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Now</th><th class="num">Per month</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Website hosting</td><td>As today</td><td class="num">unchanged</td></tr>
+          <tr><td>Platform hosting</td><td>Azure, free tier</td><td class="num">&pound;0</td></tr>
+          <tr><td>Sign-in and invitations</td><td>Included, up to 25 people</td><td class="num">&pound;0</td></tr>
+          <tr><td>Certificate and domain</td><td>Included</td><td class="num">&pound;0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="measure">
+      <p style="margin-top:20px">
+        The free tier is not a trial and does not expire. It carries the sign-in, the custom
+        address and the certificate. The first real cost arrives with a database, when actual
+        client data goes in — <strong>on the order of &pound;20 to &pound;25 a month</strong>,
+        which is worth knowing now and deciding on later.
+      </p>
+      <p>
+        Azure infrastructure is not where the money goes on something like this. The cost is
+        engineering time, and that decision comes when there is a client to build it for.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── The ask ───────────────────────────────────────────────────── -->
+  <section>
+    <h2>What I need from you</h2>
+    <div class="ask">
+      <h3>Two things, both quick</h3>
+      <ol class="asks">
+        <li>
+          <b>Access to the alba-pip.com account.</b> Whoever the domain and the website sit with,
+          I need enough to edit the home page and add one DNS record — so it does not need asking
+          twice. Where the provider supports it, delegate access is better than sharing a
+          password: it is revocable at any time, and a shared password does not work anyway once
+          two-factor is on the account.
+        </li>
+        <li>
+          <b>Confirmation on the Azure subscription</b>, opened against the Alba account rather
+          than a personal one. Ownership then sits with the business, sign-in uses our own work
+          accounts, and nothing depends on any one person's login.
+        </li>
+      </ol>
+    </div>
+    <div class="measure">
+      <p class="note">
+        Also useful, if you know: <strong>who built the website and where it is deployed from</strong>.
+        It decides where the button gets added, and nothing else.
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Order ─────────────────────────────────────────────────────── -->
+  <section>
+    <h2>Order of work</h2>
+    <ol class="steps">
+      <li>
+        <div>
+          <span class="step-when">This week</span>
+          <span class="step-body">
+            <b>Button on the home page</b>, pointing at the platform where it is published today.
+            A working link, immediately, with nothing else needing to be in place first.
+          </span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-when">On the subscription</span>
+          <span class="step-body">
+            <b>Azure, the address and the sign-in.</b> About an hour. The platform moves to
+            app.alba-pip.com, invitations go out, and the home page button is repointed.
+          </span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-when">Then</span>
+          <span class="step-body">
+            <b>The live connectors.</b> Xero, Stripe and HubSpot read real ledgers rather than the
+            worked example. The code exists; it needs adapting to Azure and somewhere to run.
+          </span>
+        </div>
+      </li>
+      <li>
+        <div>
+          <span class="step-when">When there is a client</span>
+          <span class="step-body">
+            <b>The production build</b> — database, multiple firms, audit trail. Months of
+            engineering rather than hours, and nothing above it waits on this.
+          </span>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <footer>
+    Alba PIP &middot; Portfolio intelligence. The platform is running and populated end to end;
+    the portfolio in it is a worked example, and the companies, ledgers and figures in that
+    example are generated rather than those of any real business.
+  </footer>
+
+</div>
+
+</body>
+</html>

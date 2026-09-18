@@ -1,0 +1,98 @@
+<!--
+  ══════════════════════════════════════════════════════════════════════════
+   Alba PIP — the platform link for alba-pip.com
+  ──────────────────────────────────────────────────────────────────────────
+   Written against the site's own markup, not as a self-contained block. The
+   site is hand-coded static HTML on GoDaddy cPanel hosting, and it already
+   has the classes this needs — .button, .button-gold, .button-outline,
+   .container, .section, .section-kicker. Using them means the link inherits
+   the site's real typography, spacing and hover states instead of
+   approximating them, and it keeps working when the stylesheet changes.
+
+   Two options. Do ONE of them.
+
+   ── Where to edit ─────────────────────────────────────────────────────────
+     GoDaddy → My Products → Web Hosting → Manage → cPanel Admin
+     → File Manager → public_html → index.html → Edit
+
+   Take a copy of index.html before editing. There is no undo in File Manager.
+
+   ── The link ──────────────────────────────────────────────────────────────
+   Points at the platform where it is published today. When it moves to
+   app.alba-pip.com the href is the only thing that changes.
+  ══════════════════════════════════════════════════════════════════════════
+-->
+
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     OPTION A — one line in the hero  (recommended)
+     ────────────────────────────────────────────────────────────────────────
+     The smallest possible change and the most prominent position. FIND this
+     block, which is already in index.html:
+
+         <div class="hero-actions">
+           <a class="button button-gold" href="#contact">Request early access</a>
+         </div>
+
+     REPLACE it with this. The second button is the only new line.
+     ════════════════════════════════════════════════════════════════════════ -->
+
+          <div class="hero-actions">
+            <a class="button button-gold" href="#contact">Request early access</a>
+            <a class="button button-outline" href="https://jbgray1874.github.io/alba-pip/" target="_blank" rel="noopener">See the platform</a>
+          </div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     OPTION B — a section of its own
+     ────────────────────────────────────────────────────────────────────────
+     More room to make the argument. PASTE this whole section into index.html
+     immediately BEFORE the line that reads:
+
+         <section class="final-cta" id="contact">
+
+     It follows the same shape as the sections already on the page: a kicker,
+     then content, inside a .container.
+     ════════════════════════════════════════════════════════════════════════ -->
+
+    <section class="section" id="demo">
+      <div class="container">
+        <p class="section-kicker centered">See it running.</p>
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <span class="feature-icon">◧</span>
+            <h2>Nine companies, live</h2>
+            <p>Three currencies, every screen calculated from one finance model.</p>
+          </article>
+          <article class="feature-card reveal delay-1">
+            <span class="feature-icon">⬡</span>
+            <h2>Every figure traceable</h2>
+            <p>No number on any screen is unattributed. Sources named throughout.</p>
+          </article>
+          <article class="feature-card reveal delay-2">
+            <span class="feature-icon">▤</span>
+            <h2>Reports that circulate</h2>
+            <p>An investigation becomes an A4 document, ready to send.</p>
+          </article>
+        </div>
+        <div class="hero-actions" style="justify-content:center;margin-top:2rem">
+          <a class="button button-gold" href="https://jbgray1874.github.io/alba-pip/" target="_blank" rel="noopener">Open the platform</a>
+        </div>
+      </div>
+    </section>
+
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     OPTION C — the navigation bar
+     ────────────────────────────────────────────────────────────────────────
+     If the link should be reachable from anywhere on the page rather than
+     only the top. FIND, in the header:
+
+         <a class="button button-outline nav-cta" href="#contact">Request early access</a>
+
+     and ADD this line immediately before it. Check it at phone width — the
+     header already carries a logo, five links and a button, and a sixth
+     element may be one too many on a narrow screen.
+     ════════════════════════════════════════════════════════════════════════ -->
+
+      <a class="nav-cta" href="https://jbgray1874.github.io/alba-pip/" target="_blank" rel="noopener" style="margin-right:.75rem">Sign in</a>
