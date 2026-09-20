@@ -18,8 +18,8 @@ import IntegrationPlan from './views/IntegrationPlan.jsx'
 import NewsFeed        from './views/NewsFeed.jsx'
 import PortfolioAnalytics from './views/PortfolioAnalytics.jsx'
 import UserGuide      from './views/UserGuide.jsx'
-import { HOMES, SCALES, loadPrefs, savePrefs } from './lib/prefs.js'
-import { C, F, S, label as labelStyle } from './lib/theme.js'
+import { HOMES, LOOKS, SCALES, loadPrefs, savePrefs } from './lib/prefs.js'
+import { C, F, S, label as labelStyle, setTheme } from './lib/theme.js'
 import { Wordmark } from './components/Shell.jsx'
 import { COMPANIES, FUNDS } from './lib/companies.js'
 import { attentionActions } from './lib/investigation.js'
@@ -58,16 +58,21 @@ const GROUPS = ['Portfolio', 'Intelligence', 'Actions', 'Reports']
 // ── TOAST SYSTEM ────────────────────────────────────────────────────────────
 // Derived from the registry and the finance model rather than typed, so the
 // activity ticker names the companies the rest of the platform names.
+//
+// The colours are getters. This list is built once, when the module loads, and
+// a toast raised an hour later still reads its colour off it — so a plain value
+// would hold the palette the application started in and the notification would
+// arrive in the wrong one after the interface switched.
 const TOAST_POOL = (() => {
   const worst = attentionActions(3)
   const co = (i) => worst[i]?.company ?? COMPANIES[i]?.name ?? 'a portfolio company'
   return [
-    { type:'alert', icon:'▲', color:C.red,    title:'Threshold breached', msg:`${co(0)} — ${worst[0]?.rationale ?? 'runway below threshold'}` },
-    { type:'sync',  icon:'✓', color:C.green,  title:'Data synced',        msg:`Xero · ${COMPANIES[0].name} · management accounts updated` },
-    { type:'news',  icon:'◫', color:C.blue,   title:'News flagged',       msg:`${COMPANIES[1].name} secured a new enterprise contract` },
-    { type:'agent', icon:'◐', color:C.purple, title:'Agent action',       msg:`Investigation complete — ${co(1)}` },
-    { type:'sync',  icon:'✓', color:C.green,  title:'Live feed',          msg:'Market data refreshed · GBP/USD updated' },
-    { type:'alert', icon:'◷', color:C.amber,  title:'Action due',         msg:`${co(2)} — review due today` },
+    { type:'alert', icon:'▲', get color() { return C.red },    title:'Threshold breached', msg:`${co(0)} — ${worst[0]?.rationale ?? 'runway below threshold'}` },
+    { type:'sync',  icon:'✓', get color() { return C.green },  title:'Data synced',        msg:`Xero · ${COMPANIES[0].name} · management accounts updated` },
+    { type:'news',  icon:'◫', get color() { return C.blue },   title:'News flagged',       msg:`${COMPANIES[1].name} secured a new enterprise contract` },
+    { type:'agent', icon:'◐', get color() { return C.purple }, title:'Agent action',       msg:`Investigation complete — ${co(1)}` },
+    { type:'sync',  icon:'✓', get color() { return C.green },  title:'Live feed',          msg:'Market data refreshed · GBP/USD updated' },
+    { type:'alert', icon:'◷', get color() { return C.amber },  title:'Action due',         msg:`${co(2)} — review due today` },
   ]
 })()
 
@@ -77,10 +82,14 @@ function Toasts({ toasts, dismiss }) {
       {toasts.map(t => (
         <div key={t.id} style={{
           pointerEvents:'auto', minWidth:280, maxWidth:340,
-          background:'rgba(19,19,21,0.97)', backdropFilter:'blur(12px)',
+          // The card sits over whatever screen is open, so it takes the card
+          // surface with an alpha appended rather than a colour of its own —
+          // a literal here was still a dark card under the light palette, with
+          // the light palette's dark text on it.
+          background:`${C.surface}F8`, backdropFilter:'blur(12px)',
           border:`1px solid ${t.color}40`, borderLeft:`3px solid ${t.color}`,
           borderRadius:10, padding:'12px 14px',
-          boxShadow:'0 12px 40px rgba(0,0,0,0.4)',
+          boxShadow:`0 12px 40px ${C.shadow}`,
           animation: t.leaving ? 'toastOut 0.3s ease forwards' : 'toastIn 0.35s cubic-bezier(0.22,1,0.36,1)',
           display:'flex', gap:11, alignItems:'flex-start',
         }}>
@@ -113,8 +122,28 @@ export default function App() {
   const me = useIdentity()
   const active = VIEWS.find(v => v.id === view)
 
+  // Set the palette before anything reads a token.
+  //
+  // Not in an effect: an effect runs after the first paint, so the interface
+  // would draw once in whichever palette the module loaded with and then
+  // repaint in the stored one — a black flash on every reload for anybody who
+  // chose light. This is an assignment to a module variable, which is safe to
+  // repeat and is what the render below is about to read.
+  setTheme(prefs.theme)
+
   const setHome  = (id)    => { setPrefs(savePrefs({ home: id })); setView(id) }
   const setScale = (value) => setPrefs(savePrefs({ scale: value }))
+  const setLook  = (id)    => {
+    setTheme(id)
+    // The page ground is painted by app.html before this bundle loads, off the
+    // same stored preference. Keep the attribute it reads in step, or the strip
+    // of page behind the interface stays in the palette the tab opened in.
+    if (typeof document !== 'undefined') {
+      if (id === 'light') document.documentElement.dataset.look = 'light'
+      else delete document.documentElement.dataset.look
+    }
+    setPrefs(savePrefs({ theme: id }))
+  }
 
   // ── Ctrl/Cmd +, − and 0 drive the same setting as the top-bar control ──
   //
@@ -228,7 +257,7 @@ export default function App() {
                   style={{ padding:'3px 8px', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:S.micro,
                            fontWeight: prefs.home===h.id ? 700 : 400,
                            background: prefs.home===h.id ? C.gold : 'transparent',
-                           color: prefs.home===h.id ? '#141005' : C.txt2 }}>{h.label}</button>
+                           color: prefs.home===h.id ? C.goldOn : C.txt2 }}>{h.label}</button>
               ))}
             </div>
           </div>
@@ -240,7 +269,21 @@ export default function App() {
                   style={{ padding:'3px 6px', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:S.micro,
                            fontWeight: prefs.scale===sc.id ? 700 : 400,
                            background: prefs.scale===sc.id ? C.gold : 'transparent',
-                           color: prefs.scale===sc.id ? '#141005' : C.txt2 }}>{sc.label}</button>
+                           color: prefs.scale===sc.id ? C.goldOn : C.txt2 }}>{sc.label}</button>
+              ))}
+            </div>
+          </div>
+          {/* Light or dark, beside the size control — the two settings that are
+              about the room rather than the data. */}
+          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
+            <span style={{ color:C.txt3, fontSize:S.micro, letterSpacing:'0.1em' }}>LOOK</span>
+            <div style={{ display:'flex', border:`1px solid ${C.border}`, borderRadius:4, overflow:'hidden' }}>
+              {LOOKS.map(lk => (
+                <button key={lk.id} onClick={() => setLook(lk.id)} title={lk.blurb}
+                  style={{ padding:'3px 8px', border:'none', cursor:'pointer', fontFamily:'inherit', fontSize:S.micro,
+                           fontWeight: prefs.theme===lk.id ? 700 : 400,
+                           background: prefs.theme===lk.id ? C.gold : 'transparent',
+                           color: prefs.theme===lk.id ? C.goldOn : C.txt2 }}>{lk.label}</button>
               ))}
             </div>
           </div>

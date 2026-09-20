@@ -29,7 +29,7 @@ import LiveBadge from "../components/LiveBadge.jsx";
 import LiveStrip from "../components/LiveStrip.jsx";
 import InsightCard from "../components/InsightCard.jsx";
 
-const RAG = { RED: C.red, AMBER: C.gold, GREEN: C.green };
+const RAG = { get RED() { return C.red }, get AMBER() { return C.gold }, get GREEN() { return C.green }};
 const REPORTING = "GBP";
 
 /**

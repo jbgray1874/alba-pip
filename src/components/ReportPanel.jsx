@@ -186,12 +186,12 @@ export default function ReportPanel({ report, onClose }) {
 
   return (
     <div onClick={onClose}
-         style={{ position: "fixed", inset: 0, background: "rgba(7,7,8,0.82)", zIndex: 9998,
+         style={{ position: "fixed", inset: 0, background: C.scrim, zIndex: 9998,
                   display: "flex", alignItems: "flex-start", justifyContent: "center",
                   padding: "24px 18px", overflowY: "auto" }}>
       <div onClick={(e) => e.stopPropagation()}
            style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 8,
-                    width: "min(1180px, 100%)", boxShadow: "0 28px 80px rgba(0,0,0,0.6)" }}>
+                    width: "min(1180px, 100%)", boxShadow: `0 28px 80px ${C.shadow}` }}>
 
         {/* ── Header ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14,
@@ -278,7 +278,7 @@ export default function ReportPanel({ report, onClose }) {
               <div style={{ color: C.ink2, fontSize: 11.5, fontFamily: F.sans }}>
                 {report.company} <span style={{ color: C.inkRule }}>|</span> {report.subtitle}
               </div>
-              <div style={{ color: C.gold, fontSize: 10, fontFamily: F.sans, fontWeight: 700,
+              <div style={{ color: C.inkGold, fontSize: 10, fontFamily: F.sans, fontWeight: 700,
                             letterSpacing: "0.11em", textTransform: "uppercase", marginTop: 7 }}>
                 Prepared for circulation · review {report.reviewDate}
               </div>

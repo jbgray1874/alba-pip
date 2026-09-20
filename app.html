@@ -18,8 +18,29 @@
       One line, one file, nothing left behind.
     -->
     <link rel="icon" type="image/png" href="%BASE_URL%favicon.png" />
+    <!--
+      Paint the ground before the application loads.
+
+      The page carries the dark ground so it is never white for the moment
+      before React mounts. For anybody who has chosen the light palette that is
+      the opposite problem — a black flash on every reload — so the stored
+      preference is read here, ahead of the bundle, and the ground set to match.
+      It has to be inline and it has to be in the head: this is the only code
+      that runs before the first paint. The two colours are C.bg from each
+      palette in src/lib/theme.js; nothing else in the application repeats them.
+    -->
+    <style>
+      html, body { margin: 0; padding: 0; background: #0A0A0B; }
+      html[data-look="light"], html[data-look="light"] body { background: #F7F6F2; }
+    </style>
+    <script>
+      try {
+        var p = JSON.parse(localStorage.getItem("alba.prefs.v1") || "{}");
+        if (p.theme === "light") document.documentElement.dataset.look = "light";
+      } catch (e) { /* storage blocked — the dark ground stands */ }
+    </script>
   </head>
-  <body style="margin:0;padding:0;background:#0A0A0B;">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

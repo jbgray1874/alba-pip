@@ -7,23 +7,22 @@ import { forNews } from "../lib/companies.js";
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  surface: C.bgDeep,
-  card: C.surface,
-  border: C.border,
-  borderLt: C.borderLt,
-  green: C.green,
-  greenDim: C.greenSoft,
-  amber: C.amber,
-  amberDim: C.amberSoft,
-  red: C.red,
-  redDim: C.redSoft,
-  blue: C.blue,
-  blueDim: C.blueSoft,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get surface() { return C.bgDeep },
+  get card() { return C.surface },
+  get border() { return C.border },
+  get borderLt() { return C.borderLt },
+  get green() { return C.green },
+  get greenDim() { return C.greenSoft },
+  get amber() { return C.amber },
+  get amberDim() { return C.amberSoft },
+  get red() { return C.red },
+  get redDim() { return C.redSoft },
+  get blue() { return C.blue },
+  get blueDim() { return C.blueSoft },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 
 const COMPANIES = forNews(T);
 

@@ -98,8 +98,8 @@ function ConfidenceBar({ confidence }) {
   );
 }
 
-const TH = { padding: "6px 10px", fontWeight: 500, borderBottom: `1px solid ${C.border}`, whiteSpace: "nowrap" };
-const TD = { padding: "9px 10px", borderBottom: `1px solid ${C.border}`, verticalAlign: "middle" };
+const TH = { padding: "6px 10px", fontWeight: 500, get borderBottom() { return `1px solid ${C.border}` }, whiteSpace: "nowrap" };
+const TD = { padding: "9px 10px", get borderBottom() { return `1px solid ${C.border}` }, verticalAlign: "middle" };
 
 // ── The screen ──────────────────────────────────────────────────────────────
 

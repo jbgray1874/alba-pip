@@ -13,26 +13,25 @@ import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  surface: C.bgDeep,
-  card: C.surface,
-  cardHov: C.surfaceUp,
-  border: C.border,
-  borderLt: C.borderLt,
-  green: C.green,
-  greenDim: C.greenSoft,
-  amber: C.amber,
-  amberDim: C.amberSoft,
-  red: C.red,
-  redDim: C.redSoft,
-  blue: C.blue,
-  blueDim: C.blueSoft,
-  purple: C.purple,
-  purpleDim: C.purpleSoft,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get surface() { return C.bgDeep },
+  get card() { return C.surface },
+  get cardHov() { return C.surfaceUp },
+  get border() { return C.border },
+  get borderLt() { return C.borderLt },
+  get green() { return C.green },
+  get greenDim() { return C.greenSoft },
+  get amber() { return C.amber },
+  get amberDim() { return C.amberSoft },
+  get red() { return C.red },
+  get redDim() { return C.redSoft },
+  get blue() { return C.blue },
+  get blueDim() { return C.blueSoft },
+  get purple() { return C.purple },
+  get purpleDim() { return C.purpleSoft },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 const rw = (v, pct = 0.004) => +(v * (1 + (Math.random() - 0.5) * 2 * pct)).toFixed(v > 100 ? 0 : v > 1 ? 2 : 4);
@@ -50,21 +49,21 @@ const ago = (ms) => { const s = Math.floor(ms / 1000); return s < 60 ? `${s}s ag
 //
 // It is now the connected estate, and the counterparties are the company's own.
 const EVENT_POOL = [
-  { src:"Xero bank feed", cat:"Banking", color:C.green, icon:"◧",
+  { src:"Xero bank feed", cat:"Banking", get color() { return C.green }, icon:"◧",
     gen:(ctx) => ({ msg:`Cash balance updated: ${ctx.money(ctx.cash)}` }) },
-  { src:"Xero", cat:"Accounting", color:C.gold, icon:"◈",
+  { src:"Xero", cat:"Accounting", get color() { return C.gold }, icon:"◈",
     gen:(ctx) => ({ msg:`Invoice ${ctx.pick(["received","paid","raised"])}: ${ctx.money(ctx.invoice)} · ${ctx.pick(ctx.customers)}` }) },
-  { src:"HubSpot", cat:"CRM", color:C.purple, icon:"⬡",
+  { src:"HubSpot", cat:"CRM", get color() { return C.purple }, icon:"⬡",
     gen:(ctx) => ({ msg:`Deal stage advanced: ${ctx.pick(["Proposal → Negotiation","Negotiation → Closed won","Discovery → Proposal"])} · ${ctx.money(ctx.deal)}` }) },
-  { src:"BambooHR", cat:"HRIS", color:C.gold, icon:"◍",
+  { src:"BambooHR", cat:"HRIS", get color() { return C.gold }, icon:"◍",
     gen:(ctx) => ({ msg:`${ctx.pick(["Employee onboarded","Leave approved","Performance review completed"])} · ${ctx.pick(["Engineering","Sales","Operations","Finance"])}` }) },
-  { src:"Stripe", cat:"Billing", color:C.green, icon:"⚡",
+  { src:"Stripe", cat:"Billing", get color() { return C.green }, icon:"⚡",
     gen:(ctx) => ({ msg:`Subscription ${ctx.pick(["renewed","upgraded","new signup"])}: ${ctx.money(ctx.mrr)} of MRR` }) },
-  { src:"ExchangeRate-API", cat:"Market", color:C.blue, icon:"◎",
+  { src:"ExchangeRate-API", cat:"Market", get color() { return C.blue }, icon:"◎",
     gen:(ctx) => ({ msg:`GBP/USD ${ctx.fxUsd.toFixed(4)} · GBP/EUR ${ctx.fxEur.toFixed(4)}` }) },
-  { src:"Alpha Vantage", cat:"Market", color:C.blue, icon:"α",
+  { src:"Alpha Vantage", cat:"Market", get color() { return C.blue }, icon:"α",
     gen:(ctx) => ({ msg:`FX fallback polled · ${ctx.pick(["rates unchanged","GBP/USD refreshed","GBP/EUR refreshed"])}` }) },
-  { src:"NewsAPI", cat:"News", color:C.teal, icon:"◫",
+  { src:"NewsAPI", cat:"News", get color() { return C.teal }, icon:"◫",
     gen:(ctx) => ({ msg:`${ctx.pick(["Sector coverage indexed","Company mention scored","Sentiment recalculated"])} · ${ctx.company}` }) },
 ];
 

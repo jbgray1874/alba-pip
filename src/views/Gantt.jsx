@@ -79,7 +79,7 @@ const PROTOTYPE_TASKS = [
 
 const PRODUCTION_PHASES = [
   {
-    phase: "Phase 1 — Foundation", color: C.blue, months: [1, 2], tasks: [
+    phase: "Phase 1 — Foundation", get color() { return C.blue }, months: [1, 2], tasks: [
       { task: "Migrate SQLite → AWS RDS PostgreSQL", month: 1, duration: 0.5 },
       { task: "AWS ECS Fargate infrastructure (Terraform)", month: 1, duration: 1.5 },
       { task: "Auth0 SSO + MFA + RBAC/ABAC", month: 1.5, duration: 1 },
@@ -90,7 +90,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 2 — Real Integrations", color: C.purple, months: [3, 4], tasks: [
+    phase: "Phase 2 — Real Integrations", get color() { return C.purple }, months: [3, 4], tasks: [
       { task: "Merge.dev HRIS connector (BambooHR, HiBob, Workday)", month: 3, duration: 1 },
       { task: "Fivetran CRM connector", month: 3, duration: 0.75 },
       { task: "Fivetran ERP connector (Xero, NetSuite)", month: 3.5, duration: 1 },
@@ -101,7 +101,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 3 — Full Module Coverage", color: C.green, months: [5, 6], tasks: [
+    phase: "Phase 3 — Full Module Coverage", get color() { return C.green }, months: [5, 6], tasks: [
       { task: "Operations module (throughput, SLA, backlog)", month: 5, duration: 1 },
       { task: "Procurement module (spend, supplier concentration)", month: 5, duration: 0.75 },
       { task: "Technology module (uptime, incidents, cloud cost)", month: 5.5, duration: 0.75 },
@@ -112,7 +112,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 4 — Intelligence Layer", color: C.gold, months: [7, 8], tasks: [
+    phase: "Phase 4 — Intelligence Layer", get color() { return C.gold }, months: [7, 8], tasks: [
       { task: "LangChain RAG query interface (pgvector)", month: 7, duration: 1.5 },
       { task: "Claude API narrative engine (full implementation)", month: 7, duration: 1 },
       { task: "Prophet forecasting (cash runway, revenue, attrition)", month: 7.5, duration: 1 },
@@ -122,7 +122,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 5 — Compliance + Risk Modules", color: C.red, months: [9, 10], tasks: [
+    phase: "Phase 5 — Compliance + Risk Modules", get color() { return C.red }, months: [9, 10], tasks: [
       { task: "Compliance / KYC module", month: 9, duration: 1 },
       { task: "Audit module (issue tracker, aging)", month: 9, duration: 0.75 },
       { task: "Risk module (register, heatmap)", month: 9.5, duration: 0.75 },
@@ -131,7 +131,7 @@ const PRODUCTION_PHASES = [
     ],
   },
   {
-    phase: "Phase 6 — Scale + Polish", color: C.txt3, months: [11, 12], tasks: [
+    phase: "Phase 6 — Scale + Polish", get color() { return C.txt3 }, months: [11, 12], tasks: [
       { task: "Predictive risk scoring (cash injection probability)", month: 11, duration: 1 },
       { task: "Scenario planning module", month: 11, duration: 0.75 },
       { task: "Mobile responsive polish", month: 11.5, duration: 0.5 },
@@ -143,12 +143,12 @@ const PRODUCTION_PHASES = [
 ];
 
 const TYPE_COLORS = {
-  infra: { bg: C.blueSoft, bar: C.blue, label: "Infrastructure" },
-  data:  { bg: C.greenSoft, bar: C.green, label: "Data" },
-  logic: { bg: C.purpleSoft, bar: C.purple, label: "Logic" },
-  ui:    { bg: C.goldOn, bar: C.gold, label: "Frontend" },
-  ai:    { bg: C.purpleSoft, bar: C.purple, label: "AI" },
-  qa:    { bg: C.border, bar: C.txt3, label: "QA / Polish" },
+  get infra() { return { bg: C.blueSoft, bar: C.blue, label: "Infrastructure" } },
+  get data() { return { bg: C.greenSoft, bar: C.green, label: "Data" } },
+  get logic() { return { bg: C.purpleSoft, bar: C.purple, label: "Logic" } },
+  get ui() { return { bg: C.goldOn, bar: C.gold, label: "Frontend" } },
+  get ai() { return { bg: C.purpleSoft, bar: C.purple, label: "AI" } },
+  get qa() { return { bg: C.border, bar: C.txt3, label: "QA / Polish" } },
 };
 
 // ─── PROTOTYPE GANTT ───────────────────────────────────────────────────────
@@ -346,15 +346,15 @@ function ProductionGantt() {
 // ─── MILESTONES ────────────────────────────────────────────────────────────
 
 const MILESTONES = [
-  { when: "Day 7", label: "Prototype demo-ready", color: C.gold, icon: "🎯" },
-  { when: "Month 1", label: "Cloud infrastructure live", color: C.blue, icon: "☁️" },
-  { when: "Month 2", label: "Auth + multi-tenancy production", color: C.blue, icon: "🔐" },
-  { when: "Month 3", label: "First real integrations (Xero + HubSpot)", color: C.purple, icon: "🔌" },
-  { when: "Month 4", label: "dbt KPI pipeline live", color: C.purple, icon: "⚙️" },
-  { when: "Month 6", label: "MVP — first paying fund onboarded", color: C.green, icon: "🚀" },
-  { when: "Month 8", label: "AI layer + board pack generation", color: C.gold, icon: "🤖" },
-  { when: "Month 10", label: "Compliance + Risk modules + pen test", color: C.red, icon: "🛡️" },
-  { when: "Month 12", label: "Production-grade — SOC 2 prep complete", color: C.txt3, icon: "✅" },
+  { when: "Day 7", label: "Prototype demo-ready", get color() { return C.gold }, icon: "🎯" },
+  { when: "Month 1", label: "Cloud infrastructure live", get color() { return C.blue }, icon: "☁️" },
+  { when: "Month 2", label: "Auth + multi-tenancy production", get color() { return C.blue }, icon: "🔐" },
+  { when: "Month 3", label: "First real integrations (Xero + HubSpot)", get color() { return C.purple }, icon: "🔌" },
+  { when: "Month 4", label: "dbt KPI pipeline live", get color() { return C.purple }, icon: "⚙️" },
+  { when: "Month 6", label: "MVP — first paying fund onboarded", get color() { return C.green }, icon: "🚀" },
+  { when: "Month 8", label: "AI layer + board pack generation", get color() { return C.gold }, icon: "🤖" },
+  { when: "Month 10", label: "Compliance + Risk modules + pen test", get color() { return C.red }, icon: "🛡️" },
+  { when: "Month 12", label: "Production-grade — SOC 2 prep complete", get color() { return C.txt3 }, icon: "✅" },
 ];
 
 // ─── APP ───────────────────────────────────────────────────────────────────

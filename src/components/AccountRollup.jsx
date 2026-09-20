@@ -46,7 +46,7 @@ function Reading({ tier }) {
 }
 
 const cell = { padding: "8px 10px 8px 0", verticalAlign: "top", fontSize: S.small,
-               borderBottom: `1px solid ${C.border}`, fontVariantNumeric: "tabular-nums" };
+               get borderBottom() { return `1px solid ${C.border}` }, fontVariantNumeric: "tabular-nums" };
 
 /**
  * @param {object}   cash   an account book — fin.cash, or the Cash screen's own

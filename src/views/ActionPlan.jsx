@@ -23,7 +23,7 @@ import { buildExpansion } from "../lib/scenarioExpansion.js";
 import ReportPanel from "../components/ReportPanel.jsx";
 
 /** The tones the model names, resolved against the design tokens. */
-const TONE = { gold: C.gold, green: C.green, blue: C.blue, purple: C.purple, red: C.red, muted: C.txt3 };
+const TONE = { get gold() { return C.gold }, get green() { return C.green }, get blue() { return C.blue }, get purple() { return C.purple }, get red() { return C.red }, get muted() { return C.txt3 }};
 
 // ── Small parts the reference asks for and Shell does not carry ─────────────
 
@@ -97,11 +97,11 @@ const TH = {
   padding: "0 10px 8px",
   textAlign: "left",
   fontWeight: 500,
-  borderBottom: `1px solid ${C.border}`,
+  get borderBottom() { return `1px solid ${C.border}` },
   whiteSpace: "nowrap",
 };
-const TD = { padding: "10px", borderBottom: `1px solid ${C.border}`, verticalAlign: "top" };
-const SUB = { color: C.txt3, fontSize: S.micro, marginTop: 3, lineHeight: 1.45 };
+const TD = { padding: "10px", get borderBottom() { return `1px solid ${C.border}` }, verticalAlign: "top" };
+const SUB = { get color() { return C.txt3 }, fontSize: S.micro, marginTop: 3, lineHeight: 1.45 };
 
 // ── The screen ──────────────────────────────────────────────────────────────
 

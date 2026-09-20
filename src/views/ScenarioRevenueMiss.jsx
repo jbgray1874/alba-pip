@@ -148,7 +148,7 @@ const DRIVER_META = [
     detail: () => `${PARAMS.salesHires.plan - PARAMS.salesHires.inSeat} of ${PARAMS.salesHires.plan} quota-carrying roles not in seat` },
 ];
 
-const TONE = { red: C.red, amber: C.amber, green: C.green, blue: C.blue };
+const TONE = { get red() { return C.red }, get amber() { return C.amber }, get green() { return C.green }, get blue() { return C.blue }};
 
 function CauseRow({ driver, value, workings, money, share }) {
   const meta = DRIVER_META.find((m) => driver.toLowerCase().includes(m.match));
