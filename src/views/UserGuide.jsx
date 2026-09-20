@@ -27,20 +27,19 @@ import { DISPLAY_CURRENCIES, RATES_PINNED_AT } from "../lib/fx.js";
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  card: C.surface,
-  border: C.border,
-  accent: C.surfaceUp,
-  blue: C.blue,
-  green: C.green,
-  amber: C.amber,
-  gold: C.gold,
-  red: C.red,
-  purple: C.purple,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get card() { return C.surface },
+  get border() { return C.border },
+  get accent() { return C.surfaceUp },
+  get blue() { return C.blue },
+  get green() { return C.green },
+  get amber() { return C.amber },
+  get gold() { return C.gold },
+  get red() { return C.red },
+  get purple() { return C.purple },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 
 function Section({ n, title, sub, children }) {
   return (
@@ -144,7 +143,7 @@ export default function UserGuide({ onNavigate }) {
           <div style={{ color: T.txt2, fontSize: 11, lineHeight: 1.7 }}>
             <strong style={{ color: T.txt1 }}>Top bar</strong> — four sections: Portfolio, Intelligence,
             Actions, Reports. Clicking one opens its first screen. To the right sit the home switch, the
-            interface scale, the fund in view and your account.
+            interface scale, light or dark, the fund in view and your account.
             <br /><br />
             <strong style={{ color: T.txt1 }}>Left panel</strong> — every screen in the section you are in,
             with a one-line description of each. It collapses to a narrow rail from the control at the foot,
@@ -153,6 +152,12 @@ export default function UserGuide({ onNavigate }) {
             <strong style={{ color: T.txt1 }}>Interface scale</strong> — 100% is the density the screens were
             laid out at; 115% and 130% are for a laptop and a room. Ctrl and + or − do the same thing, and the
             setting persists, so a rehearsal and the meeting after it are the same size.
+            <br /><br />
+            <strong style={{ color: T.txt1 }}>Light or dark</strong> — LOOK, beside the size control. Dark is
+            the design. Light is for a lit room, a projector or a laptop beside a window, where a dark screen
+            is a mirror. It is not the dark palette inverted: the accent and the red, amber and green are
+            redrawn at weights a pale ground can carry, so a status still reads as a status. The report sheet
+            is cream in both, and a downloaded PDF is the same document either way. The choice persists.
           </div>
         </Card>
 
@@ -580,6 +585,7 @@ export default function UserGuide({ onNavigate }) {
           <Row k="Every screen, every company" v={`Client Portal and Live Data each carry a company selector, and the GP Dashboard's eleven tabs and benchmarks are populated for all ${COMPANIES.length}. Nothing is pinned to one company any more.`} />
           <Row k="Generating a report" v="Opens it on screen first, with Download PDF, Save as HTML and Print inside the panel. A download is silently blocked in some embedded viewers, so the report is shown rather than only offered as a file." />
           <Row k="Text too small?" v="Ctrl and + or − (Cmd on a Mac), or the SIZE control in the top bar — 100% to 150%, Ctrl+0 to reset. It scales the whole interface together, so no column, chart or table row is dropped at any setting. The browser's own zoom still works and stacks on top. The choice is remembered." />
+          <Row k="Screen too dark, or too bright?" v="LOOK in the top bar, beside SIZE — Dark or Light. Dark is the design; light is for a lit room, a projector or a window behind you. Every screen, chart and table is drawn in the palette you pick, and the choice is remembered. The report sheet stays cream in both, and a downloaded PDF is identical either way." />
           <Row k="Which page opens first?" v="Set it with the home switch in the top bar. Portfolio Health or GP Dashboard; the other stays one click away in the sidebar." />
           <Row k="Status pips" v="Five per company on Portfolio Health — revenue, EBITDA, cash, people, sales. Hover any pip for the figure behind it." />
           <Row k="Currency" v={`Companies hold their own currency (${[...new Set(COMPANIES.map((c) => c.currency))].join(", ")}). Fund-level figures are restated into ${FUNDS[0].reportingCurrency}.`} />

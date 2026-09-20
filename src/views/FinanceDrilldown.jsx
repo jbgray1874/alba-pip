@@ -9,33 +9,32 @@ import { CONNECTED_COMPANY_ID, SOURCES, provenanceOf } from "../lib/kpiDefinitio
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  surface: C.bgDeep,
-  card: C.surface,
-  cardHov: C.surfaceUp,
-  border: C.border,
-  borderLt: C.borderLt,
-  green: C.green,
-  greenDim: C.greenSoft,
-  amber: C.amber,
-  amberDim: C.amberSoft,
-  red: C.red,
-  redDim: C.redSoft,
-  blue: C.blue,
-  blueDim: C.blueSoft,
-  purple: C.purple,
-  purpleDim: C.purpleSoft,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get surface() { return C.bgDeep },
+  get card() { return C.surface },
+  get cardHov() { return C.surfaceUp },
+  get border() { return C.border },
+  get borderLt() { return C.borderLt },
+  get green() { return C.green },
+  get greenDim() { return C.greenSoft },
+  get amber() { return C.amber },
+  get amberDim() { return C.amberSoft },
+  get red() { return C.red },
+  get redDim() { return C.redSoft },
+  get blue() { return C.blue },
+  get blueDim() { return C.blueSoft },
+  get purple() { return C.purple },
+  get purpleDim() { return C.purpleSoft },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 const ragCol = (s) => ({ green:T.green, amber:T.amber, red:T.red, critical:T.red, overdue:T.amber, watch:T.blue }[s] || T.txt3);
 const ragBg  = (s) => ({ green:T.greenDim, amber:T.amberDim, red:T.redDim, critical:T.redDim, overdue:T.amberDim, watch:T.blueDim }[s] || "transparent");
 
 const TT = ({ active, payload, label, src }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background:T.card, border:`1px solid ${T.borderLt}`, borderRadius:8, padding:"9px 12px", boxShadow:"0 8px 28px rgba(0,0,0,0.45)" }}>
+    <div style={{ background:T.card, border:`1px solid ${T.borderLt}`, borderRadius:8, padding:"9px 12px", boxShadow:`0 8px 28px ${C.shadow}` }}>
       <div style={{ color:T.txt3, fontSize:9, marginBottom:6 }}>{label}</div>
       {payload.map((p,i)=>(
         <div key={i} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:3 }}>
@@ -350,13 +349,13 @@ export default function FinanceDrilldown({ company, metric, onClose }) {
   const body = metric === "cash" ? cashLevels() : metric === "revenue" ? revLevels() : ebitdaLevels();
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:5000, background:"rgba(2,8,23,0.78)", backdropFilter:"blur(6px)",
+    <div style={{ position:"fixed", inset:0, zIndex:5000, background:C.scrim, backdropFilter:"blur(6px)",
       display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}
       onClick={onClose}>
       <div onClick={(e)=>e.stopPropagation()} style={{
         width:"min(720px,100%)", maxHeight:"88vh", background:T.bg, border:`1px solid ${T.borderLt}`,
         borderRadius:16, overflow:"hidden", display:"flex", flexDirection:"column",
-        boxShadow:"0 30px 80px rgba(0,0,0,0.6)", animation:"fadeSlideIn 0.3s ease" }}>
+        boxShadow:`0 30px 80px ${C.shadow}`, animation:"fadeSlideIn 0.3s ease" }}>
 
         {/* Header + breadcrumb */}
         <div style={{ padding:"16px 20px", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>

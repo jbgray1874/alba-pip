@@ -16,8 +16,22 @@
 //  seventeen.
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Two palettes, one name for every colour.
+ *
+ * Every screen reads `C.bg`, `C.txt1`, `C.gold` and so on, and a good number of
+ * those do arithmetic on the string: `${C.gold}44` for a translucent border,
+ * chart props that go straight into an SVG attribute, and src/lib/pdf.js, which
+ * parses the hex to place ink on a page. So the tokens stay hex. What changes
+ * is which hex.
+ *
+ * That is why this is a runtime swap rather than CSS custom properties: a
+ * variable reads beautifully in a stylesheet and cannot be sliced, appended to
+ * or parsed, and those three things are exactly what the call sites do.
+ */
+
 /** Ground, surfaces and lines. Neutral black — not the prototype's blue black. */
-export const C = {
+const DARK = {
   bg:        "#0A0A0B",   // page
   bgDeep:    "#070708",   // rail and inset wells
   surface:   "#131315",   // cards and panels
@@ -53,10 +67,76 @@ export const C = {
   pinkSoft:  "#EF5DA81A",
   goldOn:    "#141005",   // text on a gold fill
 
-  // The report sheet. Screens 6 and 9 print onto paper, not onto the dark
-  // interface, so the ink has its own scale — a report a partner circulates is
-  // read on a screen and then on a printer, and #F2F2F0 on #131315 does not
-  // survive the second one.
+  // What a panel floating over the interface casts. On a dark ground a shadow
+  // is a deeper black; on a light one it is the ink at low opacity, because
+  // black at this size reads as dirt rather than depth.
+  shadow:    "rgba(0,0,0,0.40)",
+  // Behind a modal. It dims the screen under the dialogue without hiding it.
+  scrim:     "rgba(7,7,8,0.82)",
+};
+
+/**
+ * Light is not the dark palette inverted.
+ *
+ * Two things have to move rather than flip. The accent: #E5A83C is a gold that
+ * glows on near-black and washes out to beige on white, so it darkens to a
+ * bronze that holds its contrast — the same hue, carrying the same meaning, at
+ * a weight the ground can take. And the semantic set: a #3FCF6E green readable
+ * against black is barely legible against white, and "barely legible" on the
+ * colour that means "this company is fine" is worse than no colour at all.
+ *
+ * The ground is a warm off-white rather than #FFF. Pure white under a dense
+ * table glares, and the warmth ties the interface to the cream the reports
+ * print on — two surfaces of one product rather than two products.
+ */
+const LIGHT = {
+  bg:        "#F7F6F2",
+  bgDeep:    "#EFEDE6",
+  surface:   "#FFFFFF",
+  surfaceUp: "#F4F2EC",
+  border:    "#E2DFD6",
+  borderLt:  "#C8C4B8",
+
+  txt1:      "#1A1814",
+  txt2:      "#57534A",
+  txt3:      "#8A857A",
+
+  gold:      "#9A6B12",
+  goldSoft:  "#9A6B121F",
+  goldLine:  "#9A6B1255",
+
+  green:     "#1B7A47",
+  greenSoft: "#1B7A471A",
+  amber:     "#9A6B12",
+  amberSoft: "#9A6B121A",
+  red:       "#B02A21",
+  redSoft:   "#B02A211A",
+  blue:      "#2B55C4",
+  blueSoft:  "#2B55C41A",
+  purple:    "#6544C4",
+  purpleSoft:"#6544C41A",
+  teal:      "#0E7070",
+  tealSoft:  "#0E70701A",
+  pink:      "#A82A73",
+  pinkSoft:  "#A82A731A",
+  goldOn:    "#FFFFFF",   // text on a gold fill
+
+  shadow:    "rgba(26,24,20,0.14)",
+  scrim:     "rgba(26,24,20,0.55)",
+};
+
+export const THEMES = { dark: DARK, light: LIGHT };
+
+/**
+ * The report sheet, identical in both palettes.
+ *
+ * Screens 6 and 9 print onto paper, not onto the interface, so the ink has its
+ * own scale — a report a partner circulates is read on a screen and then on a
+ * printer, and #F2F2F0 on #131315 does not survive the second one. The sheet
+ * stays cream whichever way the interface is set: the document does not change
+ * because the reader prefers a light screen.
+ */
+const SHEET = {
   paper:       "#F5F2EA",
   paperEdge:   "#E4DFD2",
   paperShadow: "rgba(0,0,0,0.45)",
@@ -66,7 +146,34 @@ export const C = {
   inkRule:     "#D6D0C2",
   inkRed:      "#9B2C2C",   // a shortfall, printed
   inkGreen:    "#1F6B45",   // an upside, printed
+  inkGold:     "#E5A83C",   // the masthead, on cream
 };
+
+let _active = "dark";
+
+/** Which palette the interface is drawn in. */
+export function themeName() { return _active; }
+
+/**
+ * Swap the palette. The caller re-renders; nothing here notifies anybody.
+ * Returns the name actually set, so a bad value is visible rather than silent.
+ */
+export function setTheme(name) {
+  _active = THEMES[name] ? name : "dark";
+  return _active;
+}
+
+/**
+ * The colours, as the application reads them.
+ *
+ * A getter per token rather than a plain object, so `C.bg` is whatever the
+ * active palette says at the moment it is read. Every screen keeps using it
+ * exactly as before. The sheet tokens are plain values — they do not move.
+ */
+export const C = Object.freeze([
+  ...Object.keys(DARK).map((k) => [k, { get: () => THEMES[_active][k], enumerable: true }]),
+  ...Object.keys(SHEET).map((k) => [k, { value: SHEET[k], enumerable: true }]),
+].reduce((o, [k, d]) => (Object.defineProperty(o, k, d), o), {}));
 
 /**
  * Type.
@@ -115,9 +222,17 @@ export const metric = (colour = C.txt1, size = S.metric) => ({
   lineHeight: 1.05,
 });
 
+/**
+ * A card.
+ *
+ * Getters rather than values: this object is built once when the module loads,
+ * and the screens spread it into a style at every paint. Read plainly it would
+ * freeze whichever palette happened to be active at import and the cards would
+ * keep their old ground after the interface switched.
+ */
 export const panel = {
-  background: C.surface,
-  border: `1px solid ${C.border}`,
+  get background() { return C.surface },
+  get border() { return `1px solid ${C.border}` },
   borderRadius: 6,
 };
 

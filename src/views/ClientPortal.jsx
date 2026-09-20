@@ -11,29 +11,28 @@ import { AreaChart, Area, BarChart, Bar, ComposedChart, Line, XAxis, YAxis, Cart
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  surface: C.bgDeep,
-  card: C.surface,
-  border: C.border,
-  green: C.green,
-  greenDim: C.greenSoft,
-  amber: C.amber,
-  amberDim: C.amberSoft,
-  red: C.red,
-  redDim: C.redSoft,
-  blue: C.blue,
-  blueDim: C.blueSoft,
-  purple: C.purple,
-  purpleDim: C.purpleSoft,
-  navy: C.gold,
-  amberBrd: C.goldLine,
-  blueBrd: C.blue + "55",
-  greenBrd: C.green + "55",
-  redBrd: C.red + "55",
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get surface() { return C.bgDeep },
+  get card() { return C.surface },
+  get border() { return C.border },
+  get green() { return C.green },
+  get greenDim() { return C.greenSoft },
+  get amber() { return C.amber },
+  get amberDim() { return C.amberSoft },
+  get red() { return C.red },
+  get redDim() { return C.redSoft },
+  get blue() { return C.blue },
+  get blueDim() { return C.blueSoft },
+  get purple() { return C.purple },
+  get purpleDim() { return C.purpleSoft },
+  get navy() { return C.gold },
+  get amberBrd() { return C.goldLine },
+  get blueBrd() { return C.blue + "55" },
+  get greenBrd() { return C.green + "55" },
+  get redBrd() { return C.red + "55" },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 const ragCol = s => ({green:T.green,amber:T.amber,red:T.red}[s]||T.txt3);
 const ragBg  = s => ({green:T.greenDim,amber:T.amberDim,red:T.redDim}[s]||"transparent");
 const ragBrd = s => ({green:T.greenBrd,amber:T.amberBrd,red:T.redBrd}[s]||T.border);
@@ -47,7 +46,7 @@ const ROLES = [
   { id:"sales",  label:"Head of Sales",   icon:"📈", color:T.green,  desc:"Pipeline, revenue, team performance" },
   { id:"hr",     label:"HR Lead",         icon:"👥", color:T.purple, desc:"People, hiring, attrition, payroll" },
   { id:"coo",    label:"COO",             icon:"⚙️", color:T.amber,  desc:"Operations, SLA, procurement, delivery" },
-  { id:"gp",     label:"GP View",         icon:"🏦", color:C.red,desc:"What the fund sees about your company" },
+  { id:"gp",     label:"GP View",         icon:"🏦", get color() { return C.red },desc:"What the fund sees about your company" },
 ];
 
 // ── WIDGET REGISTRY ───────────────────────────────────────────────────────────
@@ -159,7 +158,7 @@ function dataFieldsFor(c) {
 const TT = ({active,payload,label}) => {
   if (!active||!payload?.length) return null;
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"8px 12px",boxShadow:"0 4px 12px rgba(0,0,0,0.1)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:6,padding:"8px 12px",boxShadow:`0 4px 12px ${C.shadow}`}}>
       <div style={{color:T.txt3,fontSize:9,marginBottom:4}}>{label}</div>
       {payload.map((p,i)=><div key={i} style={{color:p.color||T.txt1,fontSize:11}}>{p.name}: {p.value}</div>)}
     </div>
@@ -170,7 +169,7 @@ const TT = ({active,payload,label}) => {
 function KpiStat({label,value,delta,status,sub}) {
   const col = ragCol(status); const bg = ragBg(status); const brd = ragBrd(status);
   return (
-    <div style={{background:T.surface,border:`1px solid ${brd}`,borderRadius:10,padding:"14px 16px",height:"100%",boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${brd}`,borderRadius:10,padding:"14px 16px",height:"100%",boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt3,fontSize:10,letterSpacing:"0.05em",textTransform:"uppercase",marginBottom:6}}>{label}</div>
       <div style={{color:col,fontSize:24,fontWeight:800,fontFamily:"monospace",lineHeight:1}}>{value}</div>
       {delta&&<div style={{color:col,fontSize:11,marginTop:4,fontFamily:"monospace"}}>{delta}</div>}
@@ -183,7 +182,7 @@ function ActionsList({actions,setActions}) {
   const pc={critical:T.red,high:T.amber,medium:T.blue};
   const advance = id => setActions(p=>p.map(a=>a.id===id?{...a,st:a.st==="open"?"in_progress":a.st==="in_progress"?"done":"open"}:a));
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:12}}>My Actions <span style={{color:T.txt3,fontWeight:400,fontSize:10}}>({actions.filter(a=>a.st!=="done").length} open)</span></div>
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {actions.map(a=>(
@@ -209,7 +208,7 @@ function AlertsPanel({alerts}) {
   const sc={high:T.amber,watchlist:T.blue,critical:T.red};
   const sb={high:T.amberDim,watchlist:T.blueDim,critical:T.redDim};
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:12}}>My Alerts</div>
       {alerts.map(a=>(
         <div key={a.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"9px 11px",background:sb[a.sev],border:`1px solid ${sc[a.sev]}44`,borderRadius:7,marginBottom:6}}>
@@ -227,7 +226,7 @@ function AlertsPanel({alerts}) {
 function DataSubmission({fields}) {
   const [submitted,setSubmitted] = useState(false);
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
         <div style={{color:T.txt1,fontSize:12,fontWeight:700}}>Data Submission</div>
         <span style={{background:T.greenDim,color:T.green,fontSize:9,padding:"2px 8px",borderRadius:4,fontWeight:700}}>AUTO-SYNCED</span>
@@ -268,7 +267,7 @@ function CommentaryBox() {
     "Attrition above plan — Engineering team affected. Retention programme launched.",
   ];
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:4}}>Add Commentary</div>
       <div style={{color:T.txt3,fontSize:10,marginBottom:10}}>Explain variances · Provide context · Visible to GP</div>
       <div style={{display:"flex",gap:5,marginBottom:8,flexWrap:"wrap"}}>
@@ -339,7 +338,7 @@ function BenchmarkBar({label,company,median,top,unit,lowerBetter}) {
       <div style={{position:"relative",height:6,background:T.border,borderRadius:3}}>
         <div style={{position:"absolute",left:"33%",right:"10%",top:0,bottom:0,background:T.greenDim,borderRadius:3}}/>
         <div style={{position:"absolute",left:"33%",width:1,top:-2,height:10,background:T.txt3}}/>
-        <div style={{position:"absolute",left:`${pos}%`,top:-3,width:12,height:12,borderRadius:"50%",background:col,transform:"translateX(-50%)",border:"2px solid #fff",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+        <div style={{position:"absolute",left:`${pos}%`,top:-3,width:12,height:12,borderRadius:"50%",background:col,transform:"translateX(-50%)",border:"2px solid #fff",boxShadow:`0 1px 3px ${C.shadow}`}}/>
       </div>
       <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
         <span style={{color:T.txt3,fontSize:8}}>Bottom quartile</span>
@@ -352,7 +351,7 @@ function BenchmarkBar({label,company,median,top,unit,lowerBetter}) {
 
 function BenchmarksWidget() {
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:4}}>Benchmark Position</div>
       <div style={{color:T.txt3,fontSize:10,marginBottom:14}}>vs B2B SaaS Series A peers (anonymised) · Source: Alpha Vantage + Portfolio data</div>
       <BenchmarkBar label="Gross Margin"       company={71}  median={72} top={80} unit="%" />
@@ -368,7 +367,7 @@ function BenchmarksWidget() {
 function RevenueChart() {
   const DATA = useData();
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Revenue — Actual vs Budget (£k)</div>
       <ResponsiveContainer width="100%" height={160}>
         <ComposedChart data={DATA.rev}>
@@ -387,7 +386,7 @@ function RevenueChart() {
 function CashChart() {
   const DATA = useData();
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Cash Projection (£k)</div>
       <ResponsiveContainer width="100%" height={160}>
         <AreaChart data={DATA.cash}>
@@ -406,7 +405,7 @@ function CashChart() {
 function PipelineChart() {
   const DATA = useData();
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Pipeline vs Target (£k)</div>
       <ResponsiveContainer width="100%" height={160}>
         <ComposedChart data={DATA.pipe}>
@@ -425,7 +424,7 @@ function PipelineChart() {
 function AttritionChart() {
   const DATA = useData();
   return (
-    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
+    <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,boxShadow:`0 1px 3px ${C.shadow}`}}>
       <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Attrition vs Benchmark (%)</div>
       <ResponsiveContainer width="100%" height={160}>
         <ComposedChart data={DATA.att}>
@@ -522,7 +521,7 @@ function Dashboard({role}) {
 
       {/* Widget picker (edit mode) */}
       {editMode && (
-        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:20,boxShadow:"0 2px 8px rgba(0,0,0,0.08)"}}>
+        <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:16,marginBottom:20,boxShadow:`0 2px 8px ${C.shadow}`}}>
           <div style={{color:T.txt1,fontSize:12,fontWeight:700,marginBottom:10}}>Choose your widgets</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:7}}>
             {WIDGET_REGISTRY.map(w=>{

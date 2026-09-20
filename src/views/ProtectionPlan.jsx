@@ -23,7 +23,7 @@ import { useApproval } from "../lib/approval.js";
 import { buildExceptionReport } from "../lib/reports.js";
 import ReportPanel from "../components/ReportPanel.jsx";
 
-const TONE = { gold: C.gold, green: C.green, blue: C.blue, purple: C.purple, red: C.red, txt1: C.txt1, muted: C.txt3 };
+const TONE = { get gold() { return C.gold }, get green() { return C.green }, get blue() { return C.blue }, get purple() { return C.purple }, get red() { return C.red }, get txt1() { return C.txt1 }, get muted() { return C.txt3 }};
 
 /** A numbered gold circle — the priority marker down the left of the table. */
 function Rank({ n }) {

@@ -22,12 +22,11 @@ import { TIERS } from "../lib/liveData.js";
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  card: C.surface,
-  border: C.border,
-  bg: C.bg,
-  txt1: C.txt1,
-  txt3: C.txt3
-};
+  get card() { return C.surface },
+  get border() { return C.border },
+  get bg() { return C.bg },
+  get txt1() { return C.txt1 },
+  get txt3() { return C.txt3 }};
 
 function Tile({ feed }) {
   const tier = TIERS[feed.tier] ?? TIERS.simulated;

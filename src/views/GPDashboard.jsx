@@ -17,28 +17,27 @@ import { buildInvestigation } from "../lib/investigation.js";
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  surface: C.bgDeep,
-  card: C.surface,
-  cardHov: C.surfaceUp,
-  border: C.border,
-  borderLt: C.borderLt,
-  green: C.green,
-  greenDim: C.greenSoft,
-  amber: C.amber,
-  amberDim: C.amberSoft,
-  red: C.red,
-  redDim: C.redSoft,
-  blue: C.blue,
-  blueDim: C.blueSoft,
-  purple: C.purple,
-  purpleDim: C.purpleSoft,
-  teal: C.teal,
-  tealDim: C.tealSoft,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get surface() { return C.bgDeep },
+  get card() { return C.surface },
+  get cardHov() { return C.surfaceUp },
+  get border() { return C.border },
+  get borderLt() { return C.borderLt },
+  get green() { return C.green },
+  get greenDim() { return C.greenSoft },
+  get amber() { return C.amber },
+  get amberDim() { return C.amberSoft },
+  get red() { return C.red },
+  get redDim() { return C.redSoft },
+  get blue() { return C.blue },
+  get blueDim() { return C.blueSoft },
+  get purple() { return C.purple },
+  get purpleDim() { return C.purpleSoft },
+  get teal() { return C.teal },
+  get tealDim() { return C.tealSoft },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 const MO = ["May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr"];
 const ragCol = s => ({green:T.green,amber:T.amber,red:T.red}[s]||T.txt3);
 const ragBg  = s => ({green:T.greenDim,amber:T.amberDim,red:T.redDim}[s]||"transparent");
@@ -83,7 +82,7 @@ function HealthRing({score,size=48}){
 }
 function Dot({status,size=8}){const c=ragCol(status);return <span style={{display:"inline-block",width:size,height:size,borderRadius:"50%",background:c,boxShadow:`0 0 5px ${c}`,flexShrink:0}}/>;}
 function RagBadge({status}){const m={green:{c:T.green,bg:T.greenDim,l:"Green"},amber:{c:T.amber,bg:T.amberDim,l:"Amber"},red:{c:T.red,bg:T.redDim,l:"Red"}};const s=m[status]||m.amber;return <span style={{padding:"2px 8px",borderRadius:4,background:s.bg,color:s.c,fontSize:10,fontWeight:700,letterSpacing:"0.08em"}}>{s.l.toUpperCase()}</span>;}
-const TT=({active,payload,label,src})=>{if(!active||!payload?.length)return null;return(<div style={{background:T.card,border:`1px solid ${T.borderLt}`,borderRadius:8,padding:"9px 12px",boxShadow:"0 8px 28px rgba(0,0,0,0.45)"}}><div style={{color:T.txt3,fontSize:9,marginBottom:6,letterSpacing:"0.04em"}}>{label}</div>{payload.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}><span style={{width:7,height:7,borderRadius:2,background:p.color||p.fill||T.blue,display:"inline-block"}}/><span style={{color:T.txt2,fontSize:11,flex:1}}>{p.name}</span><span style={{color:T.txt1,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{typeof p.value==="number"?p.value.toLocaleString():p.value}</span></div>)}<div style={{marginTop:6,paddingTop:6,borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:5}}><span style={{width:5,height:5,borderRadius:"50%",background:T.green,display:"inline-block"}}/><span style={{color:T.txt3,fontSize:8}}>{src||"Live data"}</span></div></div>);};
+const TT=({active,payload,label,src})=>{if(!active||!payload?.length)return null;return(<div style={{background:T.card,border:`1px solid ${T.borderLt}`,borderRadius:8,padding:"9px 12px",boxShadow:`0 8px 28px ${C.shadow}`}}><div style={{color:T.txt3,fontSize:9,marginBottom:6,letterSpacing:"0.04em"}}>{label}</div>{payload.map((p,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}><span style={{width:7,height:7,borderRadius:2,background:p.color||p.fill||T.blue,display:"inline-block"}}/><span style={{color:T.txt2,fontSize:11,flex:1}}>{p.name}</span><span style={{color:T.txt1,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{typeof p.value==="number"?p.value.toLocaleString():p.value}</span></div>)}<div style={{marginTop:6,paddingTop:6,borderTop:`1px solid ${T.border}`,display:"flex",alignItems:"center",gap:5}}><span style={{width:5,height:5,borderRadius:"50%",background:T.green,display:"inline-block"}}/><span style={{color:T.txt3,fontSize:8}}>{src||"Live data"}</span></div></div>);};
 
 // ── SPARKLINE ───────────────────────────────────────────────────────────────
 function Sparkline({data,color,w=58,h=22}){

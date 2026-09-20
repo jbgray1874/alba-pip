@@ -10,18 +10,17 @@ import { attentionActions } from "../lib/investigation.js";
 // Palette from the shared design tokens. Every view used to carry its own
 // copy of this object, seventeen of them, each a shade adrift of the next.
 const T = {
-  bg: C.bg,
-  card: C.surface,
-  border: C.border,
-  gold: C.gold,
-  green: C.green,
-  amber: C.amber,
-  red: C.red,
-  blue: C.blue,
-  txt1: C.txt1,
-  txt2: C.txt2,
-  txt3: C.txt3
-};
+  get bg() { return C.bg },
+  get card() { return C.surface },
+  get border() { return C.border },
+  get gold() { return C.gold },
+  get green() { return C.green },
+  get amber() { return C.amber },
+  get red() { return C.red },
+  get blue() { return C.blue },
+  get txt1() { return C.txt1 },
+  get txt2() { return C.txt2 },
+  get txt3() { return C.txt3 }};
 
 // ── Seed data ─────────────────────────────────────────────────────
 const COMPANIES = forAnalytics();

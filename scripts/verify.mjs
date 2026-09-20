@@ -1051,12 +1051,89 @@ check("every palette resolves — no view references a token it does not define"
     const src = viewSources.get(file);
     const block = /^const T = \{[\s\S]*?^\};?$/m.exec(src);
     if (!block) continue;
-    const defined = new Set([...block[0].matchAll(/^\s*([a-zA-Z][a-zA-Z0-9]*)\s*:/gm)].map((m) => m[1]));
+    // Two forms count as a definition: the plain `key:` alias, and the getter
+    // `get key() { return C.key }`. A view uses the getter so the colour is
+    // read at paint time rather than captured once at import — which is what
+    // lets a palette declared at module scope follow the light/dark switch.
+    const defined = new Set(
+      [...block[0].matchAll(/^\s*(?:get\s+)?([a-zA-Z][a-zA-Z0-9]*)\s*[:(]/gm)].map((m) => m[1]),
+    );
     const used = new Set([...src.matchAll(/\bT\.([a-zA-Z][a-zA-Z0-9]*)/g)].map((m) => m[1]));
     const missing = [...used].filter((k) => !defined.has(k));
     if (missing.length) return `${file} uses T.${missing[0]} but never defines it`;
   }
   return true;
+});
+
+check("no colour is captured when a module loads", async () => {
+  // The light/dark switch works by changing which palette `C` reads from, so a
+  // token has to be read at the moment a screen paints. A module-scope object
+  // — `const TONE = { red: C.red }`, a table of style objects, a pool of toast
+  // records — is built once when the file is imported, which freezes whichever
+  // palette happened to be active then. The screen then keeps drawing the old
+  // colour after the interface has switched, and it does it silently: nothing
+  // throws, nothing logs, the pane simply renders half in the wrong palette.
+  //
+  // The fix at each site is a getter — `get red() { return C.red }` — which the
+  // property reads through every time. This check walks every module-scope
+  // declaration whose initializer is an object or array (a function initializer
+  // is evaluated when it is called, so those are already live) and fails on any
+  // bare `C.token` left inside one.
+  const OPEN = "({[", CLOSE = ")}]";
+  const skipString = (s, i) => {
+    const q = s[i]; i++;
+    while (i < s.length && s[i] !== q) {
+      if (s[i] === "\\") { i += 2; continue; }
+      if (q === "`" && s[i] === "$" && s[i + 1] === "{") {
+        let d = 1; i += 2;
+        while (i < s.length && d) {
+          if (s[i] === '"' || s[i] === "'" || s[i] === "`") { i = skipString(s, i); continue; }
+          if (s[i] === "{") d++; else if (s[i] === "}") d--;
+          i++;
+        }
+        continue;
+      }
+      i++;
+    }
+    return i + 1;
+  };
+  const endOfInitializer = (s, i) => {
+    let depth = 0;
+    while (i < s.length) {
+      const c = s[i];
+      if (c === '"' || c === "'" || c === "`") { i = skipString(s, i); continue; }
+      if (OPEN.includes(c)) depth++;
+      else if (CLOSE.includes(c)) { depth--; if (depth === 0) return i + 1; }
+      i++;
+    }
+    return i;
+  };
+
+  const roots = ["../src/views/", "../src/components/", "../src/lib/"];
+  const offenders = [];
+  for (const root of roots) {
+    for (const name of await readdir(new URL(root, import.meta.url))) {
+      if (!/\.jsx?$/.test(name)) continue;
+      const path = `${root}${name}`;
+      // theme.js is where the palettes themselves are declared.
+      if (name === "theme.js") continue;
+      const src = await codeOf(path);
+      const decl = /^(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*/gm;
+      let m;
+      while ((m = decl.exec(src))) {
+        const start = m.index + m[0].length;
+        if (!"({[".includes(src[start])) continue;
+        if (/^(?:async\s+)?(?:function\b|\(|[A-Za-z_$][\w$]*\s*=>)/.test(src.slice(start, start + 40))) continue;
+        const end = endOfInitializer(src, start);
+        decl.lastIndex = end;
+        // A getter body is the fix, not the fault — take those out first.
+        const body = src.slice(start, end).replace(/get\s+[A-Za-z_$][\w$]*\(\)\s*\{[\s\S]*?\n?\s*\}/g, "");
+        const hit = /\bC\.([a-zA-Z]\w*)/.exec(body);
+        if (hit) offenders.push(`${name} captures C.${hit[1]} in ${m[1]}`);
+      }
+    }
+  }
+  return offenders.length === 0 || offenders.slice(0, 3).join("; ");
 });
 
 check("the brand typefaces are loaded and declared", () => {

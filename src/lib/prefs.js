@@ -1,9 +1,10 @@
 // ════════════════════════════════════════════════════════════════════════════
 //  Alba PIP — Viewer preferences
 //  ----------------------------------------------------------------------------
-//  Three settings that belong to the person looking at the screen rather than
-//  to the data: which of the two landing pages opens first, how large the
-//  interface is drawn, and whether the navigation panel is open or collapsed.
+//  Four settings that belong to the person looking at the screen rather than to
+//  the data: which of the two landing pages opens first, how large the
+//  interface is drawn, whether the navigation panel is open or collapsed, and
+//  whether it is drawn light or dark.
 //
 //  Both persist in localStorage so a rehearsal and the meeting that follows it
 //  look the same, and both fall back safely — a browser with storage blocked
@@ -62,7 +63,21 @@ export const SCALES = [
  * A default is a claim about who is most likely to be looking. That is not the
  * author.
  */
-const DEFAULTS = { home: "command", scale: 1.3, navOpen: true };
+/**
+ * Light or dark.
+ *
+ * Dark is the design — the reference screens are drawn on near-black and the
+ * gold is chosen for it. Light exists because this is shown on a projector in a
+ * lit room and read on a laptop next to a window, and on both of those a dark
+ * interface is a mirror. Neither is a degraded version of the other; see the
+ * note in src/lib/theme.js on why the light palette is not an inversion.
+ */
+export const LOOKS = [
+  { id: "dark", label: "Dark", blurb: "As designed — near-black ground" },
+  { id: "light", label: "Light", blurb: "A lit room, a projector, a window" },
+];
+
+const DEFAULTS = { home: "command", scale: 1.3, navOpen: true, theme: "dark" };
 
 function read() {
   try {
@@ -75,6 +90,7 @@ function read() {
       home: HOMES.some((h) => h.id === saved.home) ? saved.home : DEFAULTS.home,
       scale: SCALES.some((s) => s.id === saved.scale) ? saved.scale : DEFAULTS.scale,
       navOpen: typeof saved.navOpen === "boolean" ? saved.navOpen : DEFAULTS.navOpen,
+      theme: LOOKS.some((l) => l.id === saved.theme) ? saved.theme : DEFAULTS.theme,
     };
   } catch {
     return { ...DEFAULTS };

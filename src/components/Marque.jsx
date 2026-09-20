@@ -21,7 +21,7 @@
 // ════════════════════════════════════════════════════════════════════════════
 
 import { useState } from "react";
-import { C } from "../lib/theme.js";
+import { C, themeName } from "../lib/theme.js";
 
 /**
  * Where the real artwork goes.
@@ -44,11 +44,14 @@ const ARTWORK = ["logo.svg", "logo.png", "logo.jpg"].map((f) => `${import.meta.e
  * visible — near-black on near-black still shows a seam.
  *
  * `screen` blending drops every black pixel to nothing and leaves the white
- * untouched, which knocks the box out cleanly. It is applied to JPEGs only:
- * a PNG or SVG carries its own alpha and blending one would erase any dark
- * part of the artwork.
+ * untouched, which knocks the box out cleanly. On a light ground the mark has
+ * been inverted first, so it is black on white and the blend that removes the
+ * box is `multiply` — the same trick the other way up. Applied to JPEGs only:
+ * a PNG or SVG carries its own alpha and blending one would erase any dark part
+ * of the artwork.
  */
-const knockout = (src) => (/\.jpe?g$/i.test(src) ? { mixBlendMode: "screen" } : null);
+const knockout = (src, inverted) =>
+  /\.jpe?g$/i.test(src) ? { mixBlendMode: inverted ? "multiply" : "screen" } : null;
 
 /**
  * The mark alone, no wordmark.
@@ -64,10 +67,18 @@ const knockout = (src) => (/\.jpe?g$/i.test(src) ? { mixBlendMode: "screen" } : 
  * @param {boolean} drawn   force the drawn version — used on the report sheet,
  *                          where the mark has to be ink on cream and a supplied
  *                          white-on-black file could not be recoloured
+ * @param {boolean} ink     the mark sits on paper rather than on the interface
  */
 export function Mark({ size = 20, colour = C.txt1, ground = C.bg, drawn = false, ink = false }) {
   // Walk the candidate files; -1 means every one failed, so draw it instead.
   const [candidate, setCandidate] = useState(drawn ? -1 : 0);
+
+  // The supplied artwork is light-on-transparent. That is right on the dark
+  // interface and wrong on both of the pale grounds it can land on: the cream
+  // report sheet, and the light palette, where a white mark on a white bar
+  // leaves a gap where the logo should be. Inverting is exact here because the
+  // mark is one flat colour.
+  const inverted = ink || themeName() === "light";
 
   if (candidate >= 0 && candidate < ARTWORK.length) {
     const src = ARTWORK[candidate];
@@ -76,12 +87,8 @@ export function Mark({ size = 20, colour = C.txt1, ground = C.bg, drawn = false,
            onError={() => setCandidate(candidate + 1)}
            style={{
              flexShrink: 0, display: "block", objectFit: "contain",
-             // The supplied artwork is light-on-transparent, which is right for
-             // the interface and wrong for the report, where the sheet is cream
-             // and everything else on it is ink. Inverting is exact here because
-             // the mark is a single flat colour.
-             ...(ink ? { filter: "invert(1)" } : null),
-             ...knockout(src),
+             ...(inverted ? { filter: "invert(1)" } : null),
+             ...knockout(src, inverted),
            }} />
     );
   }

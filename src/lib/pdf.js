@@ -49,13 +49,15 @@ function rgb(hex) {
 // The report sheet's ink scale, shared with the on-screen preview so the file
 // and the thing it was previewed as are the same document.
 const INK = {
-  head:  rgb(C.ink1),
-  body:  rgb(C.ink2),
-  quiet: rgb(C.ink3),
-  rule:  rgb(C.inkRule),
-  gold:  rgb(C.gold),
-  red:   rgb(C.inkRed),
-  green: rgb(C.inkGreen),
+  get head() { return rgb(C.ink1) },
+  get body() { return rgb(C.ink2) },
+  get quiet() { return rgb(C.ink3) },
+  get rule() { return rgb(C.inkRule) },
+  // The sheet's own gold, not the interface accent — a report is the same
+  // document whichever way the reader has the screen set.
+  get gold() { return rgb(C.inkGold) },
+  get red() { return rgb(C.inkRed) },
+  get green() { return rgb(C.inkGreen) },
 };
 
 const toneInk = (tone) => (tone === "red" ? INK.red : tone === "green" ? INK.green : INK.head);
