@@ -23,17 +23,24 @@ import { AS_OF_DATE } from "./liveFeed.js";
 const KEY = "alba.approvals.v1";
 
 /**
+ * The two people behind Alba PIP.
+ *
+ * The top bar carries their initials, and one of them signs plans off. Held
+ * here rather than typed into each screen so the top bar and the two plan
+ * screens cannot disagree about who somebody is or what they do.
+ */
+export const TEAM = [
+  { name: "James Gray", initials: "JG", role: "Co-Founder & CTO" },
+  { name: "Gerard Milligan", initials: "GM", role: "Co-Founder & CEO" },
+];
+
+/**
  * Who is approving.
  *
- * The top bar carries a GM avatar; this is that person. Held here rather than
- * typed into each screen so the two plan screens cannot disagree about who
- * signed a plan off.
+ * A plan is a commitment the firm makes, so it carries the CEO's name rather
+ * than whoever happens to have the screen open.
  */
-export const APPROVER = {
-  name: "Gerard Milligan",
-  initials: "GM",
-  role: "Managing Partner",
-};
+export const APPROVER = TEAM.find((p) => p.initials === "GM");
 
 function readAll() {
   try {

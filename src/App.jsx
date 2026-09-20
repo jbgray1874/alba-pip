@@ -24,7 +24,7 @@ import { Wordmark } from './components/Shell.jsx'
 import { COMPANIES, FUNDS } from './lib/companies.js'
 import { attentionActions } from './lib/investigation.js'
 import { useIdentity, SIGN_OUT } from './lib/identity.js'
-import { APPROVER } from './lib/approval.js'
+import { TEAM } from './lib/approval.js'
 
 // Grouped as the reference screens group them. The top bar carries the four
 // sections; the rail below carries every view within the active section.
@@ -295,15 +295,27 @@ export default function App() {
                              letterSpacing:'0.09em', textTransform:'uppercase', cursor:'pointer' }}>
               {FUNDS.map(f => <option key={f.id} value={f.id} style={{ background:C.surface }}>{f.name}</option>)}
             </select>
-            {/* The signed-in person where there is a sign-in, and the approver's
-                initials where there is not. Showing one person's initials to a
-                different person is the one thing this must not do. */}
-            <span title={me ? `${me.name} — signed in with ${me.provider}` : `${APPROVER.name}, ${APPROVER.role}`}
-                  style={{ width:26, height:26, borderRadius:'50%', border:`1px solid ${C.goldLine}`,
-                           background:C.goldSoft, color:C.gold, display:'flex', alignItems:'center',
-                           justifyContent:'center', fontSize:9.5, fontWeight:700, flexShrink:0 }}>
-              {me ? me.initials : APPROVER.initials}
-            </span>
+            {/* The signed-in person where there is a sign-in, and the two
+                founders where there is not — which is every build without a
+                login in front of it, including this one. Showing one person's
+                initials to a different person is the one thing this must not
+                do, so a real session replaces the pair rather than joining it.
+                Hover either for the name and the role. */}
+            {/* Sat close together so they read as one account rather than as
+                two unrelated controls, but not overlapped: at 26px an overlap
+                puts the second circle through the first one's second letter. */}
+            <div style={{ display:'flex', alignItems:'center', gap:4, flexShrink:0 }}>
+              {(me ? [{ name:me.name, initials:me.initials, role:`signed in with ${me.provider}` }] : TEAM)
+                .map((person) => (
+                <span key={person.initials}
+                      title={`${person.name} — ${person.role}`}
+                      style={{ width:26, height:26, borderRadius:'50%', border:`1px solid ${C.goldLine}`,
+                               background:C.goldSoft, color:C.gold, display:'flex', alignItems:'center',
+                               justifyContent:'center', fontSize:9.5, fontWeight:700, flexShrink:0 }}>
+                  {person.initials}
+                </span>
+              ))}
+            </div>
             {me && (
               <a href={SIGN_OUT} title={`Sign out of ${me.name}`}
                  style={{ color:C.txt3, fontSize:S.micro, letterSpacing:'0.1em',
